@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 
 class App extends StatelessWidget {
@@ -9,10 +10,7 @@ class App extends StatelessWidget {
     return MaterialApp.router(
       title: '生活事项',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4CAF7D)),
-      ),
+      theme: AppTheme.lightTheme(),
       routerConfig: appRouter,
     );
   }
