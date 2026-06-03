@@ -8,6 +8,9 @@ part 'bill_record_dao.g.dart';
 class BillRecordDao extends DatabaseAccessor<AppDatabase> with _$BillRecordDaoMixin {
   BillRecordDao(super.db);
 
+  Future<List<BillRecord>> getAll() =>
+      (select(billRecords)..orderBy([(t) => OrderingTerm.desc(t.billTime)])).get();
+
   Stream<List<BillRecord>> watchAll() =>
       (select(billRecords)..orderBy([(t) => OrderingTerm.desc(t.billTime)])).watch();
 
