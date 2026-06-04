@@ -114,7 +114,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
                 if (!snapshot.hasData) return const SizedBox.shrink();
                 final cats = snapshot.data!;
                 return DropdownButtonFormField<int>(
-                  value: _selectedCategoryId,
+                  value: cats.any((c) => c.id == _selectedCategoryId) ? _selectedCategoryId : null,
                   decoration: const InputDecoration(labelText: '分类'),
                   items: cats.map((c) => DropdownMenuItem<int>(value: c.id, child: Text(c.name))).toList(),
                   onChanged: (v) => setState(() => _selectedCategoryId = v),
