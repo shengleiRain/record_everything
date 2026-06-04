@@ -26,23 +26,33 @@ class LifeItemListPage extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle_outline, size: 64, color: Theme.of(context).colorScheme.outline),
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                   const SizedBox(height: 16),
                   Text('还没有事项', style: Theme.of(context).textTheme.bodyLarge),
                   const SizedBox(height: 8),
-                  Text('点击右下角按钮创建第一个事项', style: Theme.of(context).textTheme.bodyMedium),
+                  Text(
+                    '点击右下角按钮创建第一个事项',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ],
               ),
             );
           }
 
-          final sorted = List<LifeItem>.from(items)..sort((a, b) {
-            final aOverdue = a.status == 'pending' && DateFormatter.isOverdue(a.dueTime);
-            final bOverdue = b.status == 'pending' && DateFormatter.isOverdue(b.dueTime);
-            if (aOverdue && !bOverdue) return -1;
-            if (!aOverdue && bOverdue) return 1;
-            return a.dueTime.compareTo(b.dueTime);
-          });
+          final sorted = List<LifeItem>.from(items)
+            ..sort((a, b) {
+              final aOverdue =
+                  a.status == 'pending' && DateFormatter.isOverdue(a.dueTime);
+              final bOverdue =
+                  b.status == 'pending' && DateFormatter.isOverdue(b.dueTime);
+              if (aOverdue && !bOverdue) return -1;
+              if (!aOverdue && bOverdue) return 1;
+              return a.dueTime.compareTo(b.dueTime);
+            });
 
           return ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
@@ -72,16 +82,25 @@ class LifeItemListPage extends ConsumerWidget {
       item: item,
       onComplete: () async {
         await ref.read(lifeItemNotifierProvider.notifier).complete(item.id);
-        if (context.mounted) Navigator.pop(context);
       },
       onCompleteAndBill: (amount, categoryId, note) async {
         await ref.read(lifeItemNotifierProvider.notifier).complete(item.id);
-        await ref.read(billNotifierProvider.notifier).createFromLifeItem(item, amount, categoryId, note);
-        if (context.mounted) Navigator.pop(context);
+        await ref
+            .read(billNotifierProvider.notifier)
+            .createFromLifeItem(item, amount, categoryId, note);
+      },
+      onCompleteAndBillAndNext: (amount, categoryId, note) async {
+        await ref
+            .read(billNotifierProvider.notifier)
+            .createFromLifeItem(item, amount, categoryId, note);
+        await ref
+            .read(lifeItemNotifierProvider.notifier)
+            .completeAndGenerateNext(item.id);
       },
       onCompleteAndNext: () async {
-        await ref.read(lifeItemNotifierProvider.notifier).completeAndGenerateNext(item.id);
-        if (context.mounted) Navigator.pop(context);
+        await ref
+            .read(lifeItemNotifierProvider.notifier)
+            .completeAndGenerateNext(item.id);
       },
       onDefer: () {
         _showDeferPicker(context, ref, item);

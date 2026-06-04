@@ -1,0 +1,8 @@
+appId: com.lifeitems.record_everything
+---
+- launchApp:
+    clearState: true
+- takeScreenshot: home-dashboard
+- tapOn:
+    point: "90%,95%"
+- takeScreenshot: settings-tab

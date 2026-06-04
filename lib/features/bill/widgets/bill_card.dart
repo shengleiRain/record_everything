@@ -26,7 +26,8 @@ class BillCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: (isIncome ? AppColors.income : AppColors.expense).withOpacity(0.1),
+                  color: (isIncome ? AppColors.income : AppColors.expense)
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -40,20 +41,35 @@ class BillCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(bill.title, style: Theme.of(context).textTheme.bodyLarge),
+                    Text(
+                      bill.title,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Text(DateFormatter.formatDate(bill.billTime), style: Theme.of(context).textTheme.bodyMedium),
+                        Text(
+                          DateFormatter.formatDate(bill.billTime),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                         if (bill.lifeItemId != null) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text('来自事项', style: TextStyle(fontSize: 10, color: AppColors.primary)),
+                            child: const Text(
+                              '来自事项',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
                         ],
                       ],
@@ -62,7 +78,9 @@ class BillCard extends StatelessWidget {
                 ),
               ),
               Text(
-                isIncome ? MoneyFormatter.formatIncome(bill.amount) : MoneyFormatter.formatExpense(bill.amount),
+                isIncome
+                    ? MoneyFormatter.formatIncome(bill.amount)
+                    : MoneyFormatter.formatExpense(bill.amount),
                 style: TextStyle(
                   color: isIncome ? AppColors.income : AppColors.expense,
                   fontWeight: FontWeight.w600,

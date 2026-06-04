@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:drift/drift.dart' show Value;
 import '../../../domain/enums/item_type.dart';
 import '../../../domain/enums/amount_type.dart';
 import '../../../domain/enums/repeat_period.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
+import '../../../shared/widgets/app_dropdown_field.dart';
 import '../providers/life_item_providers.dart';
 import '../widgets/quick_template_sheet.dart';
 
@@ -44,23 +47,68 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
       _isEdit = true;
       _editId = extra['id'] as int?;
       _loadFromMap(extra);
+    } else {
+      final idStr = state.pathParameters['id'];
+      if (idStr != null && idStr != 'new') {
+        _isEdit = true;
+        _editId = int.tryParse(idStr);
+        _loadFromDatabase();
+      }
     }
     _loaded = true;
+  }
+
+  Future<void> _loadFromDatabase() async {
+    final id = _editId;
+    if (id == null) return;
+    final item = await ref.read(databaseProvider).lifeItemDao.getById(id);
+    if (!mounted) return;
+    setState(() => _loadFromItem(item));
   }
 
   void _loadFromMap(Map<String, dynamic> data) {
     _titleController.text = data['title'] as String? ?? '';
     _descController.text = data['description'] as String? ?? '';
     _itemType = ItemType.fromString(data['itemType'] as String? ?? 'todo');
-    _amountType = AmountType.fromString(data['amountType'] as String? ?? 'none');
+    _amountType = AmountType.fromString(
+      data['amountType'] as String? ?? 'none',
+    );
     if (data['amount'] != null) {
-      _amountController.text = ((data['amount'] as int) / 100).toStringAsFixed(2);
+      _amountController.text = ((data['amount'] as int) / 100).toStringAsFixed(
+        2,
+      );
     }
-    _dueDate = data['dueTime'] as DateTime? ?? DateTime.now().add(const Duration(days: 1));
+    _dueDate =
+        data['dueTime'] as DateTime? ??
+        DateTime.now().add(const Duration(days: 1));
     _selectedCategoryId = data['categoryId'] as int?;
     _hasRepeat = data['repeatRule'] != null;
     if (_hasRepeat) {
       final ruleStr = data['repeatRule'] as String;
+      if (ruleStr.startsWith('every:')) {
+        _repeatPeriod = RepeatPeriod.custom;
+        _customRepeatDays = int.tryParse(ruleStr.split(':')[1]) ?? 30;
+      } else {
+        _repeatPeriod = RepeatPeriod.fromString(ruleStr);
+      }
+    }
+  }
+
+  void _loadFromItem(LifeItem item) {
+    _titleController.text = item.title;
+    _descController.text = item.description ?? '';
+    _itemType = ItemType.fromString(item.itemType);
+    _amountType = AmountType.fromString(item.amountType);
+    if (item.amount != null) {
+      _amountController.text = (item.amount! / 100).toStringAsFixed(2);
+    } else {
+      _amountController.clear();
+    }
+    _dueDate = item.dueTime;
+    _selectedCategoryId = item.categoryId;
+    _hasRepeat = item.repeatRule != null;
+    if (_hasRepeat) {
+      final ruleStr = item.repeatRule!;
       if (ruleStr.startsWith('every:')) {
         _repeatPeriod = RepeatPeriod.custom;
         _customRepeatDays = int.tryParse(ruleStr.split(':')[1]) ?? 30;
@@ -118,19 +166,58 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     if (!_formKey.currentState!.validate()) return;
     final notifier = ref.read(lifeItemNotifierProvider.notifier);
 
-    notifier.create({
-      'title': _titleController.text.trim(),
-      'description': _descController.text.trim().isEmpty ? null : _descController.text.trim(),
-      'itemType': _itemType.value,
-      'categoryId': _selectedCategoryId,
-      'amount': _amountType != AmountType.none ? MoneyFormatter.parse(_amountController.text) : null,
-      'amountType': _amountType.value,
-      'dueTime': _dueDate,
-      'remindTime': null,
-      'repeatRule': _buildRepeatRule(),
-    }).then((_) {
-      if (mounted) context.pop();
-    });
+    if (_isEdit && _editId != null) {
+      ref
+          .read(databaseProvider)
+          .lifeItemDao
+          .getById(_editId!)
+          .then((item) {
+            return notifier.update(
+              item.copyWith(
+                title: _titleController.text.trim(),
+                description: Value(
+                  _descController.text.trim().isEmpty
+                      ? null
+                      : _descController.text.trim(),
+                ),
+                itemType: _itemType.value,
+                categoryId: Value(_selectedCategoryId),
+                amount: Value(
+                  _amountType != AmountType.none
+                      ? MoneyFormatter.parse(_amountController.text)
+                      : null,
+                ),
+                amountType: _amountType.value,
+                dueTime: _dueDate,
+                repeatRule: Value(_buildRepeatRule()),
+                updatedAt: DateTime.now(),
+              ),
+            );
+          })
+          .then((_) {
+            if (mounted) context.pop();
+          });
+    } else {
+      notifier
+          .create({
+            'title': _titleController.text.trim(),
+            'description': _descController.text.trim().isEmpty
+                ? null
+                : _descController.text.trim(),
+            'itemType': _itemType.value,
+            'categoryId': _selectedCategoryId,
+            'amount': _amountType != AmountType.none
+                ? MoneyFormatter.parse(_amountController.text)
+                : null,
+            'amountType': _amountType.value,
+            'dueTime': _dueDate,
+            'remindTime': null,
+            'repeatRule': _buildRepeatRule(),
+          })
+          .then((_) {
+            if (mounted) context.pop();
+          });
+    }
   }
 
   @override
@@ -154,14 +241,17 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
             TextFormField(
               controller: _titleController,
               decoration: const InputDecoration(labelText: '标题 *'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? '请输入标题' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? '请输入标题' : null,
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<ItemType>(
+            AppDropdownField<ItemType>(
+              label: '事项类型',
               value: _itemType,
-              decoration: const InputDecoration(labelText: '事项类型'),
-              items: ItemType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.label))).toList(),
-              onChanged: (v) => setState(() => _itemType = v!),
+              options: ItemType.values
+                  .map((t) => AppDropdownOption(value: t, label: t.label))
+                  .toList(),
+              onSelected: (v) => setState(() => _itemType = v ?? _itemType),
             ),
             const SizedBox(height: 16),
             FutureBuilder(
@@ -169,21 +259,24 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox.shrink();
                 final cats = snapshot.data!;
-                final validValue = cats.any((c) => c.id == _selectedCategoryId) ? _selectedCategoryId : null;
-                return DropdownButtonFormField<int>(
+                final validValue = cats.any((c) => c.id == _selectedCategoryId)
+                    ? _selectedCategoryId
+                    : null;
+                return AppDropdownField<int>(
+                  label: '分类',
                   value: validValue,
-                  decoration: const InputDecoration(labelText: '分类'),
-                  items: cats.map((c) => DropdownMenuItem<int>(value: c.id, child: Text(c.name))).toList(),
-                  onChanged: (v) => setState(() => _selectedCategoryId = v),
+                  options: cats
+                      .map((c) => AppDropdownOption(value: c.id, label: c.name))
+                      .toList(),
+                  onSelected: (v) => setState(() => _selectedCategoryId = v),
                 );
               },
             ),
             const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('日期'),
-              subtitle: Text(DateFormatter.formatDate(_dueDate)),
-              trailing: const Icon(Icons.calendar_today),
+            _DateField(
+              key: const ValueKey('life-item-date-field'),
+              label: '日期',
+              value: DateFormatter.formatDate(_dueDate),
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
@@ -195,18 +288,25 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
               },
             ),
             const SizedBox(height: 8),
-            DropdownButtonFormField<AmountType>(
+            AppDropdownField<AmountType>(
+              label: '金额类型',
               value: _amountType,
-              decoration: const InputDecoration(labelText: '金额类型'),
-              items: AmountType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.label))).toList(),
-              onChanged: (v) => setState(() => _amountType = v!),
+              options: AmountType.values
+                  .map((t) => AppDropdownOption(value: t, label: t.label))
+                  .toList(),
+              onSelected: (v) => setState(() => _amountType = v ?? _amountType),
             ),
             if (_amountType != AmountType.none) ...[
               const SizedBox(height: 16),
               TextFormField(
                 controller: _amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: '金额', prefixText: '¥'),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: '金额',
+                  prefixText: '¥',
+                ),
               ),
             ],
             const SizedBox(height: 16),
@@ -218,11 +318,14 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
             ),
             if (_hasRepeat) ...[
               const SizedBox(height: 8),
-              DropdownButtonFormField<RepeatPeriod>(
+              AppDropdownField<RepeatPeriod>(
+                label: '重复频率',
                 value: _repeatPeriod,
-                decoration: const InputDecoration(labelText: '重复频率'),
-                items: RepeatPeriod.values.map((p) => DropdownMenuItem(value: p, child: Text(p.label))).toList(),
-                onChanged: (v) => setState(() => _repeatPeriod = v!),
+                options: RepeatPeriod.values
+                    .map((p) => AppDropdownOption(value: p, label: p.label))
+                    .toList(),
+                onSelected: (v) =>
+                    setState(() => _repeatPeriod = v ?? _repeatPeriod),
               ),
               if (_repeatPeriod == RepeatPeriod.custom) ...[
                 const SizedBox(height: 16),
@@ -247,6 +350,34 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  const _DateField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          suffixIcon: const Icon(Icons.calendar_today),
+        ),
+        child: Text(value, style: Theme.of(context).textTheme.bodyLarge),
       ),
     );
   }

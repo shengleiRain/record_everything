@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../domain/enums/bill_amount_type.dart';
+import '../../../shared/widgets/app_dropdown_field.dart';
 import '../providers/bill_providers.dart';
 import '../../../data/database/database_provider.dart';
 
@@ -86,47 +87,62 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
             TextFormField(
               controller: _titleController,
               decoration: const InputDecoration(labelText: '标题 *'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? '请输入标题' : null,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? '请输入标题' : null,
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<BillAmountType>(
+            AppDropdownField<BillAmountType>(
+              label: '类型',
               value: _amountType,
-              decoration: const InputDecoration(labelText: '类型'),
-              items: BillAmountType.values.map((t) => DropdownMenuItem(value: t, child: Text(t.label))).toList(),
-              onChanged: (v) => setState(() {
-                _amountType = v!;
+              options: BillAmountType.values
+                  .map((t) => AppDropdownOption(value: t, label: t.label))
+                  .toList(),
+              onSelected: (v) => setState(() {
+                _amountType = v ?? _amountType;
                 _selectedCategoryId = null;
               }),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: '金额', prefixText: '¥'),
-              validator: (v) => (v == null || v.trim().isEmpty) ? '请输入金额' : null,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(
+                labelText: '金额',
+                prefixText: '¥',
+              ),
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? '请输入金额' : null,
             ),
             const SizedBox(height: 16),
             FutureBuilder(
-              future: ref.read(databaseProvider).categoryDao.getByType(
+              future: ref
+                  .read(databaseProvider)
+                  .categoryDao
+                  .getByType(
                     _amountType == BillAmountType.income ? 'income' : 'expense',
                   ),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox.shrink();
                 final cats = snapshot.data!;
-                return DropdownButtonFormField<int>(
-                  value: cats.any((c) => c.id == _selectedCategoryId) ? _selectedCategoryId : null,
-                  decoration: const InputDecoration(labelText: '分类'),
-                  items: cats.map((c) => DropdownMenuItem<int>(value: c.id, child: Text(c.name))).toList(),
-                  onChanged: (v) => setState(() => _selectedCategoryId = v),
+                return AppDropdownField<int>(
+                  label: '分类',
+                  value: cats.any((c) => c.id == _selectedCategoryId)
+                      ? _selectedCategoryId
+                      : null,
+                  options: cats
+                      .map((c) => AppDropdownOption(value: c.id, label: c.name))
+                      .toList(),
+                  onSelected: (v) => setState(() => _selectedCategoryId = v),
                 );
               },
             ),
             const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('日期'),
-              subtitle: Text(DateFormatter.formatDate(_billTime)),
-              trailing: const Icon(Icons.calendar_today),
+            _DateField(
+              key: const ValueKey('bill-date-field'),
+              label: '日期',
+              value: DateFormatter.formatDate(_billTime),
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
@@ -159,30 +175,43 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
     final notifier = ref.read(billNotifierProvider.notifier);
 
     if (_isEdit && _editId != null) {
-      ref.read(databaseProvider).billRecordDao.getById(_editId!).then((bill) {
-        return ref.read(billRepoProvider).updateRecord(bill.copyWith(
-              title: _titleController.text.trim(),
-              amount: MoneyFormatter.parse(_amountController.text) ?? 0,
-              amountType: _amountType.value,
-              categoryId: Value(_selectedCategoryId),
-              billTime: _billTime,
-              note: Value(_noteController.text.trim()),
-              updatedAt: DateTime.now(),
-            ));
-      }).then((_) {
-        if (mounted) context.pop();
-      });
+      ref
+          .read(databaseProvider)
+          .billRecordDao
+          .getById(_editId!)
+          .then((bill) {
+            return ref
+                .read(billRepoProvider)
+                .updateRecord(
+                  bill.copyWith(
+                    title: _titleController.text.trim(),
+                    amount: MoneyFormatter.parse(_amountController.text) ?? 0,
+                    amountType: _amountType.value,
+                    categoryId: Value(_selectedCategoryId),
+                    billTime: _billTime,
+                    note: Value(_noteController.text.trim()),
+                    updatedAt: DateTime.now(),
+                  ),
+                );
+          })
+          .then((_) {
+            if (mounted) context.pop();
+          });
     } else {
-      notifier.create(
-        title: _titleController.text.trim(),
-        amount: MoneyFormatter.parse(_amountController.text) ?? 0,
-        amountType: _amountType.value,
-        categoryId: _selectedCategoryId,
-        billTime: _billTime,
-        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
-      ).then((_) {
-        if (mounted) context.pop();
-      });
+      notifier
+          .create(
+            title: _titleController.text.trim(),
+            amount: MoneyFormatter.parse(_amountController.text) ?? 0,
+            amountType: _amountType.value,
+            categoryId: _selectedCategoryId,
+            billTime: _billTime,
+            note: _noteController.text.trim().isEmpty
+                ? null
+                : _noteController.text.trim(),
+          )
+          .then((_) {
+            if (mounted) context.pop();
+          });
     }
   }
 
@@ -193,7 +222,10 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
         title: const Text('确认删除'),
         content: const Text('删除后无法恢复，确认要删除这条账单吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               ref.read(billNotifierProvider.notifier).delete(_editId!);
@@ -203,6 +235,34 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
             child: const Text('删除'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  const _DateField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          suffixIcon: const Icon(Icons.calendar_today),
+        ),
+        child: Text(value, style: Theme.of(context).textTheme.bodyLarge),
       ),
     );
   }

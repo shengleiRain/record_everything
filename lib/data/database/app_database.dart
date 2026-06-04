@@ -17,6 +17,8 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(openConnection());
 
+  AppDatabase.forTesting(super.executor);
+
   @override
   int get schemaVersion => 1;
 
@@ -34,28 +36,34 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> _insertDefaultCategories() async {
     for (final c in DefaultCategories.income) {
-      await into(categories).insert(CategoriesCompanion.insert(
-        name: c['name']!,
-        type: 'income',
-        icon: Value(c['icon']!),
-        isDefault: const Value(true),
-      ));
+      await into(categories).insert(
+        CategoriesCompanion.insert(
+          name: c['name']!,
+          type: 'income',
+          icon: Value(c['icon']!),
+          isDefault: const Value(true),
+        ),
+      );
     }
     for (final c in DefaultCategories.expense) {
-      await into(categories).insert(CategoriesCompanion.insert(
-        name: c['name']!,
-        type: 'expense',
-        icon: Value(c['icon']!),
-        isDefault: const Value(true),
-      ));
+      await into(categories).insert(
+        CategoriesCompanion.insert(
+          name: c['name']!,
+          type: 'expense',
+          icon: Value(c['icon']!),
+          isDefault: const Value(true),
+        ),
+      );
     }
     for (final c in DefaultCategories.item) {
-      await into(categories).insert(CategoriesCompanion.insert(
-        name: c['name']!,
-        type: 'item',
-        icon: Value(c['icon']!),
-        isDefault: const Value(true),
-      ));
+      await into(categories).insert(
+        CategoriesCompanion.insert(
+          name: c['name']!,
+          type: 'item',
+          icon: Value(c['icon']!),
+          isDefault: const Value(true),
+        ),
+      );
     }
   }
 }

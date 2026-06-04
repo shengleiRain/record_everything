@@ -7,7 +7,10 @@ void showCompleteActionSheet({
   required BuildContext context,
   required LifeItem item,
   required VoidCallback onComplete,
-  required void Function(int amount, int? categoryId, String? note) onCompleteAndBill,
+  required void Function(int amount, int? categoryId, String? note)
+  onCompleteAndBill,
+  required void Function(int amount, int? categoryId, String? note)
+  onCompleteAndBillAndNext,
   required VoidCallback onCompleteAndNext,
   required VoidCallback onDefer,
 }) {
@@ -16,7 +19,9 @@ void showCompleteActionSheet({
 
   showModalBottomSheet(
     context: context,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
     builder: (context) => Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -33,11 +38,9 @@ void showCompleteActionSheet({
               onTap: () {
                 if (hasAmount) {
                   Navigator.pop(context);
-                  _showBillDialog(context, item, (amount, categoryId, note) {
-                    onCompleteAndBill(amount, categoryId, note);
-                    onCompleteAndNext();
-                  });
+                  _showBillDialog(context, item, onCompleteAndBillAndNext);
                 } else {
+                  Navigator.pop(context);
                   onCompleteAndNext();
                 }
               },
@@ -69,7 +72,10 @@ void showCompleteActionSheet({
             },
           ),
           ListTile(
-            leading: const Icon(Icons.cancel_outlined, color: AppColors.textHint),
+            leading: const Icon(
+              Icons.cancel_outlined,
+              color: AppColors.textHint,
+            ),
             title: const Text('取消事项'),
             onTap: () => Navigator.pop(context),
           ),
@@ -84,7 +90,9 @@ void _showBillDialog(
   LifeItem item,
   void Function(int amount, int? categoryId, String? note) onSubmit,
 ) {
-  final amountController = TextEditingController(text: ((item.amount ?? 0) / 100).toStringAsFixed(2));
+  final amountController = TextEditingController(
+    text: ((item.amount ?? 0) / 100).toStringAsFixed(2),
+  );
   final noteController = TextEditingController();
   int amount = item.amount ?? 0;
 
@@ -116,7 +124,10 @@ void _showBillDialog(
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
         FilledButton(
           onPressed: () {
             onSubmit(amount, item.categoryId, noteController.text);

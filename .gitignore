@@ -32,6 +32,10 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/screenshot/
+home-dashboard.png
+settings-tab.png
+android-*.png
 
 # Symbolication related
 app.*.symbols

@@ -18,11 +18,13 @@ class LifeItemDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final id = int.tryParse(GoRouterState.of(context).pathParameters['id'] ?? '') ?? 0;
+    final id =
+        int.tryParse(GoRouterState.of(context).pathParameters['id'] ?? '') ?? 0;
     final itemAsync = ref.watch(lifeItemByIdProvider(id));
 
     return itemAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('加载失败: $e'))),
       data: (item) => Scaffold(
         appBar: AppBar(
@@ -43,13 +45,24 @@ class LifeItemDetailPage extends ConsumerWidget {
           children: [
             Text(item.title, style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 16),
-            _InfoRow(label: '状态', value: ItemStatus.fromString(item.status).label),
-            _InfoRow(label: '类型', value: ItemType.fromString(item.itemType).label),
-            _InfoRow(label: '日期', value: DateFormatter.formatDate(item.dueTime)),
+            _InfoRow(
+              label: '状态',
+              value: ItemStatus.fromString(item.status).label,
+            ),
+            _InfoRow(
+              label: '类型',
+              value: ItemType.fromString(item.itemType).label,
+            ),
+            _InfoRow(
+              label: '日期',
+              value: DateFormatter.formatDate(item.dueTime),
+            ),
             _InfoRow(
               label: '剩余',
               value: DateFormatter.formatRelative(item.dueTime),
-              valueColor: DateFormatter.isOverdue(item.dueTime) && item.status == 'pending'
+              valueColor:
+                  DateFormatter.isOverdue(item.dueTime) &&
+                      item.status == 'pending'
                   ? AppColors.overdue
                   : null,
             ),
@@ -57,7 +70,9 @@ class LifeItemDetailPage extends ConsumerWidget {
               _InfoRow(
                 label: AmountType.fromString(item.amountType).label,
                 value: MoneyFormatter.format(item.amount),
-                valueColor: item.amountType == 'income' ? AppColors.income : AppColors.expense,
+                valueColor: item.amountType == 'income'
+                    ? AppColors.income
+                    : AppColors.expense,
               ),
             if (item.repeatRule != null)
               _InfoRow(label: '重复', value: _formatRepeatRule(item.repeatRule!)),
@@ -92,11 +107,24 @@ class LifeItemDetailPage extends ConsumerWidget {
       },
       onCompleteAndBill: (amount, categoryId, note) async {
         await ref.read(lifeItemNotifierProvider.notifier).complete(item.id);
-        await ref.read(billNotifierProvider.notifier).createFromLifeItem(item, amount, categoryId, note);
+        await ref
+            .read(billNotifierProvider.notifier)
+            .createFromLifeItem(item, amount, categoryId, note);
+        if (context.mounted) Navigator.pop(context);
+      },
+      onCompleteAndBillAndNext: (amount, categoryId, note) async {
+        await ref
+            .read(billNotifierProvider.notifier)
+            .createFromLifeItem(item, amount, categoryId, note);
+        await ref
+            .read(lifeItemNotifierProvider.notifier)
+            .completeAndGenerateNext(item.id);
         if (context.mounted) Navigator.pop(context);
       },
       onCompleteAndNext: () async {
-        await ref.read(lifeItemNotifierProvider.notifier).completeAndGenerateNext(item.id);
+        await ref
+            .read(lifeItemNotifierProvider.notifier)
+            .completeAndGenerateNext(item.id);
         if (context.mounted) Navigator.pop(context);
       },
       onDefer: () {
@@ -106,7 +134,9 @@ class LifeItemDetailPage extends ConsumerWidget {
           firstDate: DateTime.now(),
           lastDate: DateTime.now().add(const Duration(days: 365)),
         ).then((date) {
-          if (date != null) ref.read(lifeItemNotifierProvider.notifier).defer(item.id, date);
+          if (date != null) {
+            ref.read(lifeItemNotifierProvider.notifier).defer(item.id, date);
+          }
         });
       },
     );
@@ -119,7 +149,10 @@ class LifeItemDetailPage extends ConsumerWidget {
         title: const Text('确认删除'),
         content: const Text('删除后无法恢复，确认要删除这个事项吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
           FilledButton(
             onPressed: () {
               ref.read(lifeItemNotifierProvider.notifier).delete(id);
@@ -148,12 +181,18 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 80, child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
+          SizedBox(
+            width: 80,
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
           Expanded(
-            child: Text(value, style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: valueColor,
-                  fontWeight: FontWeight.w500,
-                )),
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: valueColor,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),

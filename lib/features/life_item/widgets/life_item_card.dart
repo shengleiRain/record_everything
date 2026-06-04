@@ -10,7 +10,13 @@ class LifeItemCard extends StatelessWidget {
   final VoidCallback? onComplete;
   final VoidCallback? onDefer;
 
-  const LifeItemCard({super.key, required this.item, this.onTap, this.onComplete, this.onDefer});
+  const LifeItemCard({
+    super.key,
+    required this.item,
+    this.onTap,
+    this.onComplete,
+    this.onDefer,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,8 +25,8 @@ class LifeItemCard extends StatelessWidget {
     final statusColor = isOverdue
         ? AppColors.overdue
         : daysLeft <= 3
-            ? AppColors.upcoming
-            : AppColors.completed;
+        ? AppColors.upcoming
+        : AppColors.completed;
 
     return Card(
       child: InkWell(
@@ -37,15 +43,19 @@ class LifeItemCard extends StatelessWidget {
                     child: Text(
                       item.title,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            decoration: item.status == 'completed' ? TextDecoration.lineThrough : null,
-                          ),
+                        decoration: item.status == 'completed'
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
                     ),
                   ),
                   if (item.amount != null && item.amountType != 'none')
                     Text(
                       MoneyFormatter.format(item.amount),
                       style: TextStyle(
-                        color: item.amountType == 'income' ? AppColors.income : AppColors.expense,
+                        color: item.amountType == 'income'
+                            ? AppColors.income
+                            : AppColors.expense,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -56,22 +66,36 @@ class LifeItemCard extends StatelessWidget {
                 children: [
                   Icon(Icons.calendar_today, size: 14, color: statusColor),
                   const SizedBox(width: 4),
-                  Text(DateFormatter.formatDate(item.dueTime), style: Theme.of(context).textTheme.bodyMedium),
+                  Text(
+                    DateFormatter.formatDate(item.dueTime),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                   const SizedBox(width: 12),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       DateFormatter.formatRelative(item.dueTime),
-                      style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const Spacer(),
                   if (item.repeatRule != null)
-                    const Icon(Icons.repeat, size: 16, color: AppColors.textHint),
+                    const Icon(
+                      Icons.repeat,
+                      size: 16,
+                      color: AppColors.textHint,
+                    ),
                 ],
               ),
               if (item.status == 'pending') ...[
@@ -81,7 +105,10 @@ class LifeItemCard extends StatelessWidget {
                   children: [
                     TextButton(onPressed: onDefer, child: const Text('延期')),
                     const SizedBox(width: 8),
-                    FilledButton.tonal(onPressed: onComplete, child: const Text('完成')),
+                    FilledButton.tonal(
+                      onPressed: onComplete,
+                      child: const Text('完成'),
+                    ),
                   ],
                 ),
               ],

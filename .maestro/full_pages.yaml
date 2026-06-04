@@ -1,0 +1,26 @@
+appId: com.lifeitems.record_everything
+---
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- takeScreenshot: android-home
+- tapOn:
+    point: "30%,95%"
+- takeScreenshot: android-items
+- tapOn:
+    point: "92%,86%"
+- takeScreenshot: android-item-new
+- back
+- tapOn:
+    point: "50%,95%"
+- takeScreenshot: android-bills
+- tapOn:
+    point: "92%,86%"
+- takeScreenshot: android-bill-new
+- back
+- tapOn:
+    point: "70%,95%"
+- takeScreenshot: android-statistics
+- tapOn:
+    point: "90%,95%"
+- takeScreenshot: android-settings

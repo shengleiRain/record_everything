@@ -14,14 +14,14 @@ final billsByMonthProvider = StreamProvider<List<BillRecord>>((ref) {
   return ref.watch(billRepoProvider).watchByMonth(month);
 });
 
-final monthlyIncomeProvider = FutureProvider<int>((ref) {
+final monthlyIncomeProvider = StreamProvider<int>((ref) {
   final month = ref.watch(currentMonthProvider);
-  return ref.watch(billRepoProvider).sumIncomeForMonth(month);
+  return ref.watch(billRepoProvider).watchIncomeForMonth(month);
 });
 
-final monthlyExpenseProvider = FutureProvider<int>((ref) {
+final monthlyExpenseProvider = StreamProvider<int>((ref) {
   final month = ref.watch(currentMonthProvider);
-  return ref.watch(billRepoProvider).sumExpenseForMonth(month);
+  return ref.watch(billRepoProvider).watchExpenseForMonth(month);
 });
 
 class BillNotifier extends Notifier<void> {
@@ -38,34 +38,34 @@ class BillNotifier extends Notifier<void> {
     DateTime? billTime,
     String? note,
     int? lifeItemId,
-  }) =>
-      _repo.create(
-        title: title,
-        amount: amount,
-        amountType: amountType,
-        categoryId: categoryId,
-        billTime: billTime ?? DateTime.now(),
-        note: note,
-        lifeItemId: lifeItemId,
-      );
+  }) => _repo.create(
+    title: title,
+    amount: amount,
+    amountType: amountType,
+    categoryId: categoryId,
+    billTime: billTime ?? DateTime.now(),
+    note: note,
+    lifeItemId: lifeItemId,
+  );
 
   Future<BillRecord> createFromLifeItem(
     LifeItem item,
     int? customAmount,
     int? customCategoryId,
     String? note,
-  ) =>
-      _repo.create(
-        title: item.title,
-        amount: customAmount ?? item.amount ?? 0,
-        amountType: item.amountType,
-        categoryId: customCategoryId ?? item.categoryId,
-        billTime: DateTime.now(),
-        note: note,
-        lifeItemId: item.id,
-      );
+  ) => _repo.create(
+    title: item.title,
+    amount: customAmount ?? item.amount ?? 0,
+    amountType: item.amountType,
+    categoryId: customCategoryId ?? item.categoryId,
+    billTime: DateTime.now(),
+    note: note,
+    lifeItemId: item.id,
+  );
 
   Future<void> delete(int id) => _repo.deleteRecord(id);
 }
 
-final billNotifierProvider = NotifierProvider<BillNotifier, void>(BillNotifier.new);
+final billNotifierProvider = NotifierProvider<BillNotifier, void>(
+  BillNotifier.new,
+);
