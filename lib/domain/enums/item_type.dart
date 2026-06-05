@@ -10,6 +10,8 @@ enum ItemType {
   final String value;
   final String label;
 
-  static ItemType fromString(String v) =>
-      ItemType.values.firstWhere((e) => e.value == v, orElse: () => ItemType.todo);
+  static ItemType fromString(String v) => ItemType.values.firstWhere(
+    (e) => e.value == v,
+    orElse: () => ItemType.todo,
+  );
 }

@@ -7,6 +7,8 @@ enum AmountType {
   final String value;
   final String label;
 
-  static AmountType fromString(String v) =>
-      AmountType.values.firstWhere((e) => e.value == v, orElse: () => AmountType.none);
+  static AmountType fromString(String v) => AmountType.values.firstWhere(
+    (e) => e.value == v,
+    orElse: () => AmountType.none,
+  );
 }

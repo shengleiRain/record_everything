@@ -30,11 +30,31 @@ Widget _buildShell(BuildContext context, GoRouterState state, Widget child) {
       currentIndex: _currentIndex(state),
       onTap: (index) => _onTap(context, index),
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: '首页'),
-        BottomNavigationBarItem(icon: Icon(Icons.check_circle_outline), activeIcon: Icon(Icons.check_circle), label: '事项'),
-        BottomNavigationBarItem(icon: Icon(Icons.receipt_long_outlined), activeIcon: Icon(Icons.receipt_long), label: '账单'),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: '统计'),
-        BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: '设置'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          activeIcon: Icon(Icons.home),
+          label: '首页',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.check_circle_outline),
+          activeIcon: Icon(Icons.check_circle),
+          label: '事项',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.receipt_long_outlined),
+          activeIcon: Icon(Icons.receipt_long),
+          label: '账单',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.bar_chart_outlined),
+          activeIcon: Icon(Icons.bar_chart),
+          label: '统计',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.settings_outlined),
+          activeIcon: Icon(Icons.settings),
+          label: '设置',
+        ),
       ],
     ),
   );
@@ -47,17 +67,46 @@ final appRouter = GoRouter(
       builder: _buildShell,
       routes: [
         GoRoute(path: '/home', builder: (context, state) => const HomePage()),
-        GoRoute(path: '/items', builder: (context, state) => const LifeItemListPage(), routes: [
-          GoRoute(path: 'new', builder: (context, state) => const LifeItemEditPage()),
-          GoRoute(path: ':id', builder: (context, state) => const LifeItemDetailPage()),
-          GoRoute(path: ':id/edit', builder: (context, state) => const LifeItemEditPage()),
-        ]),
-        GoRoute(path: '/bills', builder: (context, state) => const BillListPage(), routes: [
-          GoRoute(path: 'new', builder: (context, state) => const BillEditPage()),
-          GoRoute(path: ':id/edit', builder: (context, state) => const BillEditPage()),
-        ]),
-        GoRoute(path: '/statistics', builder: (context, state) => const StatisticsPage()),
-        GoRoute(path: '/settings', builder: (context, state) => const SettingsPage()),
+        GoRoute(
+          path: '/items',
+          builder: (context, state) => const LifeItemListPage(),
+          routes: [
+            GoRoute(
+              path: 'new',
+              builder: (context, state) => const LifeItemEditPage(),
+            ),
+            GoRoute(
+              path: ':id',
+              builder: (context, state) => const LifeItemDetailPage(),
+            ),
+            GoRoute(
+              path: ':id/edit',
+              builder: (context, state) => const LifeItemEditPage(),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: '/bills',
+          builder: (context, state) => const BillListPage(),
+          routes: [
+            GoRoute(
+              path: 'new',
+              builder: (context, state) => const BillEditPage(),
+            ),
+            GoRoute(
+              path: ':id/edit',
+              builder: (context, state) => const BillEditPage(),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: '/statistics',
+          builder: (context, state) => const StatisticsPage(),
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsPage(),
+        ),
       ],
     ),
   ],

@@ -10,6 +10,8 @@ enum RepeatPeriod {
   final String label;
   final int defaultDays;
 
-  static RepeatPeriod fromString(String v) =>
-      RepeatPeriod.values.firstWhere((e) => e.value == v, orElse: () => RepeatPeriod.custom);
+  static RepeatPeriod fromString(String v) => RepeatPeriod.values.firstWhere(
+    (e) => e.value == v,
+    orElse: () => RepeatPeriod.custom,
+  );
 }

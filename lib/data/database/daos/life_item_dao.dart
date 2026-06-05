@@ -15,6 +15,16 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
     lifeItems,
   )..orderBy([(t) => OrderingTerm.asc(t.dueTime)])).watch();
 
+  Stream<List<LifeItem>> watchBetween(DateTime start, DateTime end) =>
+      (select(lifeItems)
+            ..where(
+              (t) =>
+                  t.dueTime.isBiggerOrEqualValue(start) &
+                  t.dueTime.isSmallerThanValue(end),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
+          .watch();
+
   Stream<List<LifeItem>> watchByStatus(String status) =>
       (select(lifeItems)
             ..where((t) => t.status.equals(status))

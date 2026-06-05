@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
-import '../../../core/utils/date_formatter.dart';
 import '../../../data/database/app_database.dart';
 
 class BillCard extends StatelessWidget {
@@ -13,79 +14,85 @@ class BillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIncome = bill.amountType == 'income';
+    final accent = isIncome ? AppColors.income : AppColors.expense;
+    final subtitle = (bill.note?.trim().isNotEmpty ?? false)
+        ? bill.note!.trim()
+        : '账单流水';
+    final time = DateFormat('HH:mm').format(bill.billTime);
 
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        height: 64,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: (isIncome ? AppColors.income : AppColors.expense)
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  isIncome ? Icons.arrow_downward : Icons.arrow_upward,
-                  color: isIncome ? AppColors.income : AppColors.expense,
+                  isIncome ? Icons.payments_outlined : Icons.receipt_long,
+                  color: accent,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       bill.title,
-                      style: Theme.of(context).textTheme.bodyLarge,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          DateFormatter.formatDate(bill.billTime),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        if (bill.lifeItemId != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Text(
-                              '来自事项',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
+                    Text(
+                      '$subtitle · $time',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Text(
-                isIncome
-                    ? MoneyFormatter.formatIncome(bill.amount)
-                    : MoneyFormatter.formatExpense(bill.amount),
-                style: TextStyle(
-                  color: isIncome ? AppColors.income : AppColors.expense,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
+              const SizedBox(width: 12),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    isIncome
+                        ? MoneyFormatter.formatIncome(bill.amount)
+                        : MoneyFormatter.formatExpense(bill.amount),
+                    style: TextStyle(
+                      color: accent,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    bill.lifeItemId == null ? time : '来自事项',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textHint,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

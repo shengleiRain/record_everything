@@ -20,23 +20,37 @@ class TodayTodosCard extends StatelessWidget {
               children: [
                 Text('今日待办', style: Theme.of(context).textTheme.titleMedium),
                 if (items.isNotEmpty)
-                  TextButton(onPressed: () => context.push('/items'), child: const Text('查看全部')),
+                  TextButton(
+                    onPressed: () => context.push('/items'),
+                    child: const Text('查看全部'),
+                  ),
               ],
             ),
             if (items.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: Text('今天没有待办事项', style: Theme.of(context).textTheme.bodyMedium)),
+                child: Center(
+                  child: Text(
+                    '今天没有待办事项',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
               )
             else
-              ...items.take(3).map((item) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    leading: const Icon(Icons.check_circle_outline, size: 20),
-                    title: Text(item.title),
-                    subtitle: Text(DateFormatter.formatRelative(item.dueTime)),
-                    onTap: () => context.push('/items/${item.id}'),
-                  )),
+              ...items
+                  .take(3)
+                  .map(
+                    (item) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      leading: const Icon(Icons.check_circle_outline, size: 20),
+                      title: Text(item.title),
+                      subtitle: Text(
+                        DateFormatter.formatRelative(item.dueTime),
+                      ),
+                      onTap: () => context.push('/items/${item.id}'),
+                    ),
+                  ),
           ],
         ),
       ),

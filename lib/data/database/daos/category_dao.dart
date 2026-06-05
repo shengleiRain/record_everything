@@ -5,7 +5,8 @@ import '../tables/categories_table.dart';
 part 'category_dao.g.dart';
 
 @DriftAccessor(tables: [Categories])
-class CategoryDao extends DatabaseAccessor<AppDatabase> with _$CategoryDaoMixin {
+class CategoryDao extends DatabaseAccessor<AppDatabase>
+    with _$CategoryDaoMixin {
   CategoryDao(super.db);
 
   Future<List<Category>> getAll() => select(categories).get();

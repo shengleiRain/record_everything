@@ -1,16 +1,21 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:record_everything/app.dart';
+import 'package:record_everything/features/home/widgets/quick_create_sheet.dart';
 
 void main() {
-  testWidgets('App renders', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: App()));
-    await tester.pumpAndSettle();
+  testWidgets('QuickCreateSheet renders all mobile quick actions', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: QuickCreateSheet())),
+    );
 
-    expect(find.text('今天有什么要处理？'), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
+    expect(find.text('快速新增'), findsOneWidget);
+    expect(find.text('记一笔'), findsOneWidget);
+    expect(find.text('建事项'), findsOneWidget);
+    expect(find.text('账单到期'), findsOneWidget);
+    expect(find.text('周期模板'), findsOneWidget);
+    expect(find.byKey(const ValueKey('quick-create-bill')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quick-create-item')), findsOneWidget);
   });
 }

@@ -1,0 +1,1323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Record Everything Mobile UI Mockups</title>
+  <style>
+    :root {
+      --bg: #eef3f0;
+      --surface: #ffffff;
+      --surface-soft: #f7faf8;
+      --text: #1f2a27;
+      --muted: #6f7d78;
+      --hint: #a7b2ae;
+      --line: #dde6e1;
+      --primary: #35a873;
+      --primary-dark: #1e7c55;
+      --primary-soft: #e5f5ed;
+      --expense: #e6686a;
+      --income: #2fae71;
+      --warn: #f29b38;
+      --danger: #d94e4e;
+      --info: #4c7fd9;
+      --shadow: 0 18px 45px rgba(35, 58, 48, .12);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #e9f0ec 0%, #f8faf8 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .board {
+      width: min(1460px, 100%);
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .board-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .board-title h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+
+    .board-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 9px;
+      background: rgba(255,255,255,.72);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+
+    .dot.expense { background: var(--expense); }
+    .dot.warn { background: var(--warn); }
+    .dot.info { background: var(--info); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      align-items: start;
+    }
+
+    .phone-wrap {
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+    }
+
+    .caption {
+      width: 280px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .caption strong {
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .phone {
+      position: relative;
+      width: 280px;
+      height: 606px;
+      overflow: hidden;
+      border: 1px solid #d8e3de;
+      border-radius: 28px;
+      background: var(--bg);
+      box-shadow: var(--shadow);
+    }
+
+    .status {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      color: #5f6a66;
+      font-size: 11px;
+      background: rgba(238, 243, 240, .92);
+    }
+
+    .screen {
+      height: calc(100% - 34px);
+      overflow: hidden;
+      padding-bottom: 70px;
+    }
+
+    .top {
+      padding: 15px 14px 7px;
+    }
+
+    .top.compact {
+      padding-bottom: 4px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .title-row h2 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.2;
+      font-weight: 760;
+    }
+
+    .subtitle {
+      margin: -4px 0 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .icon-btn, .mini-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 16px;
+    }
+
+    .mini-btn {
+      width: auto;
+      min-width: 34px;
+      padding: 0 10px;
+      color: var(--primary-dark);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .summary-cell {
+      min-height: 45px;
+      padding: 8px 7px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.84);
+    }
+
+    .summary-cell span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      margin-bottom: 3px;
+      white-space: nowrap;
+    }
+
+    .summary-cell strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, 34px);
+      gap: 4px;
+      overflow: hidden;
+      margin: 8px 0 0;
+    }
+
+    .day {
+      height: 54px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      text-align: center;
+      padding: 6px 3px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .day b {
+      display: block;
+      color: var(--text);
+      font-size: 14px;
+      margin: 2px 0;
+    }
+
+    .day.active {
+      border-color: rgba(53,168,115,.4);
+      background: var(--primary);
+      color: rgba(255,255,255,.86);
+    }
+
+    .day.active b, .day.active small { color: #fff; }
+    .day small { display: block; color: var(--muted); white-space: nowrap; }
+
+    .calendar-head {
+      display: grid;
+      grid-template-columns: 34px 1fr 34px;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 6px;
+    }
+
+    .calendar-title {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 780;
+      color: var(--text);
+    }
+
+    .calendar-title span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 520;
+    }
+
+    .calendar-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+
+    .toggle-pill {
+      padding: 4px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 680;
+    }
+
+    .toggle-pill.active {
+      border-color: rgba(53,168,115,.36);
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .week-labels,
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+
+    .week-labels {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .calendar-grid.week {
+      margin-bottom: 7px;
+    }
+
+    .calendar-grid.month {
+      grid-template-rows: repeat(5, 36px);
+      margin-bottom: 7px;
+    }
+
+    .cal-day {
+      min-width: 0;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      text-align: center;
+      padding: 4px 2px;
+      color: var(--muted);
+      font-size: 9px;
+      overflow: hidden;
+    }
+
+    .calendar-grid.month .cal-day {
+      height: 36px;
+      padding-top: 3px;
+    }
+
+    .cal-day b {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+
+    .calendar-grid.month .cal-day b {
+      font-size: 12px;
+    }
+
+    .cal-day small {
+      display: block;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .cal-day.dim {
+      opacity: .42;
+      background: #f5f8f6;
+    }
+
+    .cal-day.active {
+      border-color: rgba(53,168,115,.4);
+      background: var(--primary);
+      color: rgba(255,255,255,.9);
+    }
+
+    .cal-day.active b,
+    .cal-day.active small {
+      color: #fff;
+    }
+
+    .selected-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid rgba(53,168,115,.2);
+      border-radius: 8px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-size: 11px;
+      font-weight: 680;
+      margin-bottom: 8px;
+    }
+
+    .content {
+      padding: 0 12px 16px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 4px 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 680;
+    }
+
+    .section-title strong {
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.92);
+      overflow: hidden;
+    }
+
+    .agenda-row {
+      min-height: 56px;
+      display: grid;
+      grid-template-columns: 24px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 9px;
+      border-bottom: 1px solid #edf2ef;
+    }
+
+    .agenda-row:last-child { border-bottom: 0; }
+
+    .check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--primary);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .check.done {
+      background: var(--primary);
+    }
+
+    .check.bill {
+      border-radius: 6px;
+      border-color: var(--expense);
+      color: var(--expense);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .check.warn {
+      border-color: var(--warn);
+      color: var(--warn);
+    }
+
+    .row-main {
+      min-width: 0;
+    }
+
+    .row-main h3 {
+      margin: 0 0 3px;
+      font-size: 13px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .row-main p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .row-side {
+      text-align: right;
+      min-width: 54px;
+    }
+
+    .row-side strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .row-side span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .expense { color: var(--expense); }
+    .income { color: var(--income); }
+    .warn-text { color: var(--warn); }
+    .danger { color: var(--danger); }
+
+    .chips {
+      display: flex;
+      gap: 6px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      padding: 0 2px;
+    }
+
+    .chip {
+      flex: 0 0 auto;
+      padding: 6px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 620;
+    }
+
+    .chip.active {
+      border-color: rgba(53,168,115,.34);
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .month-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      margin-bottom: 10px;
+    }
+
+    .month-card .big {
+      font-size: 22px;
+      font-weight: 780;
+      line-height: 1.2;
+    }
+
+    .month-card label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .progress {
+      height: 8px;
+      border-radius: 999px;
+      background: #edf2ef;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      width: 68%;
+      background: linear-gradient(90deg, var(--primary), var(--warn));
+    }
+
+    .chart-card {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      margin-bottom: 10px;
+    }
+
+    .bars {
+      height: 112px;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      align-items: end;
+      gap: 9px;
+      padding-top: 16px;
+    }
+
+    .bar {
+      border-radius: 5px 5px 0 0;
+      background: #bae3ce;
+      min-height: 18px;
+      position: relative;
+    }
+
+    .bar.hot { background: var(--expense); }
+    .bar.warn { background: var(--warn); }
+    .bar::after {
+      content: attr(data-label);
+      position: absolute;
+      bottom: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .category-row {
+      display: grid;
+      grid-template-columns: 22px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      font-size: 12px;
+    }
+
+    .category-icon {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-size: 12px;
+    }
+
+    .settings-group {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .settings-row {
+      min-height: 48px;
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 9px;
+      align-items: center;
+      padding: 9px 12px;
+      border-bottom: 1px solid #edf2ef;
+      font-size: 13px;
+    }
+
+    .settings-row:last-child { border-bottom: 0; }
+    .settings-row span { color: var(--muted); font-size: 11px; }
+
+    .detail-hero {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+
+    .detail-hero h3 {
+      margin: 8px 0 8px;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .meta {
+      padding: 9px;
+      border-radius: var(--radius);
+      background: var(--surface-soft);
+    }
+
+    .meta label {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      margin-bottom: 3px;
+    }
+
+    .meta strong {
+      font-size: 13px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .button {
+      min-height: 42px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 720;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--primary-dark);
+    }
+
+    .button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .form-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .field {
+      min-height: 55px;
+      padding: 9px 12px;
+      border-bottom: 1px solid #edf2ef;
+    }
+
+    .field:last-child { border-bottom: 0; }
+    .field label {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      margin-bottom: 5px;
+    }
+
+    .field strong {
+      font-size: 14px;
+    }
+
+    .templates {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .template {
+      min-height: 58px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .template span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    .sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 12px 14px 86px;
+      border-top: 1px solid var(--line);
+      border-radius: 20px 20px 0 0;
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 -20px 45px rgba(36, 56, 48, .18);
+    }
+
+    .sheet-handle {
+      width: 38px;
+      height: 4px;
+      border-radius: 999px;
+      background: #d8e0dc;
+      margin: 0 auto 12px;
+    }
+
+    .fab {
+      position: absolute;
+      right: 18px;
+      bottom: 78px;
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: var(--primary);
+      color: white;
+      font-size: 30px;
+      box-shadow: 0 12px 22px rgba(53,168,115,.32);
+    }
+
+    .nav {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 66px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      border-top: 1px solid var(--line);
+      background: rgba(255,255,255,.96);
+    }
+
+    .nav-item {
+      text-align: center;
+      color: var(--hint);
+      font-size: 10px;
+      font-weight: 620;
+    }
+
+    .nav-item b {
+      display: block;
+      font-size: 20px;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    .nav-item.active { color: var(--primary); }
+
+    @media (max-width: 760px) {
+      .board { padding: 18px 12px; }
+      .board-header {
+        display: block;
+      }
+      .legend {
+        justify-content: flex-start;
+        margin-top: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="board">
+    <header class="board-header">
+      <div class="board-title">
+        <h1>Record Everything 移动端未来 UI 草图</h1>
+        <p>目标：按天呈现账单和事项，在首屏提供更高信息密度，同时保持单手操作和 Material 3 风格。</p>
+      </div>
+      <div class="legend">
+        <span><i class="dot"></i>事项</span>
+        <span><i class="dot expense"></i>支出账单</span>
+        <span><i class="dot warn"></i>到期提醒</span>
+        <span><i class="dot info"></i>统计洞察</span>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="phone-wrap">
+        <div class="caption"><strong>首页</strong><span>收缩周视图 · 左右按周切换</span></div>
+        <div class="phone">
+          <div class="status"><span>1:22</span><span>◒ ▵ ▮</span></div>
+          <div class="screen">
+            <div class="top compact">
+              <div class="title-row">
+                <h2>今天</h2>
+                <div>
+                  <span class="icon-btn">⌕</span>
+                  <span class="icon-btn">＋</span>
+                </div>
+              </div>
+              <div class="subtitle">2026-06-04 周四 · 选中日期状态</div>
+              <div class="summary-strip">
+                <div class="summary-cell"><span>本月支出</span><strong class="expense">¥1,280</strong></div>
+                <div class="summary-cell"><span>收入</span><strong class="income">¥8,600</strong></div>
+                <div class="summary-cell"><span>待办</span><strong>12项</strong></div>
+                <div class="summary-cell"><span>逾期</span><strong class="danger">1项</strong></div>
+              </div>
+              <div class="calendar-head">
+                <span class="icon-btn">‹</span>
+                <div class="calendar-title">2026年6月 第1周<span>左右切换按周翻页</span></div>
+                <span class="icon-btn">›</span>
+              </div>
+              <div class="calendar-toggle">
+                <span class="toggle-pill active">周视图</span>
+                <span class="toggle-pill">展开月历</span>
+              </div>
+              <div class="week-labels">
+                <span>周日</span><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span>
+              </div>
+              <div class="calendar-grid week">
+                <div class="cal-day dim"><b>31</b><small>空</small></div>
+                <div class="cal-day"><b>1</b><small>2项</small></div>
+                <div class="cal-day"><b>2</b><small>¥88</small></div>
+                <div class="cal-day"><b>3</b><small>逾期</small></div>
+                <div class="cal-day active"><b>4</b><small>¥120</small></div>
+                <div class="cal-day"><b>5</b><small>3项</small></div>
+                <div class="cal-day"><b>6</b><small>1项</small></div>
+              </div>
+              <div class="selected-summary">
+                <span>6月4日 周四</span>
+                <span>支出¥120 · 5项 · 1逾期</span>
+              </div>
+            </div>
+            <div class="content">
+              <div class="section-title"><strong>选中日期</strong><span>只显示6月4日</span></div>
+              <div class="panel">
+                <div class="agenda-row">
+                  <div class="check warn">!</div>
+                  <div class="row-main"><h3>信用卡还款</h3><p>账单 · 每月重复 · 已逾期1天</p></div>
+                  <div class="row-side"><strong class="expense">-¥680</strong><span class="danger">逾期</span></div>
+                </div>
+                <div class="agenda-row">
+                  <div class="check bill">¥</div>
+                  <div class="row-main"><h3>买菜记录</h3><p>餐饮 · 微信支付 · 12:40</p></div>
+                  <div class="row-side"><strong class="expense">-¥56</strong><span>已入账</span></div>
+                </div>
+                <div class="agenda-row">
+                  <div class="check"></div>
+                  <div class="row-main"><h3>更换净水器滤芯</h3><p>到期提醒 · 厨房 · 还有2天</p></div>
+                  <div class="row-side"><strong class="warn-text">2天</strong><span>可延期</span></div>
+                </div>
+                <div class="agenda-row">
+                  <div class="check"></div>
+                  <div class="row-main"><h3>整理6月发票</h3><p>普通事项 · 18:00提醒</p></div>
+                  <div class="row-side"><strong>18:00</strong><span>提醒</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="nav">
+              <div class="nav-item active"><b>⌂</b>首页</div>
+              <div class="nav-item"><b>✓</b>事项</div>
+              <div class="nav-item"><b>▤</b>账单</div>
+              <div class="nav-item"><b>▥</b>统计</div>
+              <div class="nav-item"><b>⚙</b>设置</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="caption"><strong>事项</strong><span>按日期和状态筛选</span></div>
+        <div class="phone">
+          <div class="status"><span>1:22</span><span>◒ ▵ ▮</span></div>
+          <div class="screen">
+            <div class="top">
+              <div class="title-row">
+                <h2>事项</h2>
+                <span class="icon-btn">⌕</span>
+              </div>
+              <div class="chips">
+                <span class="chip active">全部</span>
+                <span class="chip">逾期 1</span>
+                <span class="chip">今天 5</span>
+                <span class="chip">重复</span>
+                <span class="chip">已完成</span>
+              </div>
+            </div>
+            <div class="content">
+              <div class="section-title"><strong>待处理优先</strong><span>按到期时间排序</span></div>
+              <div class="panel">
+                <div class="agenda-row">
+                  <div class="check warn">!</div>
+                  <div class="row-main"><h3>信用卡还款</h3><p>账单事项 · 6月3日到期</p></div>
+                  <div class="row-side"><strong class="danger">逾期</strong><span>滑动处理</span></div>
+                </div>
+                <div class="agenda-row">
+                  <div class="check"></div>
+                  <div class="row-main"><h3>整理6月发票</h3><p>普通事项 · 今天18:00</p></div>
+                  <div class="row-side"><strong>18:00</strong><span>提醒</span></div>
+                </div>
+                <div class="agenda-row">
+                  <div class="check"></div>
+                  <div class="row-main"><h3>更换净水器滤芯</h3><p>耗材更换 · 周期90天</p></div>
+                  <div class="row-side"><strong class="warn-text">2天</strong><span>到期</span></div>
+                </div>
+                <div class="agenda-row">
+                  <div class="check done">✓</div>
+                  <div class="row-main"><h3>预约体检</h3><p>已完成 · 生成下次提醒</p></div>
+                  <div class="row-side"><strong class="income">完成</strong><span>下次9月</span></div>
+                </div>
+              </div>
+              <div class="section-title"><strong>快速模板</strong><span>减少录入成本</span></div>
+              <div class="templates">
+                <div class="template">证件到期<span>身份证/护照/驾照</span></div>
+                <div class="template">耗材更换<span>滤芯/牙刷/药品</span></div>
+                <div class="template">周期缴费<span>房租/宽带/物业</span></div>
+                <div class="template">普通待办<span>临时事项</span></div>
+              </div>
+            </div>
+            <div class="fab">＋</div>
+            <div class="nav">
+              <div class="nav-item"><b>⌂</b>首页</div>
+              <div class="nav-item active"><b>✓</b>事项</div>
+              <div class="nav-item"><b>▤</b>账单</div>
+              <div class="nav-item"><b>▥</b>统计</div>
+              <div class="nav-item"><b>⚙</b>设置</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="caption"><strong>账单</strong><span>月账本 + 日期流水</span></div>
+        <div class="phone">
+          <div class="status"><span>1:22</span><span>◒ ▵ ▮</span></div>
+          <div class="screen">
+            <div class="top">
+              <div class="title-row">
+                <h2>账单</h2>
+                <span class="mini-btn">6月 ▾</span>
+              </div>
+              <div class="month-card">
+                <div><label>本月支出</label><div class="big expense">¥1,280</div></div>
+                <div><label>本月收入</label><div class="big income">¥8,600</div></div>
+                <div style="grid-column:1 / 3"><label>预算使用 68%</label><div class="progress"><span></span></div></div>
+              </div>
+              <div class="chips">
+                <span class="chip active">全部</span>
+                <span class="chip">支出</span>
+                <span class="chip">收入</span>
+                <span class="chip">订阅</span>
+              </div>
+            </div>
+            <div class="content">
+              <div class="section-title"><strong>6月4日 周四</strong><span>3笔 · -¥736</span></div>
+              <div class="panel">
+                <div class="agenda-row">
+                  <div class="check bill">¥</div>
+                  <div class="row-main"><h3>信用卡还款</h3><p>由事项完成生成 · 银行卡</p></div>
+                  <div class="row-side"><strong class="expense">-¥680</strong><span>还款</span></div>
+                </div>
+                <div class="agenda-row">
+                  <div class="check bill">¥</div>
+                  <div class="row-main"><h3>买菜</h3><p>餐饮 · 微信支付</p></div>
+                  <div class="row-side"><strong class="expense">-¥56</strong><span>12:40</span></div>
+                </div>
+              </div>
+              <div class="section-title"><strong>6月3日 周三</strong><span>2笔 · +¥8,600</span></div>
+              <div class="panel">
+                <div class="agenda-row">
+                  <div class="check done">↑</div>
+                  <div class="row-main"><h3>工资</h3><p>收入 · 招商银行</p></div>
+                  <div class="row-side"><strong class="income">+¥8,600</strong><span>入账</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="fab">＋</div>
+            <div class="nav">
+              <div class="nav-item"><b>⌂</b>首页</div>
+              <div class="nav-item"><b>✓</b>事项</div>
+              <div class="nav-item active"><b>▤</b>账单</div>
+              <div class="nav-item"><b>▥</b>统计</div>
+              <div class="nav-item"><b>⚙</b>设置</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="caption"><strong>统计</strong><span>趋势和风险提示</span></div>
+        <div class="phone">
+          <div class="status"><span>1:22</span><span>◒ ▵ ▮</span></div>
+          <div class="screen">
+            <div class="top">
+              <div class="title-row">
+                <h2>统计</h2>
+                <span class="mini-btn">本月 ▾</span>
+              </div>
+              <div class="summary-strip">
+                <div class="summary-cell"><span>结余</span><strong class="income">¥7,320</strong></div>
+                <div class="summary-cell"><span>预计支出</span><strong class="warn-text">¥2,980</strong></div>
+                <div class="summary-cell"><span>完成率</span><strong>76%</strong></div>
+                <div class="summary-cell"><span>逾期</span><strong class="danger">1</strong></div>
+              </div>
+            </div>
+            <div class="content">
+              <div class="chart-card">
+                <div class="section-title" style="margin:0 0 8px"><strong>近7日支出</strong><span>峰值：周四</span></div>
+                <div class="bars">
+                  <div class="bar" style="height:28px" data-label="一"></div>
+                  <div class="bar" style="height:44px" data-label="二"></div>
+                  <div class="bar warn" style="height:66px" data-label="三"></div>
+                  <div class="bar hot" style="height:92px" data-label="四"></div>
+                  <div class="bar" style="height:38px" data-label="五"></div>
+                  <div class="bar" style="height:20px" data-label="六"></div>
+                  <div class="bar" style="height:54px" data-label="日"></div>
+                </div>
+              </div>
+              <div class="chart-card">
+                <div class="section-title" style="margin:0 0 8px"><strong>分类占比</strong><span>支出 ¥1,280</span></div>
+                <div class="category-row"><div class="category-icon">餐</div><span>餐饮</span><strong class="expense">¥456</strong></div>
+                <div class="category-row"><div class="category-icon">家</div><span>居家缴费</span><strong class="expense">¥399</strong></div>
+                <div class="category-row"><div class="category-icon">行</div><span>交通</span><strong class="expense">¥186</strong></div>
+                <div class="category-row"><div class="category-icon">订</div><span>订阅会员</span><strong class="expense">¥99</strong></div>
+              </div>
+              <div class="chart-card">
+                <div class="section-title" style="margin:0"><strong>下月预测</strong><span class="warn-text">固定账单 6 项</span></div>
+                <p style="margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.5">预计固定支出 ¥2,980，其中房租、宽带、会员会在前 10 天集中到期。</p>
+              </div>
+            </div>
+            <div class="nav">
+              <div class="nav-item"><b>⌂</b>首页</div>
+              <div class="nav-item"><b>✓</b>事项</div>
+              <div class="nav-item"><b>▤</b>账单</div>
+              <div class="nav-item active"><b>▥</b>统计</div>
+              <div class="nav-item"><b>⚙</b>设置</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="caption"><strong>详情</strong><span>完成、延期、记账联动</span></div>
+        <div class="phone">
+          <div class="status"><span>1:22</span><span>◒ ▵ ▮</span></div>
+          <div class="screen">
+            <div class="top">
+              <div class="title-row">
+                <span class="icon-btn">‹</span>
+                <span class="icon-btn">⋯</span>
+              </div>
+            </div>
+            <div class="content">
+              <div class="detail-hero">
+                <span class="chip active">账单事项</span>
+                <h3>信用卡还款</h3>
+                <p style="margin:0;color:var(--muted);font-size:12px;line-height:1.5">每月 3 日提醒，还款完成后自动生成账单记录。</p>
+                <div class="meta-grid">
+                  <div class="meta"><label>到期时间</label><strong class="danger">已逾期1天</strong></div>
+                  <div class="meta"><label>预计金额</label><strong class="expense">¥680</strong></div>
+                  <div class="meta"><label>重复规则</label><strong>每月</strong></div>
+                  <div class="meta"><label>关联分类</label><strong>信用卡</strong></div>
+                </div>
+                <div class="actions">
+                  <div class="button">延期</div>
+                  <div class="button primary">完成并记账</div>
+                </div>
+              </div>
+              <div class="section-title"><strong>历史记录</strong><span>最近3次</span></div>
+              <div class="panel">
+                <div class="agenda-row"><div class="check done">✓</div><div class="row-main"><h3>5月信用卡还款</h3><p>已完成并记账</p></div><div class="row-side"><strong class="expense">-¥721</strong><span>5月3日</span></div></div>
+                <div class="agenda-row"><div class="check done">✓</div><div class="row-main"><h3>4月信用卡还款</h3><p>已完成并记账</p></div><div class="row-side"><strong class="expense">-¥603</strong><span>4月3日</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="caption"><strong>新增/编辑</strong><span>分段表单</span></div>
+        <div class="phone">
+          <div class="status"><span>1:22</span><span>◒ ▵ ▮</span></div>
+          <div class="screen">
+            <div class="top">
+              <div class="title-row">
+                <h2>新建事项</h2>
+                <span class="mini-btn">保存</span>
+              </div>
+              <div class="chips">
+                <span class="chip active">待办</span>
+                <span class="chip">到期</span>
+                <span class="chip">账单</span>
+                <span class="chip">订阅</span>
+              </div>
+            </div>
+            <div class="content">
+              <div class="form-card">
+                <div class="field"><label>标题</label><strong>宽带续费</strong></div>
+                <div class="field"><label>到期时间</label><strong>2026-06-05 20:00</strong></div>
+                <div class="field"><label>金额</label><strong class="expense">支出 ¥99.00</strong></div>
+                <div class="field"><label>重复</label><strong>每月 · 提前1天提醒</strong></div>
+                <div class="field"><label>备注</label><strong style="color:var(--muted)">自动续费前检查套餐</strong></div>
+              </div>
+              <div class="section-title"><strong>智能建议</strong><span>根据标题生成</span></div>
+              <div class="templates">
+                <div class="template">设为订阅<span>每月固定扣款</span></div>
+                <div class="template">完成后记账<span>生成支出流水</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="caption"><strong>首页展开</strong><span>月视图 · 左右按月切换</span></div>
+        <div class="phone">
+          <div class="status"><span>1:22</span><span>◒ ▵ ▮</span></div>
+          <div class="screen">
+            <div class="top compact">
+              <div class="title-row"><h2>今天</h2><span class="icon-btn">＋</span></div>
+              <div class="subtitle">2026-06-04 周四 · 选中日期状态</div>
+              <div class="calendar-head">
+                <span class="icon-btn">‹</span>
+                <div class="calendar-title">2026年6月<span>左右切换按月翻页</span></div>
+                <span class="icon-btn">›</span>
+              </div>
+              <div class="calendar-toggle">
+                <span class="toggle-pill">收起周视图</span>
+                <span class="toggle-pill active">月视图</span>
+              </div>
+              <div class="week-labels">
+                <span>周日</span><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span>
+              </div>
+              <div class="calendar-grid month">
+                <div class="cal-day dim"><b>31</b><small>空</small></div>
+                <div class="cal-day"><b>1</b><small>2项</small></div>
+                <div class="cal-day"><b>2</b><small>¥88</small></div>
+                <div class="cal-day"><b>3</b><small>逾期</small></div>
+                <div class="cal-day active"><b>4</b><small>¥120</small></div>
+                <div class="cal-day"><b>5</b><small>3项</small></div>
+                <div class="cal-day"><b>6</b><small>1项</small></div>
+                <div class="cal-day"><b>7</b><small>¥88</small></div>
+                <div class="cal-day"><b>8</b><small>2项</small></div>
+                <div class="cal-day"><b>9</b><small>空</small></div>
+                <div class="cal-day"><b>10</b><small>¥99</small></div>
+                <div class="cal-day"><b>11</b><small>1项</small></div>
+                <div class="cal-day"><b>12</b><small>空</small></div>
+                <div class="cal-day"><b>13</b><small>2项</small></div>
+                <div class="cal-day"><b>14</b><small>¥32</small></div>
+                <div class="cal-day"><b>15</b><small>空</small></div>
+                <div class="cal-day"><b>16</b><small>1项</small></div>
+                <div class="cal-day"><b>17</b><small>空</small></div>
+                <div class="cal-day"><b>18</b><small>¥20</small></div>
+                <div class="cal-day"><b>19</b><small>3项</small></div>
+                <div class="cal-day"><b>20</b><small>空</small></div>
+                <div class="cal-day"><b>21</b><small>1项</small></div>
+                <div class="cal-day"><b>22</b><small>空</small></div>
+                <div class="cal-day"><b>23</b><small>¥45</small></div>
+                <div class="cal-day"><b>24</b><small>2项</small></div>
+                <div class="cal-day"><b>25</b><small>空</small></div>
+                <div class="cal-day"><b>26</b><small>1项</small></div>
+                <div class="cal-day"><b>27</b><small>空</small></div>
+                <div class="cal-day"><b>28</b><small>¥66</small></div>
+                <div class="cal-day"><b>29</b><small>2项</small></div>
+                <div class="cal-day"><b>30</b><small>¥18</small></div>
+                <div class="cal-day dim"><b>1</b><small>空</small></div>
+                <div class="cal-day dim"><b>2</b><small>1项</small></div>
+                <div class="cal-day dim"><b>3</b><small>空</small></div>
+                <div class="cal-day dim"><b>4</b><small>空</small></div>
+              </div>
+              <div class="selected-summary">
+                <span>6月4日 周四</span>
+                <span>支出¥120 · 5项 · 1逾期</span>
+              </div>
+            </div>
+            <div class="content">
+              <div class="section-title"><strong>选中日期</strong><span>只显示6月4日</span></div>
+              <div class="panel">
+                <div class="agenda-row"><div class="check"></div><div class="row-main"><h3>整理6月发票</h3><p>普通事项 · 18:00提醒</p></div><div class="row-side"><strong>18:00</strong><span>提醒</span></div></div>
+                <div class="agenda-row"><div class="check bill">¥</div><div class="row-main"><h3>买菜记录</h3><p>餐饮 · 微信支付</p></div><div class="row-side"><strong class="expense">-¥56</strong><span>已入账</span></div></div>
+              </div>
+            </div>
+            <div class="sheet">
+              <div class="sheet-handle"></div>
+              <div class="section-title" style="margin:0 0 8px"><strong>快速新增</strong><span>选择一种记录</span></div>
+              <div class="templates">
+                <div class="template">记一笔<span>收入 / 支出流水</span></div>
+                <div class="template">建事项<span>待办 / 提醒</span></div>
+                <div class="template">账单到期<span>还款 / 缴费</span></div>
+                <div class="template">周期模板<span>会员 / 耗材</span></div>
+              </div>
+            </div>
+            <div class="nav">
+              <div class="nav-item active"><b>⌂</b>首页</div>
+              <div class="nav-item"><b>✓</b>事项</div>
+              <div class="nav-item"><b>▤</b>账单</div>
+              <div class="nav-item"><b>▥</b>统计</div>
+              <div class="nav-item"><b>⚙</b>设置</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-wrap">
+        <div class="caption"><strong>设置</strong><span>账户、数据、提醒</span></div>
+        <div class="phone">
+          <div class="status"><span>1:22</span><span>◒ ▵ ▮</span></div>
+          <div class="screen">
+            <div class="top">
+              <div class="title-row">
+                <h2>设置</h2>
+                <span class="icon-btn">?</span>
+              </div>
+            </div>
+            <div class="content">
+              <div class="settings-group">
+                <div class="settings-row"><div class="category-icon">账</div><div>默认账本<br><span>生活账本 · 6个分类</span></div><strong>›</strong></div>
+                <div class="settings-row"><div class="category-icon">类</div><div>分类管理<br><span>支出、收入、事项类型</span></div><strong>›</strong></div>
+                <div class="settings-row"><div class="category-icon">铃</div><div>提醒设置<br><span>默认提前1天 · 20:00</span></div><strong>›</strong></div>
+              </div>
+              <div class="settings-group">
+                <div class="settings-row"><div class="category-icon">入</div><div>导入数据<br><span>账单 CSV / Excel</span></div><strong>›</strong></div>
+                <div class="settings-row"><div class="category-icon">出</div><div>导出备份<br><span>本地文件</span></div><strong>›</strong></div>
+                <div class="settings-row"><div class="category-icon">安</div><div>数据安全<br><span>本地存储 · 可恢复</span></div><strong>›</strong></div>
+              </div>
+              <div class="chart-card">
+                <div class="section-title" style="margin:0"><strong>应用偏好</strong><span>移动端优先</span></div>
+                <p style="margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.5">首页默认显示收缩周视图日历；可展开为整月日历；下方列表只展示当前选中日期，账单金额在所有列表右对齐。</p>
+              </div>
+            </div>
+            <div class="nav">
+              <div class="nav-item"><b>⌂</b>首页</div>
+              <div class="nav-item"><b>✓</b>事项</div>
+              <div class="nav-item"><b>▤</b>账单</div>
+              <div class="nav-item"><b>▥</b>统计</div>
+              <div class="nav-item active"><b>⚙</b>设置</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

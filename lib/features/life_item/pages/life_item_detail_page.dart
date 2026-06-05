@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../domain/enums/item_type.dart';
-import '../../../domain/enums/amount_type.dart';
 import '../../../domain/enums/item_status.dart';
 import '../../../domain/enums/repeat_period.dart';
 import '../../../domain/models/repeat_rule.dart';
@@ -27,6 +26,7 @@ class LifeItemDetailPage extends ConsumerWidget {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('加载失败: $e'))),
       data: (item) => Scaffold(
+        backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('事项详情'),
           actions: [
@@ -43,48 +43,61 @@ class LifeItemDetailPage extends ConsumerWidget {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text(item.title, style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 16),
-            _InfoRow(
-              label: '状态',
-              value: ItemStatus.fromString(item.status).label,
-            ),
-            _InfoRow(
-              label: '类型',
-              value: ItemType.fromString(item.itemType).label,
-            ),
-            _InfoRow(
-              label: '日期',
-              value: DateFormatter.formatDate(item.dueTime),
-            ),
-            _InfoRow(
-              label: '剩余',
-              value: DateFormatter.formatRelative(item.dueTime),
-              valueColor:
+            _HeroCard(
+              type: ItemType.fromString(item.itemType).label,
+              title: item.title,
+              description: item.description,
+              isOverdue:
                   DateFormatter.isOverdue(item.dueTime) &&
-                      item.status == 'pending'
-                  ? AppColors.overdue
-                  : null,
+                  item.status == 'pending',
             ),
-            if (item.amount != null && item.amountType != 'none')
-              _InfoRow(
-                label: AmountType.fromString(item.amountType).label,
-                value: MoneyFormatter.format(item.amount),
-                valueColor: item.amountType == 'income'
-                    ? AppColors.income
-                    : AppColors.expense,
+            const SizedBox(height: 16),
+            _MetadataGrid(
+              entries: [
+                _MetadataEntry(
+                  label: '到期时间',
+                  value:
+                      '${DateFormatter.formatDate(item.dueTime)}\n${DateFormatter.formatRelative(item.dueTime)}',
+                  valueColor:
+                      DateFormatter.isOverdue(item.dueTime) &&
+                          item.status == 'pending'
+                      ? AppColors.overdue
+                      : null,
+                ),
+                _MetadataEntry(
+                  label: '预计金额',
+                  value: _formatAmountValue(item.amount, item.amountType),
+                  valueColor: item.amount != null && item.amountType != 'none'
+                      ? (item.amountType == 'income'
+                            ? AppColors.income
+                            : AppColors.expense)
+                      : null,
+                ),
+                _MetadataEntry(
+                  label: '重复规则',
+                  value: item.repeatRule != null
+                      ? _formatRepeatRule(item.repeatRule!)
+                      : '不重复',
+                ),
+                _MetadataEntry(
+                  label: '状态/分类',
+                  value:
+                      '${ItemStatus.fromString(item.status).label}\n${ItemType.fromString(item.itemType).label}',
+                ),
+              ],
+            ),
+            if (item.status == 'pending') ...[
+              const SizedBox(height: 16),
+              _ActionPanel(
+                primaryLabel: item.amount != null && item.amountType != 'none'
+                    ? '完成并记账'
+                    : '完成',
+                onComplete: () => _showCompleteAction(context, ref, item),
+                onDefer: () => _defer(context, ref, item),
               ),
-            if (item.repeatRule != null)
-              _InfoRow(label: '重复', value: _formatRepeatRule(item.repeatRule!)),
-            if (item.description != null && item.description!.isNotEmpty)
-              _InfoRow(label: '备注', value: item.description!),
-            const SizedBox(height: 32),
-            if (item.status == 'pending')
-              FilledButton.icon(
-                onPressed: () => _showCompleteAction(context, ref, item),
-                icon: const Icon(Icons.check),
-                label: const Text('完成'),
-              ),
+            ],
+            const SizedBox(height: 24),
+            const _HistorySection(),
           ],
         ),
       ),
@@ -95,6 +108,14 @@ class LifeItemDetailPage extends ConsumerWidget {
     final r = RepeatRule.fromStorageString(rule);
     if (r.period == RepeatPeriod.custom) return '每 ${r.customDays} 天';
     return r.period.label;
+  }
+
+  String _formatAmountValue(int? amount, String amountType) {
+    if (amount == null || amountType == 'none') return '无金额';
+    if (amountType == 'income') {
+      return '收入\n${MoneyFormatter.formatIncome(amount)}';
+    }
+    return '支出\n${MoneyFormatter.formatExpense(amount)}';
   }
 
   void _showCompleteAction(BuildContext context, WidgetRef ref, dynamic item) {
@@ -128,18 +149,22 @@ class LifeItemDetailPage extends ConsumerWidget {
         if (context.mounted) Navigator.pop(context);
       },
       onDefer: () {
-        showDatePicker(
-          context: context,
-          initialDate: item.dueTime.add(const Duration(days: 1)),
-          firstDate: DateTime.now(),
-          lastDate: DateTime.now().add(const Duration(days: 365)),
-        ).then((date) {
-          if (date != null) {
-            ref.read(lifeItemNotifierProvider.notifier).defer(item.id, date);
-          }
-        });
+        _defer(context, ref, item);
       },
     );
+  }
+
+  void _defer(BuildContext context, WidgetRef ref, dynamic item) {
+    showDatePicker(
+      context: context,
+      initialDate: item.dueTime.add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    ).then((date) {
+      if (date != null) {
+        ref.read(lifeItemNotifierProvider.notifier).defer(item.id, date);
+      }
+    });
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, int id) {
@@ -167,34 +192,209 @@ class LifeItemDetailPage extends ConsumerWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
+    required this.type,
+    required this.title,
+    required this.description,
+    required this.isOverdue,
+  });
 
-  const _InfoRow({required this.label, required this.value, this.valueColor});
+  final String type;
+  final String title;
+  final String? description;
+  final bool isOverdue;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: valueColor,
-                fontWeight: FontWeight.w500,
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 0,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Chip(
+              visualDensity: VisualDensity.compact,
+              avatar: Icon(
+                isOverdue ? Icons.warning_amber_rounded : Icons.event_note,
+                size: 18,
+              ),
+              label: Text(type),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
             ),
+            if (description != null && description!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                description!,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MetadataGrid extends StatelessWidget {
+  const _MetadataGrid({required this.entries});
+
+  final List<_MetadataEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      itemCount: entries.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: 1.45,
+      ),
+      itemBuilder: (context, index) => _MetadataTile(entry: entries[index]),
+    );
+  }
+}
+
+class _MetadataEntry {
+  const _MetadataEntry({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+}
+
+class _MetadataTile extends StatelessWidget {
+  const _MetadataTile({required this.entry});
+
+  final _MetadataEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              entry.label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Text(
+              entry.value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: entry.valueColor ?? AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionPanel extends StatelessWidget {
+  const _ActionPanel({
+    required this.primaryLabel,
+    required this.onComplete,
+    required this.onDefer,
+  });
+
+  final String primaryLabel;
+  final VoidCallback onComplete;
+  final VoidCallback onDefer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: onComplete,
+            icon: const Icon(Icons.check),
+            label: Text(primaryLabel),
           ),
-        ],
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onDefer,
+            icon: const Icon(Icons.schedule),
+            label: const Text('延期'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HistorySection extends StatelessWidget {
+  const _HistorySection();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 0,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '历史记录',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '暂无历史记录',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

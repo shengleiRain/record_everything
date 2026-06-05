@@ -1,0 +1,130 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/money_formatter.dart';
+
+class MonthSummaryCard extends StatelessWidget {
+  final int income;
+  final int expense;
+  final String budgetText;
+
+  const MonthSummaryCard({
+    super.key,
+    required this.income,
+    required this.expense,
+    this.budgetText = '预算使用 68%',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final balance = income - expense;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryMetric(
+                  label: '本月支出',
+                  value: MoneyFormatter.format(expense),
+                  color: AppColors.expense,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _SummaryMetric(
+                  label: '本月收入',
+                  value: MoneyFormatter.format(income),
+                  color: AppColors.income,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: 0.68,
+              minHeight: 6,
+              color: AppColors.primary,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                budgetText,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '结余 ${MoneyFormatter.format(balance)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: balance >= 0 ? AppColors.income : AppColors.expense,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _SummaryMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}

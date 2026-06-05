@@ -28,15 +28,39 @@ class OverviewCard extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: _StatItem(label: '收入', value: MoneyFormatter.format(income), color: AppColors.income)),
-                Expanded(child: _StatItem(label: '支出', value: MoneyFormatter.format(expense), color: AppColors.expense)),
+                Expanded(
+                  child: _StatItem(
+                    label: '收入',
+                    value: MoneyFormatter.format(income),
+                    color: AppColors.income,
+                  ),
+                ),
+                Expanded(
+                  child: _StatItem(
+                    label: '支出',
+                    value: MoneyFormatter.format(expense),
+                    color: AppColors.expense,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _StatItem(label: '结余', value: MoneyFormatter.format(balance), color: AppColors.primary)),
-                Expanded(child: _StatItem(label: '预计支出', value: MoneyFormatter.format(forecast), color: AppColors.upcoming)),
+                Expanded(
+                  child: _StatItem(
+                    label: '结余',
+                    value: MoneyFormatter.format(balance),
+                    color: AppColors.primary,
+                  ),
+                ),
+                Expanded(
+                  child: _StatItem(
+                    label: '预计支出',
+                    value: MoneyFormatter.format(forecast),
+                    color: AppColors.upcoming,
+                  ),
+                ),
               ],
             ),
           ],
@@ -50,7 +74,11 @@ class _StatItem extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _StatItem({required this.label, required this.value, required this.color});
+  const _StatItem({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +87,14 @@ class _StatItem extends StatelessWidget {
       children: [
         Text(label, style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 4),
-        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 16)),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
       ],
     );
   }

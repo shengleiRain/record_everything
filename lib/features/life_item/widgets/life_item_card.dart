@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/utils/money_formatter.dart';
 import '../../../data/database/app_database.dart';
 
 class LifeItemCard extends StatelessWidget {
@@ -22,100 +22,153 @@ class LifeItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final daysLeft = DateFormatter.daysRemaining(item.dueTime);
     final isOverdue = daysLeft < 0 && item.status == 'pending';
+    final isCompleted = item.status == 'completed';
     final statusColor = isOverdue
         ? AppColors.overdue
-        : daysLeft <= 3
-        ? AppColors.upcoming
-        : AppColors.completed;
+        : isCompleted
+        ? AppColors.completed
+        : AppColors.upcoming;
+    final amountText = item.amount != null && item.amountType != 'none'
+        ? MoneyFormatter.format(item.amount)
+        : null;
+    final subtitle = [
+      DateFormatter.formatDate(item.dueTime),
+      DateFormatter.formatRelative(item.dueTime),
+      if (item.repeatRule != null) '重复',
+    ].join(' · ');
 
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.title,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        decoration: item.status == 'completed'
-                            ? TextDecoration.lineThrough
-                            : null,
+    return Container(
+      key: ValueKey('life-item-card-${item.id}'),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Icon(_leadingIcon(isOverdue, isCompleted), color: statusColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          decoration: isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                          color: isCompleted
+                              ? Theme.of(context).colorScheme.outline
+                              : null,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ),
-                  if (item.amount != null && item.amountType != 'none')
-                    Text(
-                      MoneyFormatter.format(item.amount),
-                      style: TextStyle(
-                        color: item.amountType == 'income'
-                            ? AppColors.income
-                            : AppColors.expense,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.calendar_today, size: 14, color: statusColor),
-                  const SizedBox(width: 4),
-                  Text(
-                    DateFormatter.formatDate(item.dueTime),
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      DateFormatter.formatRelative(item.dueTime),
-                      style: TextStyle(
-                        color: statusColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  if (item.repeatRule != null)
-                    const Icon(
-                      Icons.repeat,
-                      size: 16,
-                      color: AppColors.textHint,
-                    ),
-                ],
-              ),
-              if (item.status == 'pending') ...[
-                const SizedBox(height: 12),
+                ),
+                const SizedBox(width: 8),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    TextButton(onPressed: onDefer, child: const Text('延期')),
-                    const SizedBox(width: 8),
-                    FilledButton.tonal(
-                      onPressed: onComplete,
-                      child: const Text('完成'),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 88),
+                      child: Text(
+                        amountText ?? _statusText(isOverdue, isCompleted),
+                        textAlign: TextAlign.right,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: amountText != null
+                              ? _amountColor()
+                              : statusColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
+                    if (!isCompleted && (onComplete != null || onDefer != null))
+                      _LifeItemActionMenu(
+                        onComplete: onComplete,
+                        onDefer: onDefer,
+                      ),
                   ],
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  IconData _leadingIcon(bool isOverdue, bool isCompleted) {
+    if (isOverdue) return Icons.warning_amber_rounded;
+    if (isCompleted) return Icons.check_circle;
+    return Icons.radio_button_unchecked;
+  }
+
+  String _statusText(bool isOverdue, bool isCompleted) {
+    if (isCompleted) return '已完成';
+    if (isOverdue) return '逾期';
+    return '待办';
+  }
+
+  Color _amountColor() {
+    return item.amountType == 'income' ? AppColors.income : AppColors.expense;
+  }
 }
+
+class _LifeItemActionMenu extends StatelessWidget {
+  final VoidCallback? onComplete;
+  final VoidCallback? onDefer;
+
+  const _LifeItemActionMenu({this.onComplete, this.onDefer});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<_LifeItemAction>(
+      key: const ValueKey('life-item-action-menu'),
+      icon: const Icon(Icons.more_vert),
+      tooltip: '更多操作',
+      padding: EdgeInsets.zero,
+      onSelected: (action) {
+        switch (action) {
+          case _LifeItemAction.complete:
+            onComplete?.call();
+          case _LifeItemAction.defer:
+            onDefer?.call();
+        }
+      },
+      itemBuilder: (context) => [
+        if (onDefer != null)
+          const PopupMenuItem(value: _LifeItemAction.defer, child: Text('延期')),
+        if (onComplete != null)
+          const PopupMenuItem(
+            value: _LifeItemAction.complete,
+            child: Text('完成'),
+          ),
+      ],
+    );
+  }
+}
+
+enum _LifeItemAction { complete, defer }

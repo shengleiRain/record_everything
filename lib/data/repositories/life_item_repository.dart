@@ -7,6 +7,8 @@ class LifeItemRepository {
   LifeItemRepository(this._db);
 
   Stream<List<LifeItem>> watchAll() => _db.lifeItemDao.watchAll();
+  Stream<List<LifeItem>> watchBetween(DateTime start, DateTime end) =>
+      _db.lifeItemDao.watchBetween(start, end);
   Stream<List<LifeItem>> watchTodayPending() =>
       _db.lifeItemDao.watchTodayPending();
   Stream<List<LifeItem>> watchUpcoming(int days) =>

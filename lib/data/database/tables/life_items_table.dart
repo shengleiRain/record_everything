@@ -3,7 +3,8 @@ import 'package:drift/drift.dart';
 class LifeItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text().withLength(min: 1, max: 200)();
-  TextColumn get description => text().nullable().withDefault(const Constant(''))();
+  TextColumn get description =>
+      text().nullable().withDefault(const Constant(''))();
   IntColumn get categoryId => integer().nullable()();
   TextColumn get itemType => text().withDefault(const Constant('todo'))();
   IntColumn get amount => integer().nullable()();

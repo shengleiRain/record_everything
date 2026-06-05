@@ -6,6 +6,8 @@ class BillRecordRepository {
   BillRecordRepository(this._db);
 
   Stream<List<BillRecord>> watchAll() => _db.billRecordDao.watchAll();
+  Stream<List<BillRecord>> watchBetween(DateTime start, DateTime end) =>
+      _db.billRecordDao.watchBetween(start, end);
   Stream<List<BillRecord>> watchByMonth(DateTime month) =>
       _db.billRecordDao.watchByMonth(month);
 

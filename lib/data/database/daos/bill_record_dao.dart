@@ -17,6 +17,16 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
     billRecords,
   )..orderBy([(t) => OrderingTerm.desc(t.billTime)])).watch();
 
+  Stream<List<BillRecord>> watchBetween(DateTime start, DateTime end) =>
+      (select(billRecords)
+            ..where(
+              (t) =>
+                  t.billTime.isBiggerOrEqualValue(start) &
+                  t.billTime.isSmallerThanValue(end),
+            )
+            ..orderBy([(t) => OrderingTerm.desc(t.billTime)]))
+          .watch();
+
   Future<BillRecord> getById(int id) =>
       (select(billRecords)..where((t) => t.id.equals(id))).getSingle();
 

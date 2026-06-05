@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../domain/enums/bill_amount_type.dart';
@@ -69,9 +70,15 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(_isEdit ? '编辑账单' : '新建账单'),
         actions: [
+          IconButton(
+            tooltip: '保存',
+            icon: const Icon(Icons.check),
+            onPressed: _save,
+          ),
           if (_isEdit)
             IconButton(
               icon: const Icon(Icons.delete),
@@ -84,80 +91,103 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(labelText: '标题 *'),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? '请输入标题' : null,
-            ),
-            const SizedBox(height: 16),
-            AppDropdownField<BillAmountType>(
-              label: '类型',
-              value: _amountType,
-              options: BillAmountType.values
-                  .map((t) => AppDropdownOption(value: t, label: t.label))
-                  .toList(),
-              onSelected: (v) => setState(() {
-                _amountType = v ?? _amountType;
-                _selectedCategoryId = null;
-              }),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: '金额',
-                prefixText: '¥',
-              ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? '请输入金额' : null,
-            ),
-            const SizedBox(height: 16),
-            FutureBuilder(
-              future: ref
-                  .read(databaseProvider)
-                  .categoryDao
-                  .getByType(
-                    _amountType == BillAmountType.income ? 'income' : 'expense',
+            _SectionCard(
+              title: '账单内容',
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(labelText: '标题 *'),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? '请输入标题' : null,
                   ),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const SizedBox.shrink();
-                final cats = snapshot.data!;
-                return AppDropdownField<int>(
-                  label: '分类',
-                  value: cats.any((c) => c.id == _selectedCategoryId)
-                      ? _selectedCategoryId
-                      : null,
-                  options: cats
-                      .map((c) => AppDropdownOption(value: c.id, label: c.name))
-                      .toList(),
-                  onSelected: (v) => setState(() => _selectedCategoryId = v),
-                );
-              },
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _noteController,
+                    decoration: const InputDecoration(labelText: '备注'),
+                    maxLines: 2,
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
-            _DateField(
-              key: const ValueKey('bill-date-field'),
-              label: '日期',
-              value: DateFormatter.formatDate(_billTime),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _billTime,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2030),
-                );
-                if (picked != null) setState(() => _billTime = picked);
-              },
+            _SectionCard(
+              title: '金额与分类',
+              child: Column(
+                children: [
+                  AppDropdownField<BillAmountType>(
+                    label: '类型',
+                    value: _amountType,
+                    options: BillAmountType.values
+                        .map((t) => AppDropdownOption(value: t, label: t.label))
+                        .toList(),
+                    onSelected: (v) => setState(() {
+                      _amountType = v ?? _amountType;
+                      _selectedCategoryId = null;
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _amountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: '金额',
+                      prefixText: '¥',
+                    ),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? '请输入金额' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  FutureBuilder(
+                    future: ref
+                        .read(databaseProvider)
+                        .categoryDao
+                        .getByType(
+                          _amountType == BillAmountType.income
+                              ? 'income'
+                              : 'expense',
+                        ),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox.shrink();
+                      final cats = snapshot.data!;
+                      return AppDropdownField<int>(
+                        label: '分类',
+                        value: cats.any((c) => c.id == _selectedCategoryId)
+                            ? _selectedCategoryId
+                            : null,
+                        options: cats
+                            .map(
+                              (c) =>
+                                  AppDropdownOption(value: c.id, label: c.name),
+                            )
+                            .toList(),
+                        onSelected: (v) =>
+                            setState(() => _selectedCategoryId = v),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _noteController,
-              decoration: const InputDecoration(labelText: '备注'),
-              maxLines: 2,
+            _SectionCard(
+              title: '账单时间',
+              child: _DateField(
+                key: const ValueKey('bill-date-field'),
+                label: '日期',
+                value: DateFormatter.formatDate(_billTime),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _billTime,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                  );
+                  if (picked != null) setState(() => _billTime = picked);
+                },
+              ),
             ),
             const SizedBox(height: 32),
             FilledButton(
@@ -263,6 +293,40 @@ class _DateField extends StatelessWidget {
           suffixIcon: const Icon(Icons.calendar_today),
         ),
         child: Text(value, style: Theme.of(context).textTheme.bodyLarge),
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 0,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            child,
+          ],
+        ),
       ),
     );
   }

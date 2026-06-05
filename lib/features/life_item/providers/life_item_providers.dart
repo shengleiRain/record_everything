@@ -57,7 +57,10 @@ class LifeItemNotifier extends Notifier<void> {
 
   Future<LifeItem> defer(int id, DateTime newDate) => _repo.defer(id, newDate);
 
-  Future<LifeItem> completeAndGenerateNext(int id) => _repo.completeAndGenerateNext(id);
+  Future<LifeItem> completeAndGenerateNext(int id) =>
+      _repo.completeAndGenerateNext(id);
 }
 
-final lifeItemNotifierProvider = NotifierProvider<LifeItemNotifier, void>(LifeItemNotifier.new);
+final lifeItemNotifierProvider = NotifierProvider<LifeItemNotifier, void>(
+  LifeItemNotifier.new,
+);

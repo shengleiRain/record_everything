@@ -9,6 +9,8 @@ enum ItemStatus {
   final String value;
   final String label;
 
-  static ItemStatus fromString(String v) =>
-      ItemStatus.values.firstWhere((e) => e.value == v, orElse: () => ItemStatus.pending);
+  static ItemStatus fromString(String v) => ItemStatus.values.firstWhere(
+    (e) => e.value == v,
+    orElse: () => ItemStatus.pending,
+  );
 }

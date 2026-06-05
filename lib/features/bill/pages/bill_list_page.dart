@@ -3,35 +3,59 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
-import '../../../core/utils/money_formatter.dart';
+import '../../../data/database/app_database.dart';
 import '../providers/bill_providers.dart';
-import '../widgets/bill_card.dart';
+import '../widgets/bill_day_group.dart';
+import '../widgets/month_summary_card.dart';
 
-class BillListPage extends ConsumerWidget {
+enum _BillFilter { all, expense, income, subscription }
+
+class BillListPage extends ConsumerStatefulWidget {
   const BillListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BillListPage> createState() => _BillListPageState();
+}
+
+class _BillListPageState extends ConsumerState<BillListPage> {
+  _BillFilter _filter = _BillFilter.all;
+
+  @override
+  Widget build(BuildContext context) {
     final month = ref.watch(currentMonthProvider);
     final billsAsync = ref.watch(billsByMonthProvider);
     final incomeAsync = ref.watch(monthlyIncomeProvider);
     final expenseAsync = ref.watch(monthlyExpenseProvider);
+    final income = incomeAsync.valueOrNull ?? 0;
+    final expense = expenseAsync.valueOrNull ?? 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('账单')),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
+                  key: const ValueKey('bills-previous-month'),
+                  tooltip: '上个月',
                   icon: const Icon(Icons.chevron_left),
                   onPressed: () => _changeMonth(ref, month, -1),
                 ),
-                Text(DateFormatter.formatMonth(month), style: Theme.of(context).textTheme.titleMedium),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      DateFormatter.formatMonth(month),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
                 IconButton(
+                  key: const ValueKey('bills-next-month'),
+                  tooltip: '下个月',
                   icon: const Icon(Icons.chevron_right),
                   onPressed: () => _changeMonth(ref, month, 1),
                 ),
@@ -40,38 +64,76 @@ class BillListPage extends ConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+            child: MonthSummaryCard(income: income, expense: expense),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 38,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
               children: [
-                _SummaryItem(label: '收入', value: MoneyFormatter.format(incomeAsync.valueOrNull ?? 0), color: AppColors.income),
-                _SummaryItem(label: '支出', value: MoneyFormatter.format(expenseAsync.valueOrNull ?? 0), color: AppColors.expense),
-                _SummaryItem(label: '结余', value: MoneyFormatter.format((incomeAsync.valueOrNull ?? 0) - (expenseAsync.valueOrNull ?? 0)), color: AppColors.primary),
+                _FilterChip(
+                  key: const ValueKey('bills-filter-all'),
+                  label: '全部',
+                  selected: _filter == _BillFilter.all,
+                  onSelected: () => _selectFilter(_BillFilter.all),
+                ),
+                _FilterChip(
+                  key: const ValueKey('bills-filter-expense'),
+                  label: '支出',
+                  selected: _filter == _BillFilter.expense,
+                  onSelected: () => _selectFilter(_BillFilter.expense),
+                ),
+                _FilterChip(
+                  key: const ValueKey('bills-filter-income'),
+                  label: '收入',
+                  selected: _filter == _BillFilter.income,
+                  onSelected: () => _selectFilter(_BillFilter.income),
+                ),
+                _FilterChip(
+                  key: const ValueKey('bills-filter-subscription'),
+                  label: '订阅',
+                  selected: _filter == _BillFilter.subscription,
+                  onSelected: () => _selectFilter(_BillFilter.subscription),
+                ),
               ],
             ),
           ),
-          const Divider(height: 24),
+          const SizedBox(height: 6),
           Expanded(
             child: billsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('加载失败: $e')),
               data: (bills) {
-                if (bills.isEmpty) {
+                final filtered = _filterBills(bills);
+                if (filtered.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.receipt_long_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
+                        Icon(
+                          Icons.receipt_long_outlined,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
                         const SizedBox(height: 16),
-                        Text('本月还没有账单', style: Theme.of(context).textTheme.bodyLarge),
+                        Text(
+                          '本月还没有账单',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
                       ],
                     ),
                   );
                 }
+                final groups = _groupBillsByDay(filtered);
                 return ListView.builder(
                   padding: const EdgeInsets.only(bottom: 80),
-                  itemCount: bills.length,
-                  itemBuilder: (context, index) => BillCard(
-                    bill: bills[index],
-                    onTap: () => context.push('/bills/${bills[index].id}/edit'),
+                  itemCount: groups.length,
+                  itemBuilder: (context, index) => BillDayGroup(
+                    date: groups[index].date,
+                    bills: groups[index].bills,
+                    onBillTap: (bill) => context.push('/bills/${bill.id}/edit'),
                   ),
                 );
               },
@@ -80,6 +142,7 @@ class BillListPage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        key: const ValueKey('bills-add-button'),
         onPressed: () => context.push('/bills/new'),
         child: const Icon(Icons.add),
       ),
@@ -87,26 +150,100 @@ class BillListPage extends ConsumerWidget {
   }
 
   void _changeMonth(WidgetRef ref, DateTime current, int delta) {
-    ref.read(currentMonthProvider.notifier).state = DateTime(current.year, current.month + delta);
+    ref.read(currentMonthProvider.notifier).state = DateTime(
+      current.year,
+      current.month + delta,
+    );
+  }
+
+  void _selectFilter(_BillFilter filter) {
+    setState(() => _filter = filter);
+  }
+
+  List<BillRecord> _filterBills(List<BillRecord> bills) {
+    return switch (_filter) {
+      _BillFilter.all => bills,
+      _BillFilter.expense =>
+        bills
+            .where((bill) => bill.amountType == 'expense')
+            .toList(growable: false),
+      _BillFilter.income =>
+        bills
+            .where((bill) => bill.amountType == 'income')
+            .toList(growable: false),
+      _BillFilter.subscription =>
+        bills
+            .where((bill) => _looksLikeSubscription(bill))
+            .toList(growable: false),
+    };
+  }
+
+  List<_BillDayBucket> _groupBillsByDay(List<BillRecord> bills) {
+    final sorted = [...bills]..sort((a, b) => b.billTime.compareTo(a.billTime));
+    final buckets = <DateTime, List<BillRecord>>{};
+    for (final bill in sorted) {
+      final day = DateTime(
+        bill.billTime.year,
+        bill.billTime.month,
+        bill.billTime.day,
+      );
+      buckets.putIfAbsent(day, () => []).add(bill);
+    }
+    final days = buckets.keys.toList()..sort((a, b) => b.compareTo(a));
+    return [
+      for (final day in days) _BillDayBucket(date: day, bills: buckets[day]!),
+    ];
+  }
+
+  bool _looksLikeSubscription(BillRecord bill) {
+    final text = '${bill.title} ${bill.note ?? ''}'.toLowerCase();
+    return text.contains('订阅') ||
+        text.contains('会员') ||
+        text.contains('subscription');
   }
 }
 
-class _SummaryItem extends StatelessWidget {
+class _FilterChip extends StatelessWidget {
   final String label;
-  final String value;
-  final Color color;
-  const _SummaryItem({required this.label, required this.value, required this.color});
+  final bool selected;
+  final VoidCallback onSelected;
+
+  const _FilterChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 4),
-          Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 14)),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onSelected(),
+        showCheckmark: false,
+        visualDensity: VisualDensity.compact,
+        selectedColor: AppColors.primary.withValues(alpha: 0.14),
+        backgroundColor: AppColors.surface,
+        labelStyle: TextStyle(
+          color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        ),
+        side: BorderSide(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.36)
+              : AppColors.textHint.withValues(alpha: 0.35),
+        ),
       ),
     );
   }
+}
+
+class _BillDayBucket {
+  final DateTime date;
+  final List<BillRecord> bills;
+
+  const _BillDayBucket({required this.date, required this.bills});
 }
