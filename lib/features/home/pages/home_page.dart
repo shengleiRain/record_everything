@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../models/calendar_window.dart';
+import '../models/agenda_item_view_model.dart';
+import '../models/day_bucket_view_model.dart';
 import '../../life_item/providers/life_item_providers.dart';
 import '../providers/home_providers.dart';
 import '../widgets/home_calendar.dart';
@@ -10,11 +12,19 @@ import '../widgets/home_summary_strip.dart';
 import '../widgets/quick_create_sheet.dart';
 import '../widgets/selected_day_agenda.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  List<DayBucketViewModel>? _lastBuckets;
+  List<AgendaItemViewModel>? _lastAgendaItems;
+
+  @override
+  Widget build(BuildContext context) {
     final todayAsync = ref.watch(todayPendingProvider);
     final overdueAsync = ref.watch(overdueItemsProvider);
     final incomeAsync = ref.watch(homeMonthlyIncomeProvider);
@@ -24,6 +34,14 @@ class HomePage extends ConsumerWidget {
     final visibleAnchorDate = ref.watch(homeVisibleAnchorDateProvider);
     final bucketsAsync = ref.watch(homeCalendarBucketsProvider);
     final agendaAsync = ref.watch(homeSelectedDayAgendaProvider);
+    final currentBuckets = bucketsAsync.valueOrNull;
+    final currentAgendaItems = agendaAsync.valueOrNull;
+
+    if (currentBuckets != null) _lastBuckets = currentBuckets;
+    if (currentAgendaItems != null) _lastAgendaItems = currentAgendaItems;
+
+    final buckets = currentBuckets ?? _lastBuckets;
+    final agendaItems = currentAgendaItems ?? _lastAgendaItems;
 
     return Semantics(
       label: 'home_dashboard_screen',
@@ -62,43 +80,49 @@ class HomePage extends ConsumerWidget {
               pendingCount: todayAsync.valueOrNull?.length ?? 0,
               overdueCount: overdueAsync.valueOrNull?.length ?? 0,
             ),
-            bucketsAsync.when(
-              loading: () => const SizedBox(height: 220),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (buckets) => HomeCalendar(
+            if (buckets == null)
+              const SizedBox(height: 220)
+            else
+              HomeCalendar(
                 mode: mode,
                 visibleAnchorDate: visibleAnchorDate,
                 selectedDate: selectedDate,
                 buckets: buckets,
                 onPrevious: () => _moveWindow(ref, mode, -1),
                 onNext: () => _moveWindow(ref, mode, 1),
-                onSelectDate: (date) {
-                  final normalized = CalendarWindow.dateOnly(date);
-                  ref.read(homeSelectedDateProvider.notifier).state =
-                      normalized;
-                  ref.read(homeVisibleAnchorDateProvider.notifier).state =
-                      normalized;
-                },
+                onSelectDate: (date) => _selectDate(ref, date, buckets),
                 onSetMode: (nextMode) {
                   ref.read(homeCalendarModeProvider.notifier).state = nextMode;
-                  ref.read(homeVisibleAnchorDateProvider.notifier).state =
-                      CalendarWindow.dateOnly(selectedDate);
+                  if (nextMode == HomeCalendarMode.week) {
+                    ref.read(homeVisibleAnchorDateProvider.notifier).state =
+                        CalendarWindow.dateOnly(selectedDate);
+                  }
                 },
               ),
-            ),
-            agendaAsync.when(
-              loading: () => SelectedDayAgenda(
-                selectedDate: selectedDate,
-                items: const [],
-              ),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (items) =>
-                  SelectedDayAgenda(selectedDate: selectedDate, items: items),
+            SelectedDayAgenda(
+              selectedDate: selectedDate,
+              items: agendaItems ?? const [],
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _selectDate(
+    WidgetRef ref,
+    DateTime date,
+    List<DayBucketViewModel> visibleBuckets,
+  ) {
+    final normalized = CalendarWindow.dateOnly(date);
+    ref.read(homeSelectedDateProvider.notifier).state = normalized;
+
+    final isVisible = visibleBuckets.any(
+      (bucket) => CalendarWindow.isSameDate(bucket.date, normalized),
+    );
+    if (!isVisible) {
+      ref.read(homeVisibleAnchorDateProvider.notifier).state = normalized;
+    }
   }
 
   void _moveWindow(WidgetRef ref, HomeCalendarMode mode, int direction) {

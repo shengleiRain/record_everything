@@ -27,8 +27,12 @@ void main() {
     expect(find.text('集成今日事项'), findsOneWidget);
     expect(find.text('集成今日账单'), findsOneWidget);
 
-    await tapByKey(tester, 'home-calendar-month-mode');
-    expect(find.text('月视图'), findsOneWidget);
+    await tester.drag(
+      find.byKey(const ValueKey('home-calendar-surface')),
+      const Offset(0, 72),
+    );
+    await settle(tester);
+    expect(find.text('上滑收起周视图 · 按月翻页'), findsOneWidget);
     await tapByKey(tester, 'home-calendar-previous');
     await tapByKey(tester, 'home-calendar-next');
 

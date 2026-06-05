@@ -47,7 +47,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('home-calendar-previous')));
     await tester.tap(find.byKey(const ValueKey('home-calendar-next')));
     await tester.tap(find.byKey(const ValueKey('home-calendar-day-2026-6-4')));
-    await tester.tap(find.byKey(const ValueKey('home-calendar-month-mode')));
+    await tester.drag(
+      find.byKey(const ValueKey('home-calendar-surface')),
+      const Offset(0, 72),
+    );
     await tester.pump();
 
     expect(previousTapped, isTrue);
