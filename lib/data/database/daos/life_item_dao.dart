@@ -46,6 +46,15 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
   Future deleteById(int id) =>
       (delete(lifeItems)..where((t) => t.id.equals(id))).go();
 
+  Future<int> countByCategory(int categoryId) async {
+    final countExpr = lifeItems.id.count();
+    final query = selectOnly(lifeItems)
+      ..addColumns([countExpr])
+      ..where(lifeItems.categoryId.equals(categoryId));
+    final row = await query.getSingle();
+    return row.read(countExpr) ?? 0;
+  }
+
   Stream<List<LifeItem>> watchTodayPending() {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day);

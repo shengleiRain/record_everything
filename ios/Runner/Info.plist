@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCalendarsUsageDescription</key>
+	<string>用于将事项添加到系统日历提醒。</string>
+	<key>NSContactsUsageDescription</key>
+	<string>系统日历创建日程时可能需要访问联系人以完成地点或参与人建议。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

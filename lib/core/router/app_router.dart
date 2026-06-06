@@ -8,6 +8,8 @@ import '../../features/bill/pages/bill_list_page.dart';
 import '../../features/bill/pages/bill_edit_page.dart';
 import '../../features/statistics/pages/statistics_page.dart';
 import '../../features/settings/pages/settings_page.dart';
+import '../../features/settings/pages/category_management_page.dart';
+import '../../features/settings/pages/data_safety_page.dart';
 
 int _currentIndex(GoRouterState state) {
   final path = state.uri.path;
@@ -106,6 +108,16 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsPage(),
+          routes: [
+            GoRoute(
+              path: 'categories',
+              builder: (context, state) => const CategoryManagementPage(),
+            ),
+            GoRoute(
+              path: 'data',
+              builder: (context, state) => const DataSafetyPage(),
+            ),
+          ],
         ),
       ],
     ),

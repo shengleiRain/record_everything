@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../data/database/app_database.dart';
 import '../../../domain/enums/item_type.dart';
 import '../../../domain/enums/item_status.dart';
 import '../../../domain/enums/repeat_period.dart';
@@ -33,6 +34,11 @@ class LifeItemDetailPage extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () => context.push('/items/$id/edit'),
+            ),
+            IconButton(
+              tooltip: '添加到系统日历',
+              icon: const Icon(Icons.event_available_outlined),
+              onPressed: () => _addToCalendar(context, ref, item),
             ),
             IconButton(
               icon: const Icon(Icons.delete),
@@ -152,6 +158,29 @@ class LifeItemDetailPage extends ConsumerWidget {
         _defer(context, ref, item);
       },
     );
+  }
+
+  Future<void> _addToCalendar(
+    BuildContext context,
+    WidgetRef ref,
+    LifeItem item,
+  ) async {
+    try {
+      await ref
+          .read(lifeItemNotifierProvider.notifier)
+          .requestCreateCalendarEvent(item);
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已打开系统日历创建日程')));
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('打开系统日历失败: $error')));
+      }
+    }
   }
 
   void _defer(BuildContext context, WidgetRef ref, dynamic item) {

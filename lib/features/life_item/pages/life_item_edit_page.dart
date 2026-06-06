@@ -10,6 +10,7 @@ import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
+import '../models/reminder_preset.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../providers/life_item_providers.dart';
 import '../widgets/quick_template_sheet.dart';
@@ -34,6 +35,8 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   bool _hasRepeat = false;
   DateTime _dueDate = DateTime.now().add(const Duration(days: 1));
   int? _selectedCategoryId;
+  ReminderPreset _reminderPreset = ReminderPreset.none;
+  DateTime? _customReminderTime;
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
@@ -83,6 +86,13 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
         data['dueTime'] as DateTime? ??
         DateTime.now().add(const Duration(days: 1));
     _selectedCategoryId = data['categoryId'] as int?;
+    _reminderPreset = ReminderPreset.fromRemindTime(
+      data['remindTime'] as DateTime?,
+      _dueDate,
+    );
+    if (_reminderPreset == ReminderPreset.custom) {
+      _customReminderTime = data['remindTime'] as DateTime?;
+    }
     _hasRepeat = data['repeatRule'] != null;
     if (_hasRepeat) {
       final ruleStr = data['repeatRule'] as String;
@@ -107,6 +117,13 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     }
     _dueDate = item.dueTime;
     _selectedCategoryId = item.categoryId;
+    _reminderPreset = ReminderPreset.fromRemindTime(
+      item.remindTime,
+      item.dueTime,
+    );
+    if (_reminderPreset == ReminderPreset.custom) {
+      _customReminderTime = item.remindTime;
+    }
     _hasRepeat = item.repeatRule != null;
     if (_hasRepeat) {
       final ruleStr = item.repeatRule!;
@@ -219,6 +236,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                 ),
                 amountType: _amountType.value,
                 dueTime: _dueDate,
+                remindTime: Value(_resolvedReminderTime()),
                 repeatRule: Value(_buildRepeatRule()),
                 updatedAt: DateTime.now(),
               ),
@@ -241,7 +259,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                 : null,
             'amountType': _amountType.value,
             'dueTime': _dueDate,
-            'remindTime': null,
+            'remindTime': _resolvedReminderTime(),
             'repeatRule': _buildRepeatRule(),
           })
           .then((_) {
@@ -357,6 +375,32 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                     },
                   ),
                   const SizedBox(height: 16),
+                  AppDropdownField<ReminderPreset>(
+                    label: '提醒',
+                    value: _reminderPreset,
+                    options: ReminderPreset.values
+                        .map((p) => AppDropdownOption(value: p, label: p.label))
+                        .toList(),
+                    onSelected: (v) =>
+                        setState(() => _reminderPreset = v ?? _reminderPreset),
+                  ),
+                  if (_reminderPreset == ReminderPreset.custom) ...[
+                    const SizedBox(height: 16),
+                    _DateField(
+                      label: '提醒日期',
+                      value: DateFormatter.formatDate(
+                        _customReminderTime ?? _dueDate,
+                      ),
+                      onTap: _pickCustomReminderDate,
+                    ),
+                    const SizedBox(height: 16),
+                    _DateField(
+                      label: '提醒时间',
+                      value: _formatTime(_customReminderTime ?? _dueDate),
+                      onTap: _pickCustomReminderTime,
+                    ),
+                  ],
+                  const SizedBox(height: 16),
                   AppDropdownField<AmountType>(
                     label: '金额类型',
                     value: _amountType,
@@ -429,6 +473,57 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
         ),
       ),
     );
+  }
+
+  DateTime? _resolvedReminderTime() {
+    return _reminderPreset.remindTimeFor(
+      _dueDate,
+      customTime: _customReminderTime ?? _dueDate,
+    );
+  }
+
+  Future<void> _pickCustomReminderDate() async {
+    final current = _customReminderTime ?? _dueDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _customReminderTime = DateTime(
+        picked.year,
+        picked.month,
+        picked.day,
+        current.hour,
+        current.minute,
+      );
+    });
+  }
+
+  Future<void> _pickCustomReminderTime() async {
+    final current = _customReminderTime ?? _dueDate;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(current),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _customReminderTime = DateTime(
+        current.year,
+        current.month,
+        current.day,
+        picked.hour,
+        picked.minute,
+      );
+    });
+  }
+
+  String _formatTime(DateTime value) {
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }
 

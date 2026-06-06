@@ -39,6 +39,15 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
   Future deleteById(int id) =>
       (delete(billRecords)..where((t) => t.id.equals(id))).go();
 
+  Future<int> countByCategory(int categoryId) async {
+    final countExpr = billRecords.id.count();
+    final query = selectOnly(billRecords)
+      ..addColumns([countExpr])
+      ..where(billRecords.categoryId.equals(categoryId));
+    final row = await query.getSingle();
+    return row.read(countExpr) ?? 0;
+  }
+
   Stream<List<BillRecord>> watchByMonth(DateTime month) {
     final start = DateTime(month.year, month.month, 1);
     final end = DateTime(month.year, month.month + 1, 1);

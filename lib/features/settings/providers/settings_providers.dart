@@ -1,10 +1,51 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
+
+import '../../../core/notifications/reminder_scheduler.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
+import '../../../data/repositories/category_repository.dart';
+import '../../life_item/providers/life_item_providers.dart';
+import '../services/backup_file_gateway.dart';
+import '../services/backup_service.dart';
+
+final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
+  return CategoryRepository(ref.watch(databaseProvider));
+});
+
+final categoriesProvider = StreamProvider<List<Category>>((ref) {
+  return ref.watch(categoryRepositoryProvider).watchAll();
+});
+
+final backupServiceProvider = Provider<BackupService>((ref) {
+  return BackupService(ref.watch(databaseProvider));
+});
+
+final backupFileGatewayProvider = Provider<BackupFileGateway>((ref) {
+  return const UnconfiguredBackupFileGateway();
+});
+
+class CategoryNotifier extends Notifier<void> {
+  @override
+  void build() {}
+
+  CategoryRepository get _repo => ref.read(categoryRepositoryProvider);
+
+  Future<Category> create({
+    required String name,
+    required String type,
+    String icon = 'category',
+  }) {
+    return _repo.create(name: name, type: type, icon: icon);
+  }
+
+  Future<Category> update(Category category) => _repo.updateCategory(category);
+
+  Future<void> delete(int id) => _repo.deleteCategory(id);
+}
+
+final categoryNotifierProvider = NotifierProvider<CategoryNotifier, void>(
+  CategoryNotifier.new,
+);
 
 class SettingsNotifier extends Notifier<void> {
   @override
@@ -13,111 +54,57 @@ class SettingsNotifier extends Notifier<void> {
   AppDatabase get _db => ref.read(databaseProvider);
 
   Future<String> exportToJson() async {
-    final lifeItems = await _db.lifeItemDao.getAll();
-    final billRecords = await _db.billRecordDao.getAll();
-    final categories = await _db.categoryDao.getAll();
-
-    final data = {
-      'version': 1,
-      'exportedAt': DateTime.now().toIso8601String(),
-      'lifeItems': lifeItems.map(_lifeItemToMap).toList(),
-      'billRecords': billRecords.map(_billRecordToMap).toList(),
-      'categories': categories.map(_categoryToMap).toList(),
-    };
-
-    final json = const JsonEncoder.withIndent('  ').convert(data);
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(
-      '${dir.path}/life_items_backup_${DateTime.now().millisecondsSinceEpoch}.json',
-    );
-    await file.writeAsString(json);
-    return file.path;
+    return BackupService(_db).exportToJson();
   }
 
-  Future<void> importFromJson(String jsonString) async {
-    final data = jsonDecode(jsonString) as Map<String, dynamic>;
+  Future<BackupImportSummary> importFromJson(String jsonString) async {
+    final summary = await BackupService(_db).importFromJson(jsonString);
+    await _rebuildFutureReminders();
+    return summary;
+  }
 
-    for (final catMap in data['categories'] as List) {
-      await _db.categoryDao.insertOne(
-        CategoriesCompanion.insert(
-          name: catMap['name'] as String,
-          type: catMap['type'] as String,
-          icon: Value(catMap['icon'] as String? ?? 'category'),
-        ),
-      );
-    }
+  Future<String?> exportWithFilePicker() async {
+    final json = await ref.read(backupServiceProvider).exportToJson();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    return ref
+        .read(backupFileGatewayProvider)
+        .saveBackupJson(
+          fileName: 'life_items_backup_$timestamp.json',
+          content: json,
+        );
+  }
 
-    for (final itemMap in data['lifeItems'] as List) {
-      await _db.lifeItemDao.insertOne(
-        LifeItemsCompanion.insert(
-          title: itemMap['title'] as String,
-          description: Value(itemMap['description'] as String?),
-          categoryId: Value(itemMap['categoryId'] as int?),
-          itemType: Value(itemMap['itemType'] as String? ?? 'todo'),
-          amount: Value(itemMap['amount'] as int?),
-          amountType: Value(itemMap['amountType'] as String? ?? 'none'),
-          dueTime: DateTime.parse(itemMap['dueTime'] as String),
-          remindTime: Value(
-            itemMap['remindTime'] != null
-                ? DateTime.parse(itemMap['remindTime'] as String)
-                : null,
-          ),
-          repeatRule: Value(itemMap['repeatRule'] as String?),
-          status: Value(itemMap['status'] as String? ?? 'pending'),
-        ),
-      );
-    }
+  Future<BackupImportSummary?> importWithFilePicker() async {
+    final json = await ref.read(backupFileGatewayProvider).pickBackupJson();
+    if (json == null) return null;
+    final summary = await ref.read(backupServiceProvider).importFromJson(json);
+    await _rebuildFutureReminders();
+    return summary;
+  }
 
-    for (final billMap in data['billRecords'] as List) {
-      await _db.billRecordDao.insertOne(
-        BillRecordsCompanion.insert(
-          title: billMap['title'] as String,
-          amount: billMap['amount'] as int,
-          amountType: Value(billMap['amountType'] as String? ?? 'expense'),
-          categoryId: Value(billMap['categoryId'] as int?),
-          billTime: DateTime.parse(billMap['billTime'] as String),
-          note: Value(billMap['note'] as String?),
-          lifeItemId: Value(billMap['lifeItemId'] as int?),
-        ),
-      );
+  Future<void> _rebuildFutureReminders() async {
+    final scheduler = ref.read(reminderSchedulerProvider);
+    final items = await _db.lifeItemDao.getAll();
+    for (final item in items) {
+      if (_shouldScheduleReminder(item, scheduler)) {
+        await scheduler.schedule(
+          id: item.id,
+          title: item.title,
+          body: '事项即将到期',
+          scheduledTime: item.remindTime!,
+        );
+      }
     }
   }
+}
+
+bool _shouldScheduleReminder(LifeItem item, ReminderScheduler scheduler) {
+  final remindTime = item.remindTime;
+  if (remindTime == null) return false;
+  if (item.status != 'pending') return false;
+  return remindTime.isAfter(scheduler.currentTime);
 }
 
 final settingsNotifierProvider = NotifierProvider<SettingsNotifier, void>(
   SettingsNotifier.new,
 );
-
-Map<String, dynamic> _lifeItemToMap(LifeItem item) => {
-  'id': item.id,
-  'title': item.title,
-  'description': item.description,
-  'categoryId': item.categoryId,
-  'itemType': item.itemType,
-  'amount': item.amount,
-  'amountType': item.amountType,
-  'dueTime': item.dueTime.toIso8601String(),
-  'remindTime': item.remindTime?.toIso8601String(),
-  'repeatRule': item.repeatRule,
-  'status': item.status,
-  'createdAt': item.createdAt.toIso8601String(),
-};
-
-Map<String, dynamic> _billRecordToMap(BillRecord bill) => {
-  'id': bill.id,
-  'lifeItemId': bill.lifeItemId,
-  'title': bill.title,
-  'categoryId': bill.categoryId,
-  'amount': bill.amount,
-  'amountType': bill.amountType,
-  'billTime': bill.billTime.toIso8601String(),
-  'note': bill.note,
-  'createdAt': bill.createdAt.toIso8601String(),
-};
-
-Map<String, dynamic> _categoryToMap(Category cat) => {
-  'id': cat.id,
-  'name': cat.name,
-  'type': cat.type,
-  'icon': cat.icon,
-};

@@ -13,6 +13,8 @@ import 'package:record_everything/features/life_item/pages/life_item_detail_page
 import 'package:record_everything/features/life_item/pages/life_item_edit_page.dart';
 import 'package:record_everything/features/life_item/pages/life_item_list_page.dart';
 import 'package:record_everything/features/settings/pages/settings_page.dart';
+import 'package:record_everything/features/settings/pages/category_management_page.dart';
+import 'package:record_everything/features/settings/pages/data_safety_page.dart';
 import 'package:record_everything/features/statistics/pages/statistics_page.dart';
 
 class TestAppHarness {
@@ -27,7 +29,10 @@ Future<TestAppHarness> pumpPageWithDatabase(
   Widget page,
 ) async {
   final db = AppDatabase.forTesting(NativeDatabase.memory());
-  addTearDown(db.close);
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await db.close();
+  });
 
   final widget = ProviderScope(
     overrides: [databaseProvider.overrideWithValue(db)],
@@ -147,6 +152,16 @@ GoRouter _createTestRouter() {
           GoRoute(
             path: '/settings',
             builder: (context, state) => const SettingsPage(),
+            routes: [
+              GoRoute(
+                path: 'categories',
+                builder: (context, state) => const CategoryManagementPage(),
+              ),
+              GoRoute(
+                path: 'data',
+                builder: (context, state) => const DataSafetyPage(),
+              ),
+            ],
           ),
         ],
       ),
@@ -165,7 +180,10 @@ int _currentIndex(GoRouterState state) {
 
 Future<TestAppHarness> pumpTestApp(WidgetTester tester) async {
   final harness = createTestApp();
-  addTearDown(harness.database.close);
+  addTearDown(() async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await harness.database.close();
+  });
 
   await tester.pumpWidget(harness.widget);
   await tester.pump(const Duration(milliseconds: 100));
@@ -174,7 +192,9 @@ Future<TestAppHarness> pumpTestApp(WidgetTester tester) async {
 
 Future<void> settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 100));
-  await tester.pumpAndSettle();
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
 }
 
 Future<void> tapByKey(WidgetTester tester, String key) async {

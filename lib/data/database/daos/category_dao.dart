@@ -14,8 +14,19 @@ class CategoryDao extends DatabaseAccessor<AppDatabase>
   Future<List<Category>> getByType(String type) =>
       (select(categories)..where((t) => t.type.equals(type))).get();
 
+  Future<Category> getById(int id) =>
+      (select(categories)..where((t) => t.id.equals(id))).getSingle();
+
   Future<Category> insertOne(CategoriesCompanion entry) =>
       into(categories).insertReturning(entry);
+
+  Future<void> updateOne(CategoriesCompanion entry) =>
+      update(categories).replace(entry);
+
+  Future<int> deleteById(int id) =>
+      (delete(categories)..where((t) => t.id.equals(id))).go();
+
+  Stream<List<Category>> watchAll() => select(categories).watch();
 
   Stream<List<Category>> watchByType(String type) =>
       (select(categories)..where((t) => t.type.equals(type))).watch();

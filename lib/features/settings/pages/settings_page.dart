@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/notifications/notification_service.dart';
 import '../../../core/theme/app_colors.dart';
-import '../providers/settings_providers.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -27,7 +27,7 @@ class SettingsPage extends ConsumerWidget {
                 icon: '类',
                 title: '分类管理',
                 subtitle: '支出、收入、事项类型',
-                onTap: () => _showComingSoon(context, '分类管理'),
+                onTap: () => context.push('/settings/categories'),
               ),
               _SettingsRowData(
                 icon: '铃',
@@ -43,20 +43,20 @@ class SettingsPage extends ConsumerWidget {
               _SettingsRowData(
                 icon: '入',
                 title: '导入数据',
-                subtitle: '从 JSON 备份恢复',
-                onTap: () => _showImportDialog(context, ref),
+                subtitle: '从 JSON 文件恢复',
+                onTap: () => context.push('/settings/data'),
               ),
               _SettingsRowData(
                 icon: '出',
                 title: '导出备份',
-                subtitle: '导出为本地 JSON 文件',
-                onTap: () => _export(context, ref),
+                subtitle: '保存为 JSON 文件',
+                onTap: () => context.push('/settings/data'),
               ),
               _SettingsRowData(
                 icon: '安',
                 title: '数据安全',
-                subtitle: '本地存储 · 可导出恢复',
-                onTap: () => _showComingSoon(context, '数据安全'),
+                subtitle: '备份校验 · 文件导入导出',
+                onTap: () => context.push('/settings/data'),
               ),
             ],
           ),
@@ -64,71 +64,6 @@ class SettingsPage extends ConsumerWidget {
           _PreferenceCard(),
           const SizedBox(height: 12),
           _AboutRow(),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _export(BuildContext context, WidgetRef ref) async {
-    try {
-      final path = await ref
-          .read(settingsNotifierProvider.notifier)
-          .exportToJson();
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('数据已导出至: $path')));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('导出失败: $e')));
-      }
-    }
-  }
-
-  void _showImportDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('导入数据'),
-        content: TextField(
-          controller: controller,
-          maxLines: 5,
-          decoration: const InputDecoration(
-            hintText: '粘贴 JSON 数据',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              try {
-                await ref
-                    .read(settingsNotifierProvider.notifier)
-                    .importFromJson(controller.text);
-                if (context.mounted) {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('数据导入成功')));
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('导入失败: $e')));
-                }
-              }
-            },
-            child: const Text('导入'),
-          ),
         ],
       ),
     );
