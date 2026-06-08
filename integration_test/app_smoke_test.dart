@@ -27,8 +27,11 @@ void main() {
     expect(find.text('集成今日事项'), findsOneWidget);
     expect(find.text('集成今日账单'), findsOneWidget);
 
-    await tester.drag(
-      find.byKey(const ValueKey('home-calendar-surface')),
+    final agendaTopLeft = tester.getTopLeft(
+      find.byKey(const ValueKey('selected-day-agenda')),
+    );
+    await tester.dragFrom(
+      agendaTopLeft + const Offset(100, 24),
       const Offset(0, 160),
     );
     await settle(tester);

@@ -3,7 +3,7 @@ import 'package:flutter/animation.dart';
 class CalendarSnapBehavior {
   const CalendarSnapBehavior._();
 
-  static const Duration snapDuration = Duration(milliseconds: 260);
+  static const Duration snapDuration = Duration(milliseconds: 320);
   static const Curve snapCurve = Curves.easeOutCubic;
 
   // Progress is 0.0 when fully expanded and 1.0 when fully collapsed.

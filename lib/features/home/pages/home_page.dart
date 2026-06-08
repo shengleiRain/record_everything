@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -8,9 +9,9 @@ import '../models/day_bucket_view_model.dart';
 import '../../life_item/providers/life_item_providers.dart';
 import '../providers/home_providers.dart';
 import '../widgets/calendar_snap_behavior.dart';
+import '../widgets/home_agenda_scroll_fill.dart';
 import '../widgets/home_calendar_sliver.dart';
 import '../widgets/home_calendar.dart';
-import '../widgets/home_summary_sliver.dart';
 import '../widgets/home_summary_strip.dart';
 import '../widgets/quick_create_sheet.dart';
 import '../widgets/selected_day_agenda.dart';
@@ -27,6 +28,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   List<AgendaItemViewModel>? _lastAgendaItems;
   late final ScrollController _scrollController = ScrollController();
   bool _didApplyInitialCalendarCollapse = false;
+  bool _isSnappingCalendar = false;
   HomeCalendarMode _settledCalendarMode = HomeCalendarMode.week;
 
   @override
@@ -86,54 +88,70 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ],
         ),
-        body: NotificationListener<ScrollEndNotification>(
-          onNotification: (_) {
-            if (buckets != null) _snapCalendarIfNeeded(buckets, screenWidth);
-            return false;
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final agendaMinHeight = buckets != null
+                ? (constraints.maxHeight -
+                          _calendarCollapsedExtent(screenWidth))
+                      .clamp(0.0, double.infinity)
+                      .toDouble()
+                : 0.0;
+
+            return NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (buckets != null) {
+                  _handleScrollNotification(notification, buckets, screenWidth);
+                }
+                return false;
+              },
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  // 1. Pinned summary + collapsible calendar. The calendar
+                  // consumes the first scroll range, so the agenda pushes it
+                  // immediately instead of scrolling under a separate summary.
+                  if (buckets != null)
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: CalendarSliver(
+                        summaryStrip: HomeSummaryStrip(
+                          monthlyExpense: expenseAsync.valueOrNull ?? 0,
+                          monthlyIncome: incomeAsync.valueOrNull ?? 0,
+                          pendingCount: todayAsync.valueOrNull?.length ?? 0,
+                          overdueCount: overdueAsync.valueOrNull?.length ?? 0,
+                        ),
+                        visibleAnchorDate: visibleAnchorDate,
+                        selectedDate: selectedDate,
+                        monthBuckets: buckets,
+                        onPrevious: () => _moveWindow(ref, -1),
+                        onNext: () => _moveWindow(ref, 1),
+                        onSelectDate: (date) => _selectDate(ref, date, buckets),
+                        screenWidth: screenWidth,
+                      ),
+                    )
+                  else
+                    SliverToBoxAdapter(
+                      child: HomeSummaryStrip(
+                        monthlyExpense: expenseAsync.valueOrNull ?? 0,
+                        monthlyIncome: incomeAsync.valueOrNull ?? 0,
+                        pendingCount: todayAsync.valueOrNull?.length ?? 0,
+                        overdueCount: overdueAsync.valueOrNull?.length ?? 0,
+                      ),
+                    ),
+
+                  // 2. Agenda + background fill. Its height is
+                  // max(collapsed-week remainder, natural agenda height + gap).
+                  HomeAgendaScrollFill(
+                    minHeight: agendaMinHeight,
+                    child: SelectedDayAgenda(
+                      selectedDate: selectedDate,
+                      items: agendaItems ?? const [],
+                    ),
+                  ),
+                ],
+              ),
+            );
           },
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              // 1. Pinned summary strip
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: SummarySliver(
-                  summaryStrip: HomeSummaryStrip(
-                    monthlyExpense: expenseAsync.valueOrNull ?? 0,
-                    monthlyIncome: incomeAsync.valueOrNull ?? 0,
-                    pendingCount: todayAsync.valueOrNull?.length ?? 0,
-                    overdueCount: overdueAsync.valueOrNull?.length ?? 0,
-                  ),
-                ),
-              ),
-
-              // 2. Collapsible calendar
-              if (buckets != null)
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: CalendarSliver(
-                    visibleAnchorDate: visibleAnchorDate,
-                    selectedDate: selectedDate,
-                    monthBuckets: buckets,
-                    onPrevious: () => _moveWindow(ref, -1),
-                    onNext: () => _moveWindow(ref, 1),
-                    onSelectDate: (date) => _selectDate(ref, date, buckets),
-                    screenWidth: screenWidth,
-                  ),
-                )
-              else
-                const SliverToBoxAdapter(child: SizedBox(height: 220)),
-
-              // 3. Selected day agenda
-              SliverToBoxAdapter(
-                child: SelectedDayAgenda(
-                  selectedDate: selectedDate,
-                  items: agendaItems ?? const [],
-                ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
-            ],
-          ),
         ),
       ),
     );
@@ -187,9 +205,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     List<DayBucketViewModel> buckets,
     double screenWidth,
   ) {
-    if (!_scrollController.hasClients) return;
+    if (!_scrollController.hasClients || _isSnappingCalendar) return;
 
-    final start = SummarySliver.extent;
+    const start = 0.0;
     final range = _calendarCollapseRange(buckets, screenWidth);
     if (range <= 0) return;
 
@@ -229,11 +247,33 @@ class _HomePageState extends ConsumerState<HomePage> {
         : HomeCalendarMode.month;
     _setCalendarMode(mode);
 
-    _scrollController.animateTo(
-      target,
-      duration: CalendarSnapBehavior.snapDuration,
-      curve: CalendarSnapBehavior.snapCurve,
-    );
+    _isSnappingCalendar = true;
+    _scrollController
+        .animateTo(
+          target,
+          duration: CalendarSnapBehavior.snapDuration,
+          curve: CalendarSnapBehavior.snapCurve,
+        )
+        .whenComplete(() {
+          if (mounted) _isSnappingCalendar = false;
+        });
+  }
+
+  void _handleScrollNotification(
+    ScrollNotification notification,
+    List<DayBucketViewModel> buckets,
+    double screenWidth,
+  ) {
+    final shouldSnap =
+        notification is ScrollEndNotification ||
+        (notification is UserScrollNotification &&
+            notification.direction == ScrollDirection.idle);
+    if (!shouldSnap) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _snapCalendarIfNeeded(buckets, screenWidth);
+    });
   }
 
   void _setCalendarMode(HomeCalendarMode mode) {
@@ -256,7 +296,12 @@ class _HomePageState extends ConsumerState<HomePage> {
     List<DayBucketViewModel> buckets,
     double screenWidth,
   ) {
-    return SummarySliver.extent + _calendarCollapseRange(buckets, screenWidth);
+    return _calendarCollapseRange(buckets, screenWidth);
+  }
+
+  double _calendarCollapsedExtent(double screenWidth) {
+    return HomeHeaderLayout.summaryExtent +
+        CalendarLayout.fullHeight(1, screenWidth);
   }
 
   double _calendarCollapseRange(

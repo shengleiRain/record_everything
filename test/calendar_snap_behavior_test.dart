@@ -6,7 +6,7 @@ void main() {
   test('calendar snap uses video-matched timing and easing', () {
     expect(
       CalendarSnapBehavior.snapDuration,
-      const Duration(milliseconds: 260),
+      const Duration(milliseconds: 320),
     );
     expect(CalendarSnapBehavior.snapCurve, Curves.easeOutCubic);
   });
