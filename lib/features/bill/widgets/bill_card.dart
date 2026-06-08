@@ -74,14 +74,18 @@ class BillCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    isIncome
-                        ? MoneyFormatter.formatIncome(bill.amount)
-                        : MoneyFormatter.formatExpense(bill.amount),
-                    style: TextStyle(
-                      color: accent,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      isIncome
+                          ? MoneyFormatter.formatIncome(bill.amount)
+                          : MoneyFormatter.formatExpense(bill.amount),
+                      style: TextStyle(
+                        color: accent,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),

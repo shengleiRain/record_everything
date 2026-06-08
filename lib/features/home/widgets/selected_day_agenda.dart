@@ -61,11 +61,15 @@ class SelectedDayAgenda extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            '支出${MoneyFormatter.format(expense)} · ${items.length}项 · $overdueCount逾期',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '支出${MoneyFormatter.format(expense)} · ${items.length}项 · $overdueCount逾期',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
           ),
           const SizedBox(height: 10),
           if (items.isEmpty)

@@ -81,11 +81,14 @@ class MonthSummaryCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Text(
-                '结余 ${MoneyFormatter.format(balance)}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: balance >= 0 ? AppColors.income : AppColors.expense,
-                  fontWeight: FontWeight.w600,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '结余 ${MoneyFormatter.format(balance)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: balance >= 0 ? AppColors.income : AppColors.expense,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -120,13 +123,15 @@ class _SummaryMetric extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w700,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],

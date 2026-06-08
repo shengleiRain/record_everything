@@ -140,7 +140,7 @@ class _HomeCalendarState extends State<HomeCalendar>
                   crossAxisCount: 7,
                   mainAxisSpacing: 6,
                   crossAxisSpacing: 4,
-                  childAspectRatio: 0.82,
+                  childAspectRatio: 0.72,
                 ),
                 itemBuilder: (context, index) {
                   final bucket = visibleBuckets[index];
@@ -203,8 +203,7 @@ class _DayCell extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       onTap: onTap,
       child: Container(
-        constraints: const BoxConstraints(minHeight: 48),
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
@@ -224,14 +223,15 @@ class _DayCell extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 3),
-            Text(
-              bucket.compactLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: labelColor, fontSize: 10),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                bucket.compactLabel,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: labelColor, fontSize: 10),
+              ),
             ),
           ],
         ),

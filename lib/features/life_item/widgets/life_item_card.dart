@@ -92,16 +92,18 @@ class LifeItemCard extends StatelessWidget {
                   children: [
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 88),
-                      child: Text(
-                        amountText ?? _statusText(isOverdue, isCompleted),
-                        textAlign: TextAlign.right,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: amountText != null
-                              ? _amountColor()
-                              : statusColor,
-                          fontWeight: FontWeight.w600,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          amountText ?? _statusText(isOverdue, isCompleted),
+                          textAlign: TextAlign.right,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: amountText != null
+                                ? _amountColor()
+                                : statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
