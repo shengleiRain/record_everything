@@ -29,10 +29,11 @@ void main() {
 
     await tester.drag(
       find.byKey(const ValueKey('home-calendar-surface')),
-      const Offset(0, 72),
+      const Offset(0, 160),
     );
     await settle(tester);
-    expect(find.text('上滑收起周视图 · 按月翻页'), findsOneWidget);
+    final now = DateTime.now();
+    expect(find.text('${now.year}年${now.month}月'), findsOneWidget);
     await tapByKey(tester, 'home-calendar-previous');
     await tapByKey(tester, 'home-calendar-next');
 

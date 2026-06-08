@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/features/home/models/day_bucket_view_model.dart';
-import 'package:record_everything/features/home/providers/home_providers.dart';
 import 'package:record_everything/features/home/widgets/home_calendar.dart';
 
 void main() {
@@ -12,10 +11,9 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: HomeCalendar(
-            mode: HomeCalendarMode.week,
+            isWeek: true,
             visibleAnchorDate: DateTime(2026, 6, 4),
-            selectedDate: DateTime(2026, 6, 4),
-            buckets: List.generate(7, (index) {
+            visibleBuckets: List.generate(7, (index) {
               final date = DateTime(2026, 5, 31).add(Duration(days: index));
               return DayBucketViewModel(
                 date: date,
@@ -30,14 +28,12 @@ void main() {
             onPrevious: () {},
             onNext: () {},
             onSelectDate: (date) => selectedDate = date,
-            onSetMode: (_) {},
           ),
         ),
       ),
     );
 
     expect(find.text('2026年6月 第1周'), findsOneWidget);
-    expect(find.text('下拉展开月历 · 按周翻页'), findsOneWidget);
     for (final label in const ['周日', '周一', '周二', '周三', '周四', '周五', '周六']) {
       expect(find.text(label), findsOneWidget);
     }
@@ -47,22 +43,15 @@ void main() {
     expect(selectedDate, DateTime(2026, 6, 3));
   });
 
-  testWidgets('switches week and month by vertical drag threshold', (
-    tester,
-  ) async {
-    HomeCalendarMode? selectedMode;
-
-    Future<void> pump(HomeCalendarMode mode) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: HomeCalendar(
-              mode: mode,
-              visibleAnchorDate: DateTime(2026, 6, 4),
-              selectedDate: DateTime(2026, 6, 4),
-              buckets: List.generate(mode == HomeCalendarMode.week ? 7 : 42, (
-                index,
-              ) {
+  testWidgets('renders month view with correct title', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: HomeCalendar(
+              isWeek: false,
+              visibleAnchorDate: DateTime(2026, 6, 1),
+              visibleBuckets: List.generate(35, (index) {
                 final date = DateTime(2026, 5, 31).add(Duration(days: index));
                 return DayBucketViewModel(
                   date: date,
@@ -77,36 +66,63 @@ void main() {
               onPrevious: () {},
               onNext: () {},
               onSelectDate: (_) {},
-              onSetMode: (mode) => selectedMode = mode,
             ),
           ),
         ),
-      );
-    }
-
-    await pump(HomeCalendarMode.week);
-
-    await tester.drag(
-      find.byKey(const ValueKey('home-calendar-surface')),
-      const Offset(0, 18),
+      ),
     );
-    await tester.pump();
-    expect(selectedMode, isNull);
 
-    await tester.drag(
-      find.byKey(const ValueKey('home-calendar-surface')),
-      const Offset(0, 72),
-    );
-    await tester.pump();
-    expect(selectedMode, HomeCalendarMode.month);
+    expect(find.text('2026年6月'), findsOneWidget);
+  });
 
-    selectedMode = null;
-    await pump(HomeCalendarMode.month);
-    await tester.drag(
-      find.byKey(const ValueKey('home-calendar-surface')),
-      const Offset(0, -72),
+  testWidgets('clips a full month grid to a translated week window', (
+    tester,
+  ) async {
+    final screenWidth =
+        tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    final weekHeight = CalendarLayout.gridHeight(1, screenWidth);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: HomeCalendar(
+            isWeek: true,
+            visibleAnchorDate: DateTime(2026, 6, 4),
+            visibleBuckets: List.generate(35, (index) {
+              final date = DateTime(2026, 5, 31).add(Duration(days: index));
+              return DayBucketViewModel(
+                date: date,
+                isSelected: date == DateTime(2026, 6, 18),
+                isInVisibleMonth: date.month == 6,
+                itemCount: 0,
+                overdueCount: 0,
+                income: 0,
+                expense: 0,
+              );
+            }),
+            onPrevious: () {},
+            onNext: () {},
+            onSelectDate: (_) {},
+            gridHeight: weekHeight,
+            gridVerticalOffset:
+                -2 * (weekHeight + CalendarLayout.mainAxisSpacing),
+          ),
+        ),
+      ),
     );
-    await tester.pump();
-    expect(selectedMode, HomeCalendarMode.week);
+
+    final gridClip = tester.widget<SizedBox>(
+      find.byKey(const ValueKey('home-calendar-grid-clip')),
+    );
+    final transform = tester.widget<Transform>(
+      find.byKey(const ValueKey('home-calendar-grid-transform')),
+    );
+
+    expect(gridClip.height, weekHeight);
+    expect(transform.transform.getTranslation().y, lessThan(0));
+    expect(
+      find.byKey(const ValueKey('home-calendar-day-2026-6-18')),
+      findsOneWidget,
+    );
   });
 }

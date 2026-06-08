@@ -9,6 +9,13 @@ import 'package:record_everything/features/home/models/day_bucket_view_model.dar
 import 'package:record_everything/features/home/providers/home_providers.dart';
 
 void main() {
+  test('home calendar defaults to collapsed week mode', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(container.read(homeCalendarModeProvider), HomeCalendarMode.week);
+  });
+
   test(
     'life item repository watches range inclusively at start and ordered asc',
     () async {
@@ -126,7 +133,7 @@ void main() {
   });
 
   test(
-    'week calendar buckets are Sunday-first and mark selected day',
+    'calendar buckets always return full month grid and mark selected day',
     () async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       final container = ProviderContainer(
@@ -145,27 +152,16 @@ void main() {
         6,
         4,
       );
-      container.read(homeCalendarModeProvider.notifier).state =
-          HomeCalendarMode.week;
 
+      // Provider always returns month grid regardless of mode
       final buckets = await _waitForAsyncRows(
         container,
         homeCalendarBucketsProvider,
-        7,
+        35,
       );
 
-      expect(buckets, hasLength(7));
-      expect(buckets.first.date, DateTime(2026, 5, 31));
-      expect(buckets.last.date, DateTime(2026, 6, 6));
-      expect(buckets.map((bucket) => bucket.date.weekday), [
-        7,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-      ]);
+      // Month grid is Sunday-first (first row starts on Sunday)
+      expect(buckets.first.date.weekday, 7);
       expect(
         buckets
             .singleWhere((bucket) => bucket.date == DateTime(2026, 6, 4))

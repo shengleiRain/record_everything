@@ -5,18 +5,15 @@ import 'package:record_everything/features/bill/widgets/bill_day_group.dart';
 import 'package:record_everything/features/bill/widgets/month_summary_card.dart';
 import 'package:record_everything/features/home/models/agenda_item_view_model.dart';
 import 'package:record_everything/features/home/models/day_bucket_view_model.dart';
-import 'package:record_everything/features/home/providers/home_providers.dart';
 import 'package:record_everything/features/home/widgets/home_calendar.dart';
 import 'package:record_everything/features/home/widgets/quick_create_sheet.dart';
 import 'package:record_everything/features/home/widgets/selected_day_agenda.dart';
 import 'package:record_everything/features/life_item/widgets/life_item_card.dart';
 
 void main() {
-  testWidgets('home calendar switches and exposes stable controls', (
+  testWidgets('home calendar renders controls and handles taps', (
     tester,
   ) async {
-    final selected = DateTime(2026, 6, 4);
-    var mode = HomeCalendarMode.week;
     var previousTapped = false;
     var nextTapped = false;
     DateTime? selectedDate;
@@ -24,14 +21,12 @@ void main() {
     await tester.pumpWidget(
       _Harness(
         child: HomeCalendar(
-          mode: mode,
-          visibleAnchorDate: selected,
-          selectedDate: selected,
-          buckets: _weekBuckets(selected),
+          isWeek: true,
+          visibleAnchorDate: DateTime(2026, 6, 4),
+          visibleBuckets: _weekBuckets(DateTime(2026, 6, 4)),
           onPrevious: () => previousTapped = true,
           onNext: () => nextTapped = true,
           onSelectDate: (date) => selectedDate = date,
-          onSetMode: (nextMode) => mode = nextMode,
         ),
       ),
     );
@@ -47,16 +42,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('home-calendar-previous')));
     await tester.tap(find.byKey(const ValueKey('home-calendar-next')));
     await tester.tap(find.byKey(const ValueKey('home-calendar-day-2026-6-4')));
-    await tester.drag(
-      find.byKey(const ValueKey('home-calendar-surface')),
-      const Offset(0, 72),
-    );
-    await tester.pump();
 
     expect(previousTapped, isTrue);
     expect(nextTapped, isTrue);
     expect(selectedDate, DateTime(2026, 6, 4));
-    expect(mode, HomeCalendarMode.month);
   });
 
   testWidgets('selected day agenda only renders supplied selected-day items', (

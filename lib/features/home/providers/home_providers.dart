@@ -43,16 +43,14 @@ final homeSelectedDayAgendaProvider = StreamProvider<List<AgendaItemViewModel>>(
 final homeCalendarBucketsProvider = StreamProvider<List<DayBucketViewModel>>((
   ref,
 ) {
-  final mode = ref.watch(homeCalendarModeProvider);
   final selectedDate = CalendarWindow.dateOnly(
     ref.watch(homeSelectedDateProvider),
   );
   final visibleAnchorDate = CalendarWindow.dateOnly(
     ref.watch(homeVisibleAnchorDateProvider),
   );
-  final visibleDates = mode == HomeCalendarMode.week
-      ? CalendarWindow.weekFor(visibleAnchorDate)
-      : CalendarWindow.monthGridFor(visibleAnchorDate);
+  // Always fetch full month grid; week view is derived by filtering
+  final visibleDates = CalendarWindow.monthGridFor(visibleAnchorDate);
   final start = visibleDates.first;
   final end = visibleDates.last.add(const Duration(days: 1));
   final today = CalendarWindow.dateOnly(DateTime.now());

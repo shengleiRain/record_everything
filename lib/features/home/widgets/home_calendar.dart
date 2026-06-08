@@ -2,161 +2,237 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../models/day_bucket_view_model.dart';
-import '../providers/home_providers.dart';
 
-class HomeCalendar extends StatefulWidget {
+/// Calendar grid layout constants used by both [HomeCalendar] and
+/// [CalendarSliverDelegate] to compute heights.
+class CalendarLayout {
+  static const double marginVertical = 16; // top 8 + bottom 8
+  static const double paddingVertical = 24; // top 10 + bottom 14
+  static const double navRowHeight = 48;
+  static const double headerGap = 12;
+  static const double weekdayRowHeight = 20;
+  static const double gridTopGap = 8;
+  static const double mainAxisSpacing = 6;
+  static const double crossAxisSpacing = 4;
+  static const int crossAxisCount = 7;
+  static const double childAspectRatio = 0.72;
+
+  static double get fixedHeaderHeight =>
+      navRowHeight + headerGap + weekdayRowHeight + gridTopGap;
+
+  static double containerExtras(double screenWidth) =>
+      marginVertical +
+      paddingVertical +
+      (screenWidth - 32 - 24 - (crossAxisSpacing * (crossAxisCount - 1))) /
+          crossAxisCount /
+          childAspectRatio;
+
+  static double cellHeight(double screenWidth) =>
+      (screenWidth - 32 - 24 - (crossAxisSpacing * (crossAxisCount - 1))) /
+      crossAxisCount /
+      childAspectRatio;
+
+  static double gridHeight(int rowCount, double screenWidth) =>
+      rowCount * cellHeight(screenWidth) + (rowCount - 1) * mainAxisSpacing;
+
+  static double fullHeight(int rowCount, double screenWidth) =>
+      marginVertical +
+      paddingVertical +
+      fixedHeaderHeight +
+      gridHeight(rowCount, screenWidth);
+}
+
+class HomeCalendar extends StatelessWidget {
   const HomeCalendar({
     super.key,
-    required this.mode,
+    required this.isWeek,
     required this.visibleAnchorDate,
-    required this.selectedDate,
-    required this.buckets,
+    required this.visibleBuckets,
     required this.onPrevious,
     required this.onNext,
     required this.onSelectDate,
-    required this.onSetMode,
+    this.gridHeight,
+    this.gridVerticalOffset = 0,
   });
 
-  final HomeCalendarMode mode;
+  final bool isWeek;
   final DateTime visibleAnchorDate;
-  final DateTime selectedDate;
-  final List<DayBucketViewModel> buckets;
+  final List<DayBucketViewModel> visibleBuckets;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final ValueChanged<DateTime> onSelectDate;
-  final ValueChanged<HomeCalendarMode> onSetMode;
 
-  @override
-  State<HomeCalendar> createState() => _HomeCalendarState();
-}
+  /// When provided, the grid is clipped to this height for smooth collapse.
+  final double? gridHeight;
 
-class _HomeCalendarState extends State<HomeCalendar>
-    with SingleTickerProviderStateMixin {
-  static const double _modeSwitchThreshold = 56;
-
-  double _verticalDragDistance = 0;
-
-  void _handlePointerMove(PointerMoveEvent event) {
-    _verticalDragDistance += event.delta.dy;
-  }
-
-  void _handlePointerEnd() {
-    final distance = _verticalDragDistance;
-    _verticalDragDistance = 0;
-
-    if (distance > _modeSwitchThreshold &&
-        widget.mode == HomeCalendarMode.week) {
-      widget.onSetMode(HomeCalendarMode.month);
-    } else if (distance < -_modeSwitchThreshold &&
-        widget.mode == HomeCalendarMode.month) {
-      widget.onSetMode(HomeCalendarMode.week);
-    }
-  }
+  /// Vertical translation applied to the full month grid inside the clip.
+  final double gridVerticalOffset;
 
   @override
   Widget build(BuildContext context) {
-    final isWeek = widget.mode == HomeCalendarMode.week;
-    final visibleBuckets = isWeek
-        ? widget.buckets.take(7).toList()
-        : widget.buckets;
+    final grid = _CalendarGrid(
+      buckets: visibleBuckets,
+      gridHeight: gridHeight,
+      gridVerticalOffset: gridVerticalOffset,
+      onSelectDate: onSelectDate,
+    );
 
-    return Listener(
+    return Container(
       key: const ValueKey('home-calendar-surface'),
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _verticalDragDistance = 0,
-      onPointerMove: _handlePointerMove,
-      onPointerUp: (_) => _handlePointerEnd(),
-      onPointerCancel: (_) => _verticalDragDistance = 0,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Semantics(
-                  label: 'home_calendar_previous',
-                  button: true,
-                  child: IconButton(
-                    key: const ValueKey('home-calendar-previous'),
-                    icon: const Icon(Icons.chevron_left),
-                    onPressed: widget.onPrevious,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Semantics(
+                label: 'home_calendar_previous',
+                button: true,
+                child: IconButton(
+                  key: const ValueKey('home-calendar-previous'),
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: onPrevious,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  isWeek
+                      ? _formatWeekTitle(visibleAnchorDate)
+                      : _formatMonthTitle(visibleAnchorDate),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                Expanded(
-                  child: Column(
+              ),
+              Semantics(
+                label: 'home_calendar_next',
+                button: true,
+                child: IconButton(
+                  key: const ValueKey('home-calendar-next'),
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: onNext,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: CalendarLayout.headerGap),
+          Row(
+            children: [
+              for (final label in ['周日', '周一', '周二', '周三', '周四', '周五', '周六'])
+                Expanded(child: _WeekdayLabel(label)),
+            ],
+          ),
+          const SizedBox(height: CalendarLayout.gridTopGap),
+          grid,
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarGrid extends StatelessWidget {
+  const _CalendarGrid({
+    required this.buckets,
+    required this.gridHeight,
+    required this.gridVerticalOffset,
+    required this.onSelectDate,
+  });
+
+  final List<DayBucketViewModel> buckets;
+  final double? gridHeight;
+  final double gridVerticalOffset;
+  final ValueChanged<DateTime> onSelectDate;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final rowCount = (buckets.length / CalendarLayout.crossAxisCount)
+            .ceil();
+        final cellWidth =
+            (constraints.maxWidth -
+                CalendarLayout.crossAxisSpacing *
+                    (CalendarLayout.crossAxisCount - 1)) /
+            CalendarLayout.crossAxisCount;
+        final cellHeight = cellWidth / CalendarLayout.childAspectRatio;
+        final fullGridHeight =
+            rowCount * cellHeight +
+            (rowCount - 1) * CalendarLayout.mainAxisSpacing;
+        final fullGrid = SizedBox(
+          height: fullGridHeight,
+          child: Column(
+            children: [
+              for (var row = 0; row < rowCount; row++) ...[
+                SizedBox(
+                  height: cellHeight,
+                  child: Row(
                     children: [
-                      Text(
-                        isWeek
-                            ? _formatWeekTitle(widget.visibleAnchorDate)
-                            : _formatMonthTitle(widget.visibleAnchorDate),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        isWeek ? '下拉展开月历 · 按周翻页' : '上滑收起周视图 · 按月翻页',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                      for (
+                        var column = 0;
+                        column < CalendarLayout.crossAxisCount;
+                        column++
+                      ) ...[
+                        Expanded(
+                          child: _DayCell(
+                            key: _dayCellKey(row, column),
+                            bucket:
+                                buckets[row * CalendarLayout.crossAxisCount +
+                                    column],
+                            onTap: () => onSelectDate(
+                              buckets[row * CalendarLayout.crossAxisCount +
+                                      column]
+                                  .date,
+                            ),
+                          ),
                         ),
-                      ),
+                        if (column < CalendarLayout.crossAxisCount - 1)
+                          const SizedBox(
+                            width: CalendarLayout.crossAxisSpacing,
+                          ),
+                      ],
                     ],
                   ),
                 ),
-                Semantics(
-                  label: 'home_calendar_next',
-                  button: true,
-                  child: IconButton(
-                    key: const ValueKey('home-calendar-next'),
-                    icon: const Icon(Icons.chevron_right),
-                    onPressed: widget.onNext,
-                  ),
-                ),
+                if (row < rowCount - 1)
+                  const SizedBox(height: CalendarLayout.mainAxisSpacing),
               ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                for (final label in ['周日', '周一', '周二', '周三', '周四', '周五', '周六'])
-                  Expanded(child: _WeekdayLabel(label)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 240),
-              curve: Curves.easeOutCubic,
+            ],
+          ),
+        );
+
+        final clippedHeight = gridHeight;
+        if (clippedHeight == null) return fullGrid;
+
+        return ClipRect(
+          child: SizedBox(
+            key: const ValueKey('home-calendar-grid-clip'),
+            height: clippedHeight,
+            child: OverflowBox(
               alignment: Alignment.topCenter,
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: visibleBuckets.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                  mainAxisSpacing: 6,
-                  crossAxisSpacing: 4,
-                  childAspectRatio: 0.72,
-                ),
-                itemBuilder: (context, index) {
-                  final bucket = visibleBuckets[index];
-                  return _DayCell(
-                    key: ValueKey(
-                      'home-calendar-day-${bucket.date.year}-${bucket.date.month}-${bucket.date.day}',
-                    ),
-                    bucket: bucket,
-                    onTap: () => widget.onSelectDate(bucket.date),
-                  );
-                },
+              minHeight: 0,
+              maxHeight: fullGridHeight,
+              child: Transform.translate(
+                key: const ValueKey('home-calendar-grid-transform'),
+                offset: Offset(0, gridVerticalOffset),
+                child: fullGrid,
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
+    );
+  }
+
+  ValueKey<String> _dayCellKey(int row, int column) {
+    final bucket = buckets[row * CalendarLayout.crossAxisCount + column];
+    return ValueKey(
+      'home-calendar-day-${bucket.date.year}-${bucket.date.month}-${bucket.date.day}',
     );
   }
 }
@@ -228,9 +304,10 @@ class _DayCell extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 bucket.compactLabel,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelSmall?.copyWith(color: labelColor, fontSize: 10),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: labelColor,
+                  fontSize: 10,
+                ),
               ),
             ),
           ],
