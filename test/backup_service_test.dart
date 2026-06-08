@@ -73,5 +73,34 @@ void main() {
 
       expect(await db.lifeItemDao.getAll(), before);
     });
+
+    test('skips duplicate life items and bills when importing twice', () async {
+      final jsonText = jsonEncode({
+        'version': 1,
+        'categories': [],
+        'lifeItems': [
+          {
+            'title': '重复事项',
+            'dueTime': '2026-06-06T10:00:00.000',
+            'status': 'pending',
+          },
+        ],
+        'billRecords': [
+          {
+            'title': '重复账单',
+            'amount': 1200,
+            'billTime': '2026-06-06T12:00:00.000',
+          },
+        ],
+      });
+
+      await service.importFromJson(jsonText);
+      final summary = await service.importFromJson(jsonText);
+
+      expect(summary.lifeItemsImported, 0);
+      expect(summary.billRecordsImported, 0);
+      expect((await db.lifeItemDao.getAll()).length, 1);
+      expect((await db.billRecordDao.getAll()).length, 1);
+    });
   });
 }

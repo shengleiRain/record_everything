@@ -68,7 +68,9 @@ class LifeItemRepository {
         .then((_) => item);
   }
 
-  Future<void> deleteItem(int id) => _db.lifeItemDao.deleteById(id);
+  Future<void> deleteItem(int id) => _db.lifeItemDao.softDeleteById(id);
+
+  Future<void> restoreItem(int id) => _db.lifeItemDao.restoreById(id);
 
   Future<LifeItem> complete(int id) async {
     final item = await _db.lifeItemDao.getById(id);

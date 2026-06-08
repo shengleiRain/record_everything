@@ -85,15 +85,24 @@ class BackupService {
       for (final map in lifeItems) {
         final oldId = _optionalInt(map, 'id');
         final categoryId = _optionalInt(map, 'categoryId');
+        final title = _requiredString(map, 'title');
+        final dueTime = _requiredDate(map, 'dueTime');
+        final existingItem = (await _db.lifeItemDao.getAll()).where((item) {
+          return item.title == title && item.dueTime == dueTime;
+        }).firstOrNull;
+        if (existingItem != null) {
+          if (oldId != null) lifeItemIdMap[oldId] = existingItem.id;
+          continue;
+        }
         final inserted = await _db.lifeItemDao.insertOne(
           LifeItemsCompanion.insert(
-            title: _requiredString(map, 'title'),
+            title: title,
             description: Value(_optionalString(map, 'description')),
             categoryId: Value(_mappedId(categoryId, categoryIdMap)),
             itemType: Value(_optionalString(map, 'itemType') ?? 'todo'),
             amount: Value(_optionalInt(map, 'amount')),
             amountType: Value(_optionalString(map, 'amountType') ?? 'none'),
-            dueTime: _requiredDate(map, 'dueTime'),
+            dueTime: dueTime,
             remindTime: Value(_optionalDate(map, 'remindTime')),
             repeatRule: Value(_optionalString(map, 'repeatRule')),
             status: Value(_optionalString(map, 'status') ?? 'pending'),
@@ -107,13 +116,22 @@ class BackupService {
       for (final map in billRecords) {
         final categoryId = _optionalInt(map, 'categoryId');
         final lifeItemId = _optionalInt(map, 'lifeItemId');
+        final title = _requiredString(map, 'title');
+        final amount = _requiredInt(map, 'amount');
+        final billTime = _requiredDate(map, 'billTime');
+        final existingBill = (await _db.billRecordDao.getAll()).where((bill) {
+          return bill.title == title &&
+              bill.amount == amount &&
+              bill.billTime == billTime;
+        }).firstOrNull;
+        if (existingBill != null) continue;
         await _db.billRecordDao.insertOne(
           BillRecordsCompanion.insert(
-            title: _requiredString(map, 'title'),
-            amount: _requiredInt(map, 'amount'),
+            title: title,
+            amount: amount,
             amountType: Value(_optionalString(map, 'amountType') ?? 'expense'),
             categoryId: Value(_mappedId(categoryId, categoryIdMap)),
-            billTime: _requiredDate(map, 'billTime'),
+            billTime: billTime,
             note: Value(_optionalString(map, 'note')),
             lifeItemId: Value(_mappedId(lifeItemId, lifeItemIdMap)),
           ),

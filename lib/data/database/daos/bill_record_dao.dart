@@ -9,20 +9,28 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
     with _$BillRecordDaoMixin {
   BillRecordDao(super.db);
 
-  Future<List<BillRecord>> getAll() => (select(
-    billRecords,
-  )..orderBy([(t) => OrderingTerm.desc(t.billTime)])).get();
+  Future<List<BillRecord>> getAll() =>
+      (select(billRecords)
+            ..where((t) => t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm.desc(t.billTime)]))
+          .get();
 
-  Stream<List<BillRecord>> watchAll() => (select(
-    billRecords,
-  )..orderBy([(t) => OrderingTerm.desc(t.billTime)])).watch();
+  Future<List<BillRecord>> getDeleted() =>
+      (select(billRecords)..where((t) => t.deletedAt.isNotNull())).get();
+
+  Stream<List<BillRecord>> watchAll() =>
+      (select(billRecords)
+            ..where((t) => t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm.desc(t.billTime)]))
+          .watch();
 
   Stream<List<BillRecord>> watchBetween(DateTime start, DateTime end) =>
       (select(billRecords)
             ..where(
               (t) =>
                   t.billTime.isBiggerOrEqualValue(start) &
-                  t.billTime.isSmallerThanValue(end),
+                  t.billTime.isSmallerThanValue(end) &
+                  t.deletedAt.isNull(),
             )
             ..orderBy([(t) => OrderingTerm.desc(t.billTime)]))
           .watch();
@@ -38,6 +46,16 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
 
   Future deleteById(int id) =>
       (delete(billRecords)..where((t) => t.id.equals(id))).go();
+
+  Future<int> softDeleteById(int id) =>
+      (update(billRecords)..where((t) => t.id.equals(id))).write(
+        BillRecordsCompanion(deletedAt: Value(DateTime.now())),
+      );
+
+  Future<int> restoreById(int id) =>
+      (update(billRecords)..where((t) => t.id.equals(id))).write(
+        const BillRecordsCompanion(deletedAt: Value(null)),
+      );
 
   Future<int> countByCategory(int categoryId) async {
     final countExpr = billRecords.id.count();
@@ -55,7 +73,8 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (t) =>
                 t.billTime.isBiggerOrEqualValue(start) &
-                t.billTime.isSmallerThanValue(end),
+                t.billTime.isSmallerThanValue(end) &
+                t.deletedAt.isNull(),
           )
           ..orderBy([(t) => OrderingTerm.desc(t.billTime)]))
         .watch();
@@ -72,6 +91,7 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
             (t) =>
                 t.billTime.isBiggerOrEqualValue(start) &
                 t.billTime.isSmallerThanValue(end) &
+                t.deletedAt.isNull() &
                 t.amountType.equals(amountType),
           )
           ..orderBy([(t) => OrderingTerm.desc(t.billTime)]))
@@ -87,6 +107,7 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
       ..where(
         billRecords.billTime.isBiggerOrEqualValue(start) &
             billRecords.billTime.isSmallerThanValue(end) &
+            billRecords.deletedAt.isNull() &
             billRecords.amountType.equals(amountType),
       );
     final row = await query.getSingle();
@@ -102,6 +123,7 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
       ..where(
         billRecords.billTime.isBiggerOrEqualValue(start) &
             billRecords.billTime.isSmallerThanValue(end) &
+            billRecords.deletedAt.isNull() &
             billRecords.amountType.equals(amountType),
       );
     return query.watchSingle().map((row) => row.read(sumExpr) ?? 0);

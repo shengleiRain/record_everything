@@ -6,18 +6,23 @@ import '../../../core/utils/money_formatter.dart';
 class MonthSummaryCard extends StatelessWidget {
   final int income;
   final int expense;
-  final String budgetText;
+  final int budgetAmount;
 
   const MonthSummaryCard({
     super.key,
     required this.income,
     required this.expense,
-    this.budgetText = '预算使用 68%',
+    this.budgetAmount = 0,
   });
 
   @override
   Widget build(BuildContext context) {
     final balance = income - expense;
+    final budgetRate = budgetAmount <= 0 ? 0.0 : expense / budgetAmount;
+    final progress = budgetRate.clamp(0.0, 1.0);
+    final budgetText = budgetAmount <= 0
+        ? '未设置预算'
+        : '预算使用 ${(budgetRate * 100).round()}%';
 
     return Container(
       width: double.infinity,
@@ -59,7 +64,7 @@ class MonthSummaryCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: 0.68,
+              value: progress,
               minHeight: 6,
               color: AppColors.primary,
               backgroundColor: AppColors.primary.withValues(alpha: 0.12),

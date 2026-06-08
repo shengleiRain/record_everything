@@ -4,6 +4,8 @@ import '../../core/constants/default_categories.dart';
 import 'tables/categories_table.dart';
 import 'tables/life_items_table.dart';
 import 'tables/bill_records_table.dart';
+import 'tables/accounts_table.dart';
+import 'tables/monthly_budgets_table.dart';
 import 'daos/life_item_dao.dart';
 import 'daos/bill_record_dao.dart';
 import 'daos/category_dao.dart';
@@ -11,7 +13,7 @@ import 'daos/category_dao.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Categories, LifeItems, BillRecords],
+  tables: [Categories, LifeItems, BillRecords, Accounts, MonthlyBudgets],
   daos: [LifeItemDao, BillRecordDao, CategoryDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -20,7 +22,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   static QueryExecutor openConnection() {
     return driftDatabase(name: 'life_items.db');
@@ -31,6 +33,17 @@ class AppDatabase extends _$AppDatabase {
     onCreate: (Migrator m) async {
       await m.createAll();
       await _insertDefaultCategories();
+      await _insertDefaultAccount();
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        await m.createTable(accounts);
+        await m.createTable(monthlyBudgets);
+        await m.addColumn(lifeItems, lifeItems.deletedAt);
+        await m.addColumn(billRecords, billRecords.accountId);
+        await m.addColumn(billRecords, billRecords.deletedAt);
+        await _insertDefaultAccount();
+      }
     },
   );
 
@@ -65,5 +78,15 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
     }
+  }
+
+  Future<void> _insertDefaultAccount() async {
+    final existing = await (select(
+      accounts,
+    )..where((t) => t.isDefault.equals(true))).get();
+    if (existing.isNotEmpty) return;
+    await into(accounts).insert(
+      AccountsCompanion.insert(name: '默认账户', isDefault: const Value(true)),
+    );
   }
 }

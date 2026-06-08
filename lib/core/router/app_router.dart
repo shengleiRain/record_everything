@@ -10,6 +10,8 @@ import '../../features/statistics/pages/statistics_page.dart';
 import '../../features/settings/pages/settings_page.dart';
 import '../../features/settings/pages/category_management_page.dart';
 import '../../features/settings/pages/data_safety_page.dart';
+import '../../features/settings/pages/recycle_bin_page.dart';
+import '../../features/search/search_page.dart';
 
 int _currentIndex(GoRouterState state) {
   final path = state.uri.path;
@@ -70,6 +72,10 @@ final appRouter = GoRouter(
       routes: [
         GoRoute(path: '/home', builder: (context, state) => const HomePage()),
         GoRoute(
+          path: '/search',
+          builder: (context, state) => const SearchPage(),
+        ),
+        GoRoute(
           path: '/items',
           builder: (context, state) => const LifeItemListPage(),
           routes: [
@@ -116,6 +122,10 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'data',
               builder: (context, state) => const DataSafetyPage(),
+            ),
+            GoRoute(
+              path: 'recycle',
+              builder: (context, state) => const RecycleBinPage(),
             ),
           ],
         ),

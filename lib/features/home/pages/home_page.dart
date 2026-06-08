@@ -62,7 +62,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             IconButton(
               tooltip: '搜索',
               icon: const Icon(Icons.search),
-              onPressed: () => context.push('/items'),
+              onPressed: () => context.push('/search'),
             ),
             IconButton(
               tooltip: '新增',

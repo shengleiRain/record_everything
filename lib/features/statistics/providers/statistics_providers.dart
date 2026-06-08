@@ -14,6 +14,11 @@ final statsExpenseProvider = StreamProvider<int>((ref) {
   return ref.watch(billRepoProvider).watchExpenseForMonth(month);
 });
 
+final statsBudgetProvider = StreamProvider<int>((ref) {
+  final month = ref.watch(statsMonthProvider);
+  return ref.watch(budgetRepoProvider).watchMonthlyBudget(month);
+});
+
 final statsCompletedCountProvider = StreamProvider<int>((ref) {
   final month = ref.watch(statsMonthProvider);
   return ref.watch(lifeItemRepoProvider).watchCompletedCountInMonth(month);

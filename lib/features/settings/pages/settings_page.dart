@@ -58,6 +58,12 @@ class SettingsPage extends ConsumerWidget {
                 subtitle: '备份校验 · 文件导入导出',
                 onTap: () => context.push('/settings/data'),
               ),
+              _SettingsRowData(
+                icon: '收',
+                title: '回收站',
+                subtitle: '恢复误删事项和账单',
+                onTap: () => context.push('/settings/recycle'),
+              ),
             ],
           ),
           const SizedBox(height: 12),

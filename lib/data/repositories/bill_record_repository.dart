@@ -13,6 +13,7 @@ class BillRecordRepository {
 
   Future<BillRecord> create({
     int? lifeItemId,
+    int? accountId,
     required String title,
     int? categoryId,
     required int amount,
@@ -23,6 +24,7 @@ class BillRecordRepository {
     return _db.billRecordDao.insertOne(
       BillRecordsCompanion.insert(
         lifeItemId: Value(lifeItemId),
+        accountId: Value(accountId),
         title: title,
         categoryId: Value(categoryId),
         amount: amount,
@@ -38,6 +40,7 @@ class BillRecordRepository {
       BillRecordsCompanion(
         id: Value(record.id),
         lifeItemId: Value(record.lifeItemId),
+        accountId: Value(record.accountId),
         title: Value(record.title),
         categoryId: Value(record.categoryId),
         amount: Value(record.amount),
@@ -50,7 +53,9 @@ class BillRecordRepository {
     );
   }
 
-  Future<void> deleteRecord(int id) => _db.billRecordDao.deleteById(id);
+  Future<void> deleteRecord(int id) => _db.billRecordDao.softDeleteById(id);
+
+  Future<void> restoreRecord(int id) => _db.billRecordDao.restoreById(id);
 
   Future<int> sumIncomeForMonth(DateTime month) =>
       _db.billRecordDao.sumForMonth(month, 'income');

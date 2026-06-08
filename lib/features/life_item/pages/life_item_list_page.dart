@@ -8,7 +8,16 @@ import '../widgets/life_item_card.dart';
 import '../widgets/complete_action_sheet.dart';
 import '../../bill/providers/bill_providers.dart';
 
-enum _LifeItemFilter { all, overdue, today, repeat, completed }
+enum _LifeItemFilter {
+  all,
+  overdue,
+  today,
+  next7Days,
+  repeat,
+  hasAmount,
+  hasReminder,
+  completed,
+}
 
 final lifeItemFilterProvider = StateProvider<_LifeItemFilter>(
   (ref) => _LifeItemFilter.all,
@@ -121,8 +130,20 @@ class LifeItemListPage extends ConsumerWidget {
             .toList(),
       _LifeItemFilter.today =>
         items.where((item) => DateFormatter.isToday(item.dueTime)).toList(),
+      _LifeItemFilter.next7Days => items.where((item) {
+        final now = DateTime.now();
+        final start = DateTime(now.year, now.month, now.day);
+        final end = start.add(const Duration(days: 8));
+        return item.status == 'pending' &&
+            !item.dueTime.isBefore(start) &&
+            item.dueTime.isBefore(end);
+      }).toList(),
       _LifeItemFilter.repeat =>
         items.where((item) => item.repeatRule != null).toList(),
+      _LifeItemFilter.hasAmount =>
+        items.where((item) => item.amount != null).toList(),
+      _LifeItemFilter.hasReminder =>
+        items.where((item) => item.remindTime != null).toList(),
       _LifeItemFilter.completed =>
         items.where((item) => item.status == 'completed').toList(),
     };
@@ -177,10 +198,18 @@ class LifeItemListPage extends ConsumerWidget {
 class _LifeItemFilterCounts {
   final int overdue;
   final int today;
+  final int next7Days;
 
-  const _LifeItemFilterCounts({required this.overdue, required this.today});
+  const _LifeItemFilterCounts({
+    required this.overdue,
+    required this.today,
+    required this.next7Days,
+  });
 
   factory _LifeItemFilterCounts.from(List<LifeItem> items) {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 8));
     return _LifeItemFilterCounts(
       overdue: items
           .where(
@@ -190,6 +219,14 @@ class _LifeItemFilterCounts {
           )
           .length,
       today: items.where((item) => DateFormatter.isToday(item.dueTime)).length,
+      next7Days: items
+          .where(
+            (item) =>
+                item.status == 'pending' &&
+                !item.dueTime.isBefore(start) &&
+                item.dueTime.isBefore(end),
+          )
+          .length,
     );
   }
 }
@@ -226,7 +263,25 @@ class _LifeItemFilterChips extends StatelessWidget {
             '今天 ${counts.today}',
             'items-filter-today',
           ),
+          _chip(
+            context,
+            _LifeItemFilter.next7Days,
+            '未来7天 ${counts.next7Days}',
+            'items-filter-next7',
+          ),
           _chip(context, _LifeItemFilter.repeat, '重复', 'items-filter-repeat'),
+          _chip(
+            context,
+            _LifeItemFilter.hasAmount,
+            '有金额',
+            'items-filter-amount',
+          ),
+          _chip(
+            context,
+            _LifeItemFilter.hasReminder,
+            '有提醒',
+            'items-filter-reminder',
+          ),
           _chip(
             context,
             _LifeItemFilter.completed,

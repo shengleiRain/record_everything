@@ -1,10 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
+import '../../../data/repositories/account_repository.dart';
 import '../../../data/repositories/bill_record_repository.dart';
+import '../../../data/repositories/budget_repository.dart';
 
 final billRepoProvider = Provider<BillRecordRepository>((ref) {
   return BillRecordRepository(ref.watch(databaseProvider));
+});
+
+final accountRepoProvider = Provider<AccountRepository>((ref) {
+  return AccountRepository(ref.watch(databaseProvider));
+});
+
+final budgetRepoProvider = Provider<BudgetRepository>((ref) {
+  return BudgetRepository(ref.watch(databaseProvider));
 });
 
 final currentMonthProvider = StateProvider<DateTime>((ref) => DateTime.now());
@@ -24,6 +34,11 @@ final monthlyExpenseProvider = StreamProvider<int>((ref) {
   return ref.watch(billRepoProvider).watchExpenseForMonth(month);
 });
 
+final monthlyBudgetProvider = StreamProvider<int>((ref) {
+  final month = ref.watch(currentMonthProvider);
+  return ref.watch(budgetRepoProvider).watchMonthlyBudget(month);
+});
+
 class BillNotifier extends Notifier<void> {
   @override
   void build() {}
@@ -35,18 +50,25 @@ class BillNotifier extends Notifier<void> {
     required int amount,
     String amountType = 'expense',
     int? categoryId,
+    int? accountId,
     DateTime? billTime,
     String? note,
     int? lifeItemId,
-  }) => _repo.create(
-    title: title,
-    amount: amount,
-    amountType: amountType,
-    categoryId: categoryId,
-    billTime: billTime ?? DateTime.now(),
-    note: note,
-    lifeItemId: lifeItemId,
-  );
+  }) async {
+    final resolvedAccountId =
+        accountId ??
+        (await ref.read(accountRepoProvider).ensureDefaultAccount()).id;
+    return _repo.create(
+      title: title,
+      amount: amount,
+      amountType: amountType,
+      categoryId: categoryId,
+      accountId: resolvedAccountId,
+      billTime: billTime ?? DateTime.now(),
+      note: note,
+      lifeItemId: lifeItemId,
+    );
+  }
 
   Future<BillRecord> createFromLifeItem(
     LifeItem item,

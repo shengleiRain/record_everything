@@ -31,11 +31,16 @@ class RepeatRule {
       case RepeatPeriod.weekly:
         return from.add(const Duration(days: 7));
       case RepeatPeriod.monthly:
-        return DateTime(from.year, from.month + 1, from.day);
+        return _clampedDate(from.year, from.month + 1, from.day);
       case RepeatPeriod.yearly:
-        return DateTime(from.year + 1, from.month, from.day);
+        return _clampedDate(from.year + 1, from.month, from.day);
       case RepeatPeriod.custom:
         return from.add(Duration(days: customDays ?? 30));
     }
+  }
+
+  DateTime _clampedDate(int year, int month, int day) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    return DateTime(year, month, day > lastDay ? lastDay : day);
   }
 }

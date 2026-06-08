@@ -26,8 +26,10 @@ class _BillListPageState extends ConsumerState<BillListPage> {
     final billsAsync = ref.watch(billsByMonthProvider);
     final incomeAsync = ref.watch(monthlyIncomeProvider);
     final expenseAsync = ref.watch(monthlyExpenseProvider);
+    final budgetAsync = ref.watch(monthlyBudgetProvider);
     final income = incomeAsync.valueOrNull ?? 0;
     final expense = expenseAsync.valueOrNull ?? 0;
+    final budget = budgetAsync.valueOrNull ?? 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('账单')),
@@ -64,7 +66,11 @@ class _BillListPageState extends ConsumerState<BillListPage> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: MonthSummaryCard(income: income, expense: expense),
+            child: MonthSummaryCard(
+              income: income,
+              expense: expense,
+              budgetAmount: budget,
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(

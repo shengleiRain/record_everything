@@ -14,6 +14,7 @@ class StatisticsPage extends ConsumerWidget {
     final month = ref.watch(statsMonthProvider);
     final income = ref.watch(statsIncomeProvider).valueOrNull ?? 0;
     final expense = ref.watch(statsExpenseProvider).valueOrNull ?? 0;
+    final budget = ref.watch(statsBudgetProvider).valueOrNull ?? 0;
     final completed = ref.watch(statsCompletedCountProvider).valueOrNull ?? 0;
     final overdue = ref.watch(statsOverdueCountProvider).valueOrNull ?? 0;
     final forecast = ref.watch(statsForecastProvider).valueOrNull ?? 0;
@@ -42,8 +43,10 @@ class StatisticsPage extends ConsumerWidget {
                 color: balance >= 0 ? AppColors.income : AppColors.expense,
               ),
               _SummaryCellData(
-                label: '预计支出',
-                value: MoneyFormatter.format(forecast),
+                label: '预算',
+                value: budget == 0
+                    ? '未设置'
+                    : '${((expense / budget) * 100).round().clamp(0, 999)}%',
                 color: AppColors.upcoming,
               ),
               _SummaryCellData(
@@ -109,6 +112,8 @@ class StatisticsPage extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           _ForecastCard(forecast: forecast, overdue: overdue),
+          const SizedBox(height: 12),
+          _BudgetRiskCard(expense: expense, budget: budget),
         ],
       ),
     );
@@ -118,6 +123,33 @@ class StatisticsPage extends ConsumerWidget {
     ref.read(statsMonthProvider.notifier).state = DateTime(
       current.year,
       current.month + delta,
+    );
+  }
+}
+
+class _BudgetRiskCard extends StatelessWidget {
+  const _BudgetRiskCard({required this.expense, required this.budget});
+
+  final int expense;
+  final int budget;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = budget <= 0
+        ? '本月还没有设置预算；设置预算后，这里会展示超支风险。'
+        : expense > budget
+        ? '本月支出已超过预算 ${MoneyFormatter.format(expense - budget)}，建议检查高频支出分类。'
+        : '本月预算剩余 ${MoneyFormatter.format(budget - expense)}，当前现金流风险可控。';
+    return _ChartCard(
+      title: '预算风险',
+      trailing: budget <= 0 ? '未设置' : MoneyFormatter.format(budget),
+      child: Text(
+        message,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: AppColors.textSecondary,
+          height: 1.5,
+        ),
+      ),
     );
   }
 }

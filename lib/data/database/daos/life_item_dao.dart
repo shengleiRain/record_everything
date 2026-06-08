@@ -9,18 +9,25 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
     with _$LifeItemDaoMixin {
   LifeItemDao(super.db);
 
-  Future<List<LifeItem>> getAll() => select(lifeItems).get();
+  Future<List<LifeItem>> getAll() =>
+      (select(lifeItems)..where((t) => t.deletedAt.isNull())).get();
 
-  Stream<List<LifeItem>> watchAll() => (select(
-    lifeItems,
-  )..orderBy([(t) => OrderingTerm.asc(t.dueTime)])).watch();
+  Future<List<LifeItem>> getDeleted() =>
+      (select(lifeItems)..where((t) => t.deletedAt.isNotNull())).get();
+
+  Stream<List<LifeItem>> watchAll() =>
+      (select(lifeItems)
+            ..where((t) => t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
+          .watch();
 
   Stream<List<LifeItem>> watchBetween(DateTime start, DateTime end) =>
       (select(lifeItems)
             ..where(
               (t) =>
                   t.dueTime.isBiggerOrEqualValue(start) &
-                  t.dueTime.isSmallerThanValue(end),
+                  t.dueTime.isSmallerThanValue(end) &
+                  t.deletedAt.isNull(),
             )
             ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
           .watch();
@@ -28,6 +35,7 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
   Stream<List<LifeItem>> watchByStatus(String status) =>
       (select(lifeItems)
             ..where((t) => t.status.equals(status))
+            ..where((t) => t.deletedAt.isNull())
             ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
           .watch();
 
@@ -46,6 +54,16 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
   Future deleteById(int id) =>
       (delete(lifeItems)..where((t) => t.id.equals(id))).go();
 
+  Future<int> softDeleteById(int id) =>
+      (update(lifeItems)..where((t) => t.id.equals(id))).write(
+        LifeItemsCompanion(deletedAt: Value(DateTime.now())),
+      );
+
+  Future<int> restoreById(int id) =>
+      (update(lifeItems)..where((t) => t.id.equals(id))).write(
+        const LifeItemsCompanion(deletedAt: Value(null)),
+      );
+
   Future<int> countByCategory(int categoryId) async {
     final countExpr = lifeItems.id.count();
     final query = selectOnly(lifeItems)
@@ -63,6 +81,7 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (t) =>
                 t.status.equals('pending') &
+                t.deletedAt.isNull() &
                 t.dueTime.isBiggerOrEqualValue(start) &
                 t.dueTime.isSmallerThanValue(end),
           )
@@ -78,6 +97,7 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (t) =>
                 t.status.equals('pending') &
+                t.deletedAt.isNull() &
                 t.dueTime.isBiggerOrEqualValue(start) &
                 t.dueTime.isSmallerThanValue(end),
           )
@@ -93,6 +113,7 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (t) =>
                 t.status.equals('pending') &
+                t.deletedAt.isNull() &
                 t.amountType.equals('expense') &
                 t.amount.isNotNull() &
                 t.dueTime.isBiggerOrEqualValue(start) &
@@ -109,6 +130,7 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (t) =>
                 t.status.equals('pending') &
+                t.deletedAt.isNull() &
                 t.dueTime.isSmallerThanValue(today),
           )
           ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
@@ -122,6 +144,7 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
         await (select(lifeItems)..where(
               (t) =>
                   t.status.equals('completed') &
+                  t.deletedAt.isNull() &
                   t.updatedAt.isBiggerOrEqualValue(start) &
                   t.updatedAt.isSmallerThanValue(end),
             ))
@@ -137,6 +160,7 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
       ..addColumns([countExpr])
       ..where(
         lifeItems.status.equals('completed') &
+            lifeItems.deletedAt.isNull() &
             lifeItems.updatedAt.isBiggerOrEqualValue(start) &
             lifeItems.updatedAt.isSmallerThanValue(end),
       );
