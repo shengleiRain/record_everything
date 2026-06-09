@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/utils/dialog_helper.dart';
 import '../../../domain/enums/bill_amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../providers/bill_providers.dart';
@@ -185,7 +186,9 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
                     firstDate: DateTime(2020),
                     lastDate: DateTime(2030),
                   );
-                  if (picked != null) setState(() => _billTime = picked);
+                  if (picked != null && mounted) {
+                    setState(() => _billTime = picked);
+                  }
                 },
               ),
             ),
@@ -259,8 +262,8 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
           FilledButton(
             onPressed: () {
               ref.read(billNotifierProvider.notifier).delete(_editId!);
-              Navigator.pop(ctx);
-              context.pop();
+              ctx.safePop();
+              if (context.mounted) context.pop();
             },
             child: const Text('删除'),
           ),

@@ -9,6 +9,7 @@ import '../../../domain/enums/item_type.dart';
 import '../../../domain/enums/item_status.dart';
 import '../../../domain/enums/repeat_period.dart';
 import '../../../domain/models/repeat_rule.dart';
+import '../../../core/utils/dialog_helper.dart';
 import '../providers/life_item_providers.dart';
 import '../widgets/complete_action_sheet.dart';
 import '../../bill/providers/bill_providers.dart';
@@ -190,7 +191,7 @@ class LifeItemDetailPage extends ConsumerWidget {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     ).then((date) {
-      if (date != null) {
+      if (date != null && context.mounted) {
         ref.read(lifeItemNotifierProvider.notifier).defer(item.id, date);
       }
     });
@@ -210,8 +211,8 @@ class LifeItemDetailPage extends ConsumerWidget {
           FilledButton(
             onPressed: () {
               ref.read(lifeItemNotifierProvider.notifier).delete(id);
-              Navigator.pop(ctx);
-              context.pop();
+              ctx.safePop();
+              if (context.mounted) context.pop();
             },
             child: const Text('删除'),
           ),

@@ -95,7 +95,7 @@ void main() {
   testWidgets('quick create sheet exposes four mobile creation actions', (
     tester,
   ) async {
-    await tester.pumpWidget(const _Harness(child: QuickCreateSheet()));
+    await tester.pumpWidget(_Harness(child: QuickCreateSheet(onNavigate: (_) {})));
 
     expect(find.byKey(const ValueKey('quick-create-bill')), findsOneWidget);
     expect(find.byKey(const ValueKey('quick-create-item')), findsOneWidget);

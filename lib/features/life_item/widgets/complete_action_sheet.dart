@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../data/database/app_database.dart';
 
@@ -8,9 +9,9 @@ void showCompleteActionSheet({
   required LifeItem item,
   required VoidCallback onComplete,
   required void Function(int amount, int? categoryId, String? note)
-  onCompleteAndBill,
+      onCompleteAndBill,
   required void Function(int amount, int? categoryId, String? note)
-  onCompleteAndBillAndNext,
+      onCompleteAndBillAndNext,
   required VoidCallback onCompleteAndNext,
   required VoidCallback onDefer,
 }) {
@@ -22,13 +23,16 @@ void showCompleteActionSheet({
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => Padding(
+    builder: (sheetContext) => Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(item.title, style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            item.title,
+            style: Theme.of(sheetContext).textTheme.titleMedium,
+          ),
           const SizedBox(height: 16),
           if (isRecurring)
             ListTile(
@@ -37,10 +41,10 @@ void showCompleteActionSheet({
               subtitle: const Text('自动创建下一个周期事项'),
               onTap: () {
                 if (hasAmount) {
-                  Navigator.pop(context);
+                  sheetContext.safePop();
                   _showBillDialog(context, item, onCompleteAndBillAndNext);
                 } else {
-                  Navigator.pop(context);
+                  sheetContext.safePop();
                   onCompleteAndNext();
                 }
               },
@@ -51,7 +55,7 @@ void showCompleteActionSheet({
               title: const Text('完成并记账'),
               subtitle: Text('记录 ${MoneyFormatter.format(item.amount)}'),
               onTap: () {
-                Navigator.pop(context);
+                sheetContext.safePop();
                 _showBillDialog(context, item, onCompleteAndBill);
               },
             ),
@@ -59,7 +63,7 @@ void showCompleteActionSheet({
             leading: const Icon(Icons.check_circle, color: AppColors.completed),
             title: const Text('仅完成'),
             onTap: () {
-              Navigator.pop(context);
+              sheetContext.safePop();
               onComplete();
             },
           ),
@@ -67,7 +71,7 @@ void showCompleteActionSheet({
             leading: const Icon(Icons.schedule, color: AppColors.upcoming),
             title: const Text('延期'),
             onTap: () {
-              Navigator.pop(context);
+              sheetContext.safePop();
               onDefer();
             },
           ),
@@ -77,7 +81,7 @@ void showCompleteActionSheet({
               color: AppColors.textHint,
             ),
             title: const Text('取消事项'),
-            onTap: () => Navigator.pop(context),
+            onTap: () => sheetContext.safePop(),
           ),
         ],
       ),
@@ -85,20 +89,20 @@ void showCompleteActionSheet({
   );
 }
 
-void _showBillDialog(
+Future<void> _showBillDialog(
   BuildContext context,
   LifeItem item,
   void Function(int amount, int? categoryId, String? note) onSubmit,
-) {
+) async {
   final amountController = TextEditingController(
     text: ((item.amount ?? 0) / 100).toStringAsFixed(2),
   );
   final noteController = TextEditingController();
   int amount = item.amount ?? 0;
 
-  showDialog(
+  await showDialog(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (dialogContext) => AlertDialog(
       title: const Text('记账详情'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -125,17 +129,20 @@ void _showBillDialog(
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => dialogContext.safePop(),
           child: const Text('取消'),
         ),
         FilledButton(
           onPressed: () {
             onSubmit(amount, item.categoryId, noteController.text);
-            Navigator.pop(context);
+            dialogContext.safePop();
           },
           child: const Text('确认'),
         ),
       ],
     ),
   );
+
+  amountController.dispose();
+  noteController.dispose();
 }

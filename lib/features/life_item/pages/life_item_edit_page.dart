@@ -371,7 +371,9 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                         firstDate: DateTime(2020),
                         lastDate: DateTime(2035),
                       );
-                      if (picked != null) setState(() => _dueDate = picked);
+                      if (picked != null && mounted) {
+                        setState(() => _dueDate = picked);
+                      }
                     },
                   ),
                   const SizedBox(height: 16),

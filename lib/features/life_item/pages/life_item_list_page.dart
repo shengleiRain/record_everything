@@ -188,7 +188,7 @@ class LifeItemListPage extends ConsumerWidget {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     ).then((date) {
-      if (date != null) {
+      if (date != null && context.mounted) {
         ref.read(lifeItemNotifierProvider.notifier).defer(item.id, date);
       }
     });

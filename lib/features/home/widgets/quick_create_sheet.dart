@@ -7,12 +7,19 @@ void showQuickCreateSheet(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
-    builder: (context) => const QuickCreateSheet(),
+    builder: (sheetContext) => QuickCreateSheet(
+      onNavigate: (location) {
+        Navigator.of(sheetContext).pop();
+        context.push(location);
+      },
+    ),
   );
 }
 
 class QuickCreateSheet extends StatelessWidget {
-  const QuickCreateSheet({super.key});
+  const QuickCreateSheet({super.key, required this.onNavigate});
+
+  final void Function(String location) onNavigate;
 
   @override
   Widget build(BuildContext context) {
@@ -60,28 +67,28 @@ class QuickCreateSheet extends StatelessWidget {
                           icon: Icons.payments_outlined,
                           title: '记一笔',
                           subtitle: '收入 / 支出流水',
-                          onTap: () => _go(context, '/bills/new'),
+                          onTap: () => onNavigate('/bills/new'),
                         ),
                         _QuickCreateAction(
                           key: const ValueKey('quick-create-item'),
                           icon: Icons.check_circle_outline,
                           title: '建事项',
                           subtitle: '待办 / 提醒',
-                          onTap: () => _go(context, '/items/new'),
+                          onTap: () => onNavigate('/items/new'),
                         ),
                         _QuickCreateAction(
                           key: const ValueKey('quick-create-bill-item'),
                           icon: Icons.event_available_outlined,
                           title: '账单到期',
                           subtitle: '还款 / 缴费',
-                          onTap: () => _go(context, '/items/new'),
+                          onTap: () => onNavigate('/items/new'),
                         ),
                         _QuickCreateAction(
                           key: const ValueKey('quick-create-template'),
                           icon: Icons.repeat,
                           title: '周期模板',
                           subtitle: '会员 / 耗材',
-                          onTap: () => _go(context, '/items/new'),
+                          onTap: () => onNavigate('/items/new'),
                         ),
                       ],
                     ),
@@ -93,11 +100,6 @@ class QuickCreateSheet extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _go(BuildContext context, String location) {
-    Navigator.of(context).pop();
-    context.push(location);
   }
 }
 
