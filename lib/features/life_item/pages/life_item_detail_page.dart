@@ -33,6 +33,7 @@ class LifeItemDetailPage extends ConsumerWidget {
           title: const Text('事项详情'),
           actions: [
             IconButton(
+              tooltip: '编辑',
               icon: const Icon(Icons.edit),
               onPressed: () => context.push('/items/$id/edit'),
             ),
@@ -42,6 +43,7 @@ class LifeItemDetailPage extends ConsumerWidget {
               onPressed: () => _addToCalendar(context, ref, item),
             ),
             IconButton(
+              tooltip: '删除',
               icon: const Icon(Icons.delete),
               onPressed: () => _confirmDelete(context, ref, id),
             ),

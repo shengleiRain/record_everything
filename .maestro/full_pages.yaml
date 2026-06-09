@@ -1,26 +1,66 @@
 appId: com.lifeitems.record_everything
 ---
+# Full navigation: visit every top-level and sub-page
 - launchApp:
     clearState: true
 - waitForAnimationToEnd
-- takeScreenshot: android-home
+- takeScreenshot: 01-home
+
+# Items tab
 - tapOn:
-    point: "30%,95%"
-- takeScreenshot: android-items
-- tapOn:
-    point: "92%,86%"
-- takeScreenshot: android-item-new
-- back
-- tapOn:
-    point: "50%,95%"
-- takeScreenshot: android-bills
+    text: '.*事项.*Tab 2.*'
+- waitForAnimationToEnd
+- takeScreenshot: 02-items
+
+# Create item page
 - tapOn:
     point: "92%,86%"
-- takeScreenshot: android-bill-new
+- waitForAnimationToEnd
+- takeScreenshot: 03-item-create
 - back
+
+# Bills tab
 - tapOn:
-    point: "70%,95%"
-- takeScreenshot: android-statistics
+    text: '.*账单.*Tab 3.*'
+- waitForAnimationToEnd
+- takeScreenshot: 04-bills
+
+# Create bill page
 - tapOn:
-    point: "90%,95%"
-- takeScreenshot: android-settings
+    point: "92%,86%"
+- waitForAnimationToEnd
+- takeScreenshot: 05-bill-create
+- back
+
+# Statistics tab
+- tapOn:
+    text: '.*统计.*Tab 4.*'
+- waitForAnimationToEnd
+- takeScreenshot: 06-statistics
+
+# Settings tab
+- tapOn:
+    text: '.*设置.*Tab 5.*'
+- waitForAnimationToEnd
+- takeScreenshot: 07-settings
+
+# Category management sub-page
+- tapOn:
+    text: '.*分类管理.*'
+- waitForAnimationToEnd
+- takeScreenshot: 08-categories
+- back
+
+# Data safety sub-page
+- tapOn:
+    text: '.*数据安全.*'
+- waitForAnimationToEnd
+- takeScreenshot: 09-data-safety
+- back
+
+# Recycle bin sub-page
+- tapOn:
+    text: '.*回收站.*'
+- waitForAnimationToEnd
+- takeScreenshot: 10-recycle-bin
+- back

@@ -248,7 +248,7 @@ class _LifeItemFilterChips extends StatelessWidget {
       height: 52,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         children: [
           _chip(context, _LifeItemFilter.all, '全部', 'items-filter-all'),
           _chip(

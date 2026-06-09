@@ -1,0 +1,94 @@
+appId: com.lifeitems.record_everything
+---
+# Settings sub-pages: categories, data safety, recycle bin
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Navigate to settings tab
+- tapOn:
+    text: '.*设置.*Tab 5.*'
+- waitForAnimationToEnd
+- takeScreenshot: settings-main
+
+# ----- CATEGORY MANAGEMENT -----
+- tapOn:
+    text: '.*分类管理.*'
+- waitForAnimationToEnd
+- takeScreenshot: categories-page
+
+# Open add category dialog
+- tapOn:
+    point: "92%,86%"
+- waitForAnimationToEnd
+- takeScreenshot: category-add-dialog
+
+# Fill category name
+- tapOn:
+    point: "35%,43%"
+- inputText: 'MaestroCategory'
+- hideKeyboard
+
+# Fill icon identifier
+- tapOn:
+    point: "35%,51%"
+- inputText: 'test'
+- hideKeyboard
+
+# Save
+- tapOn: '新增'
+- waitForAnimationToEnd
+- takeScreenshot: categories-after-add
+
+# Edit the new category by tapping it
+- swipe:
+    start: "50%,82%"
+    end: "50%,28%"
+    duration: 500
+- swipe:
+    start: "50%,82%"
+    end: "50%,28%"
+    duration: 500
+- tapOn:
+    text: '.*MaestroCategory.*'
+- waitForAnimationToEnd
+- takeScreenshot: category-edit-dialog
+
+# Modify name
+- tapOn:
+    point: "35%,43%"
+- inputText: '-edited'
+- hideKeyboard
+
+# Save
+- tapOn: '保存'
+- waitForAnimationToEnd
+- takeScreenshot: categories-after-edit
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- tapOn:
+    text: '.*设置.*Tab 5.*'
+- waitForAnimationToEnd
+
+# ----- DATA SAFETY PAGE -----
+- tapOn:
+    text: '.*数据安全.*'
+- waitForAnimationToEnd
+- takeScreenshot: data-safety-page
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+- tapOn:
+    text: '.*设置.*Tab 5.*'
+- waitForAnimationToEnd
+
+# ----- RECYCLE BIN PAGE -----
+- tapOn:
+    text: '.*回收站.*'
+- waitForAnimationToEnd
+- takeScreenshot: recycle-bin-empty
+
+- back

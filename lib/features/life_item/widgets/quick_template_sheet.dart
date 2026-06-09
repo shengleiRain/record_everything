@@ -98,33 +98,38 @@ void showQuickTemplateSheet(
 ) {
   showModalBottomSheet(
     context: context,
+    showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: double.infinity),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('快捷模板', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: templates
-                .map(
-                  (t) => ActionChip(
-                    label: Text(t.title),
-                    onPressed: () {
-                      onSelect(t);
-                      Navigator.pop(context);
-                    },
-                  ),
-                )
-                .toList(),
-          ),
-        ],
+    builder: (sheetContext) => SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('快捷模板', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: templates
+                  .map(
+                    (t) => ActionChip(
+                      label: Text(t.title),
+                      onPressed: () {
+                        onSelect(t);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
       ),
     ),
   );

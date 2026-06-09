@@ -1,0 +1,93 @@
+appId: com.lifeitems.record_everything
+---
+# Bill full lifecycle: create → edit → delete, month nav, filters
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Navigate to bills tab
+- tapOn:
+    text: '.*账单.*Tab 3.*'
+- waitForAnimationToEnd
+- takeScreenshot: bill-list-empty
+
+# ----- CREATE BILL -----
+- tapOn:
+    point: "92%,86%"
+- waitForAnimationToEnd
+- takeScreenshot: bill-create-form
+
+# Fill title
+- tapOn:
+    point: "20%,23%"
+- inputText: 'MaestroBill'
+- hideKeyboard
+
+# Fill amount
+- tapOn:
+    point: "20%,59%"
+- inputText: '99.90'
+- hideKeyboard
+
+# Save
+- tapOn: '保存'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*MaestroBill.*'
+- takeScreenshot: bill-list-created
+
+# ----- EDIT BILL (via tap on bill item) -----
+- tapOn:
+    text: '.*MaestroBill.*'
+- waitForAnimationToEnd
+- takeScreenshot: bill-edit-form
+
+# Modify title
+- tapOn:
+    point: "20%,23%"
+- inputText: '-edited'
+- hideKeyboard
+
+# Save
+- tapOn: '保存'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*edited.*'
+- takeScreenshot: bill-list-after-edit
+
+# ----- MONTH NAVIGATION -----
+- tapOn:
+    point: "10%,6%"
+- waitForAnimationToEnd
+- takeScreenshot: bill-previous-month
+
+# Go back to current month
+- tapOn:
+    point: "90%,6%"
+- waitForAnimationToEnd
+
+# ----- FILTER CHIPS -----
+- tapOn: '支出'
+- waitForAnimationToEnd
+- takeScreenshot: bill-filter-expense
+
+- tapOn: '收入'
+- waitForAnimationToEnd
+- takeScreenshot: bill-filter-income
+
+- tapOn: '全部'
+- waitForAnimationToEnd
+
+# ----- DELETE BILL -----
+# Tap on the bill to open edit page
+- tapOn:
+    text: '.*edited.*'
+- waitForAnimationToEnd
+
+- tapOn: '删除'
+- waitForAnimationToEnd
+- takeScreenshot: bill-delete-dialog
+
+- tapOn: '删除'
+- waitForAnimationToEnd
+- takeScreenshot: bill-list-after-delete

@@ -7,6 +7,9 @@ void showQuickCreateSheet(BuildContext context) {
   showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
     builder: (sheetContext) => QuickCreateSheet(
       onNavigate: (location) {
         Navigator.of(sheetContext).pop();

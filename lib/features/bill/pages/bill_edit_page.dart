@@ -82,6 +82,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
           ),
           if (_isEdit)
             IconButton(
+              tooltip: '删除',
               icon: const Icon(Icons.delete),
               onPressed: () => _confirmDelete(context),
             ),
@@ -312,6 +313,7 @@ class _SectionCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
+      margin: EdgeInsets.zero,
       elevation: 0,
       color: AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

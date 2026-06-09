@@ -1,0 +1,45 @@
+appId: com.lifeitems.record_everything
+---
+# Home page: quick create sheet and search interactions
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Open quick create sheet from AppBar
+- tapOn: '新增'
+- waitForAnimationToEnd
+- takeScreenshot: home-quick-create-sheet
+
+# Navigate to bill creation via quick create
+- tapOn:
+    text: '.*记一笔.*'
+- waitForAnimationToEnd
+- takeScreenshot: home-quick-create-bill
+- back
+- waitForAnimationToEnd
+
+# Open quick create sheet again
+- tapOn: '新增'
+- waitForAnimationToEnd
+
+# Navigate to item creation via quick create
+- tapOn:
+    text: '.*建事项.*'
+- waitForAnimationToEnd
+- takeScreenshot: home-quick-create-item
+- back
+- waitForAnimationToEnd
+
+# Open search page from AppBar
+- tapOn: '搜索'
+- waitForAnimationToEnd
+- takeScreenshot: home-search-empty
+
+# Type a search query
+- tapOn:
+    point: "35%,9%"
+- inputText: 'test'
+- hideKeyboard
+- takeScreenshot: home-search-query
+- back
+- waitForAnimationToEnd

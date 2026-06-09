@@ -112,6 +112,7 @@ class _CategoryManagementPageState
             onPressed: () async {
               final name = nameController.text.trim();
               if (name.isEmpty) return;
+              FocusScope.of(dialogContext).unfocus();
               final notifier = ref.read(categoryNotifierProvider.notifier);
               if (category == null) {
                 await notifier.create(
@@ -137,8 +138,6 @@ class _CategoryManagementPageState
       ),
     );
 
-    nameController.dispose();
-    iconController.dispose();
   }
 
   Future<void> _deleteCategory(Category category) async {

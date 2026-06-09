@@ -24,6 +24,7 @@ class RecycleBinPage extends ConsumerWidget {
             return const Center(child: Text('回收站为空'));
           }
           return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
               for (final item in data.items)
                 ListTile(

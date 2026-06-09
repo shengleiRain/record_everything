@@ -577,19 +577,24 @@ class _QuickTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _LifeItemQuickType.values
-          .map(
-            (type) => ChoiceChip(
-              selected: selected == type,
-              avatar: Icon(type.icon, size: 18),
-              label: Text(type.label),
-              onSelected: (_) => onSelected(type),
-            ),
-          )
-          .toList(),
+    return SizedBox(
+      width: double.infinity,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.start,
+        children: _LifeItemQuickType.values
+            .map(
+              (type) => ChoiceChip(
+                selected: selected == type,
+                showCheckmark: false,
+                avatar: Icon(type.icon, size: 18),
+                label: Text(type.label),
+                onSelected: (_) => onSelected(type),
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 }
@@ -605,6 +610,7 @@ class _SectionCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Card(
+      margin: EdgeInsets.zero,
       elevation: 0,
       color: AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

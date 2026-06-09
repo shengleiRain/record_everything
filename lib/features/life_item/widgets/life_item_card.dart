@@ -39,7 +39,7 @@ class LifeItemCard extends StatelessWidget {
 
     return Container(
       key: ValueKey('life-item-card-${item.id}'),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),

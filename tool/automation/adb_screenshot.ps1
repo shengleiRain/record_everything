@@ -1,10 +1,15 @@
 param(
-  [string]$DeviceId = "emulator-5556",
-  [string]$OutputDir = "screenshot",
+  [string]$DeviceId = "auto",
+  [string]$OutputDir = "screenshots",
   [string]$Name = "screen"
 )
 
 $ErrorActionPreference = "Stop"
+
+. (Join-Path $PSScriptRoot "android_device.ps1")
+Initialize-AndroidAutomationPath
+$DeviceId = Resolve-AndroidAutomationDevice -DeviceId $DeviceId
+Write-Output "Using Android automation device: $DeviceId"
 
 $platformTools = Join-Path $env:LOCALAPPDATA "Android\Sdk\platform-tools"
 $adb = Join-Path $platformTools "adb.exe"

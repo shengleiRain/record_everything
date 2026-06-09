@@ -39,7 +39,7 @@
 - 设置 Tab 打开，验证导入取消、导入失败、空数据导入成功、导出提示。
 
 `.maestro/full_pages.yaml` 是设备级截图路径，覆盖每个主要页面并输出截图。
-截图统一归档到 `screenshot/`，该目录被 Git 忽略。
+截图统一归档到 `screenshots/`，该目录被 Git 忽略。
 
 ## Manual Risk Areas
 

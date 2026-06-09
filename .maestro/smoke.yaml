@@ -4,5 +4,5 @@ appId: com.lifeitems.record_everything
     clearState: true
 - takeScreenshot: home-dashboard
 - tapOn:
-    point: "90%,95%"
+    text: '.*设置.*Tab 5.*'
 - takeScreenshot: settings-tab

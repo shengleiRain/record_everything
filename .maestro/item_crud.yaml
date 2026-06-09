@@ -1,0 +1,73 @@
+appId: com.lifeitems.record_everything
+---
+# Item full lifecycle: create → detail → edit → delete
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Navigate to items tab
+- tapOn:
+    text: '.*事项.*Tab 2.*'
+- waitForAnimationToEnd
+- takeScreenshot: item-list-empty
+
+# ----- CREATE ITEM -----
+- tapOn:
+    point: "92%,86%"
+- waitForAnimationToEnd
+- takeScreenshot: item-create-form
+
+# Fill title
+- tapOn:
+    point: "20%,23%"
+- inputText: 'MaestroItem'
+- hideKeyboard
+
+# Select quick type: 待办
+- tapOn: '待办'
+- waitForAnimationToEnd
+
+# Save
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 500
+- tapOn: '创建事项'
+- waitForAnimationToEnd
+- takeScreenshot: item-list-created
+
+# ----- VIEW DETAIL -----
+- tapOn:
+    text: '.*MaestroItem.*'
+- waitForAnimationToEnd
+- takeScreenshot: item-detail
+
+# ----- EDIT ITEM -----
+- tapOn: '编辑'
+- waitForAnimationToEnd
+- takeScreenshot: item-edit-form
+
+# Modify title
+- tapOn:
+    point: "20%,23%"
+- inputText: '-edited'
+- hideKeyboard
+
+# Save changes
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 500
+- tapOn: '保存修改'
+- waitForAnimationToEnd
+- takeScreenshot: item-detail-after-edit
+
+# ----- DELETE ITEM -----
+- tapOn: '删除'
+- waitForAnimationToEnd
+- takeScreenshot: item-delete-dialog
+
+# Confirm delete
+- tapOn: '删除'
+- waitForAnimationToEnd
+- takeScreenshot: item-list-after-delete
