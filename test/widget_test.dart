@@ -7,7 +7,9 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(home: Scaffold(body: QuickCreateSheet(onNavigate: (_) {}))),
+      MaterialApp(
+        home: Scaffold(body: QuickCreateSheet(onNavigate: (_, {extra}) {})),
+      ),
     );
 
     expect(find.text('快速新增'), findsOneWidget);

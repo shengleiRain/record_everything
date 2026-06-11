@@ -18,4 +18,6 @@ class MoneyFormatter {
   static String formatIncome(int cents) => '+${format(cents)}';
 
   static String formatExpense(int cents) => '-${format(cents.abs())}';
+
+  static String formatInt(int cents) => format(cents);
 }

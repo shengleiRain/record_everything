@@ -12,5 +12,6 @@ class BillRecords extends Table {
   TextColumn get note => text().nullable().withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get projectId => integer().nullable()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
 }

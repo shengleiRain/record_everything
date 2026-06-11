@@ -92,10 +92,12 @@ void main() {
     expect(find.textContaining('2项'), findsOneWidget);
   });
 
-  testWidgets('quick create sheet exposes four mobile creation actions', (
+  testWidgets('quick create sheet exposes mobile creation actions', (
     tester,
   ) async {
-    await tester.pumpWidget(_Harness(child: QuickCreateSheet(onNavigate: (_) {})));
+    await tester.pumpWidget(
+      _Harness(child: QuickCreateSheet(onNavigate: (_, {extra}) {})),
+    );
 
     expect(find.byKey(const ValueKey('quick-create-bill')), findsOneWidget);
     expect(find.byKey(const ValueKey('quick-create-item')), findsOneWidget);
@@ -104,6 +106,11 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('quick-create-template')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quick-create-project')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('quick-create-photography')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('life item card keeps dense row information and action menu', (

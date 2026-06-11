@@ -38,6 +38,7 @@ class _CategoryManagementPageState
               ButtonSegment(value: 'expense', label: Text('支出')),
               ButtonSegment(value: 'income', label: Text('收入')),
               ButtonSegment(value: 'item', label: Text('事项')),
+              ButtonSegment(value: 'project', label: Text('项目')),
             ],
             selected: {_selectedType},
             onSelectionChanged: (values) {

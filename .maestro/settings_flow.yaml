@@ -65,6 +65,12 @@ appId: com.lifeitems.record_everything
 - waitForAnimationToEnd
 - takeScreenshot: categories-after-edit
 
+# Switch to project categories
+- tapOn:
+    text: '.*项目.*'
+- waitForAnimationToEnd
+- takeScreenshot: categories-project-type
+
 - launchApp:
     clearState: true
 - waitForAnimationToEnd

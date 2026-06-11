@@ -14,6 +14,7 @@ class BillRecordRepository {
   Future<BillRecord> create({
     int? lifeItemId,
     int? accountId,
+    int? projectId,
     required String title,
     int? categoryId,
     required int amount,
@@ -25,6 +26,7 @@ class BillRecordRepository {
       BillRecordsCompanion.insert(
         lifeItemId: Value(lifeItemId),
         accountId: Value(accountId),
+        projectId: Value(projectId),
         title: title,
         categoryId: Value(categoryId),
         amount: amount,
@@ -41,6 +43,7 @@ class BillRecordRepository {
         id: Value(record.id),
         lifeItemId: Value(record.lifeItemId),
         accountId: Value(record.accountId),
+        projectId: Value(record.projectId),
         title: Value(record.title),
         categoryId: Value(record.categoryId),
         amount: Value(record.amount),

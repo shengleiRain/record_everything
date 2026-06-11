@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../life_item/providers/life_item_providers.dart';
+import '../../project/providers/project_providers.dart';
 import '../models/agenda_item_view_model.dart';
 import '../models/calendar_window.dart';
 import '../models/day_bucket_view_model.dart';
@@ -116,16 +117,23 @@ Stream<List<AgendaItemViewModel>> _watchAgendaItems({
   final controller = StreamController<List<AgendaItemViewModel>>();
   List<AgendaItemViewModel>? lifeItems;
   List<AgendaItemViewModel>? billRecords;
+  List<AgendaItemViewModel>? projects;
 
   void emitIfReady() {
     final currentLifeItems = lifeItems;
     final currentBillRecords = billRecords;
-    if (currentLifeItems == null || currentBillRecords == null) return;
+    final currentProjects = projects;
+    if (currentLifeItems == null ||
+        currentBillRecords == null ||
+        currentProjects == null) {
+      return;
+    }
     if (controller.isClosed) return;
 
     final combined = <AgendaItemViewModel>[
       ...currentLifeItems,
       ...currentBillRecords,
+      ...currentProjects,
     ];
     if (sortItems) combined.sort(_compareAgendaItems);
     controller.add(combined);
@@ -153,9 +161,21 @@ Stream<List<AgendaItemViewModel>> _watchAgendaItems({
         emitIfReady();
       }, onError: controller.addError);
 
+  final projectSubscription = ref
+      .watch(projectRepoProvider)
+      .watchBetweenKeyDate(start, end)
+      .listen((projectList) {
+        projects = [
+          for (final p in projectList)
+            AgendaItemViewModel.fromProject(p),
+        ];
+        emitIfReady();
+      }, onError: controller.addError);
+
   ref.onDispose(() {
     unawaited(lifeSubscription.cancel());
     unawaited(billSubscription.cancel());
+    unawaited(projectSubscription.cancel());
     unawaited(controller.close());
   });
 
@@ -177,5 +197,9 @@ int _compareAgendaItems(AgendaItemViewModel a, AgendaItemViewModel b) {
 }
 
 int _agendaKindSortValue(AgendaItemViewModel item) {
-  return item.kind == AgendaItemKind.billRecord ? 0 : 1;
+  return switch (item.kind) {
+    AgendaItemKind.billRecord => 0,
+    AgendaItemKind.project => 1,
+    AgendaItemKind.lifeItem => 2,
+  };
 }

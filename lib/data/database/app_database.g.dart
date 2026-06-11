@@ -501,6 +501,17 @@ class $LifeItemsTable extends LifeItems
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _projectIdMeta = const VerificationMeta(
+    'projectId',
+  );
+  @override
+  late final GeneratedColumn<int> projectId = GeneratedColumn<int>(
+    'project_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _deletedAtMeta = const VerificationMeta(
     'deletedAt',
   );
@@ -527,6 +538,7 @@ class $LifeItemsTable extends LifeItems
     status,
     createdAt,
     updatedAt,
+    projectId,
     deletedAt,
   ];
   @override
@@ -623,6 +635,12 @@ class $LifeItemsTable extends LifeItems
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('project_id')) {
+      context.handle(
+        _projectIdMeta,
+        projectId.isAcceptableOrUnknown(data['project_id']!, _projectIdMeta),
+      );
+    }
     if (data.containsKey('deleted_at')) {
       context.handle(
         _deletedAtMeta,
@@ -690,6 +708,10 @@ class $LifeItemsTable extends LifeItems
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
+      projectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}project_id'],
+      ),
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
@@ -717,6 +739,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int? projectId;
   final DateTime? deletedAt;
   const LifeItem({
     required this.id,
@@ -732,6 +755,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.projectId,
     this.deletedAt,
   });
   @override
@@ -760,6 +784,9 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     map['status'] = Variable<String>(status);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || projectId != null) {
+      map['project_id'] = Variable<int>(projectId);
+    }
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
@@ -791,6 +818,9 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       status: Value(status),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      projectId: projectId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(projectId),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
@@ -816,6 +846,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      projectId: serializer.fromJson<int?>(json['projectId']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
@@ -836,6 +867,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'projectId': serializer.toJson<int?>(projectId),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
@@ -854,6 +886,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     String? status,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Value<int?> projectId = const Value.absent(),
     Value<DateTime?> deletedAt = const Value.absent(),
   }) => LifeItem(
     id: id ?? this.id,
@@ -869,6 +902,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     status: status ?? this.status,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
+    projectId: projectId.present ? projectId.value : this.projectId,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   LifeItem copyWithCompanion(LifeItemsCompanion data) {
@@ -896,6 +930,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      projectId: data.projectId.present ? data.projectId.value : this.projectId,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
@@ -916,6 +951,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('projectId: $projectId, ')
           ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
@@ -936,6 +972,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     status,
     createdAt,
     updatedAt,
+    projectId,
     deletedAt,
   );
   @override
@@ -955,6 +992,7 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
           other.status == this.status &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
+          other.projectId == this.projectId &&
           other.deletedAt == this.deletedAt);
 }
 
@@ -972,6 +1010,7 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
   final Value<String> status;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<int?> projectId;
   final Value<DateTime?> deletedAt;
   const LifeItemsCompanion({
     this.id = const Value.absent(),
@@ -987,6 +1026,7 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.projectId = const Value.absent(),
     this.deletedAt = const Value.absent(),
   });
   LifeItemsCompanion.insert({
@@ -1003,6 +1043,7 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.projectId = const Value.absent(),
     this.deletedAt = const Value.absent(),
   }) : title = Value(title),
        dueTime = Value(dueTime);
@@ -1020,6 +1061,7 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     Expression<String>? status,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<int>? projectId,
     Expression<DateTime>? deletedAt,
   }) {
     return RawValuesInsertable({
@@ -1036,6 +1078,7 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
       if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (projectId != null) 'project_id': projectId,
       if (deletedAt != null) 'deleted_at': deletedAt,
     });
   }
@@ -1054,6 +1097,7 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     Value<String>? status,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
+    Value<int?>? projectId,
     Value<DateTime?>? deletedAt,
   }) {
     return LifeItemsCompanion(
@@ -1070,6 +1114,7 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      projectId: projectId ?? this.projectId,
       deletedAt: deletedAt ?? this.deletedAt,
     );
   }
@@ -1116,6 +1161,9 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (projectId.present) {
+      map['project_id'] = Variable<int>(projectId.value);
+    }
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
@@ -1138,6 +1186,7 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('projectId: $projectId, ')
           ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
@@ -1275,6 +1324,17 @@ class $BillRecordsTable extends BillRecords
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _projectIdMeta = const VerificationMeta(
+    'projectId',
+  );
+  @override
+  late final GeneratedColumn<int> projectId = GeneratedColumn<int>(
+    'project_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _deletedAtMeta = const VerificationMeta(
     'deletedAt',
   );
@@ -1299,6 +1359,7 @@ class $BillRecordsTable extends BillRecords
     note,
     createdAt,
     updatedAt,
+    projectId,
     deletedAt,
   ];
   @override
@@ -1385,6 +1446,12 @@ class $BillRecordsTable extends BillRecords
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('project_id')) {
+      context.handle(
+        _projectIdMeta,
+        projectId.isAcceptableOrUnknown(data['project_id']!, _projectIdMeta),
+      );
+    }
     if (data.containsKey('deleted_at')) {
       context.handle(
         _deletedAtMeta,
@@ -1444,6 +1511,10 @@ class $BillRecordsTable extends BillRecords
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
+      projectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}project_id'],
+      ),
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
@@ -1469,6 +1540,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
   final String? note;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int? projectId;
   final DateTime? deletedAt;
   const BillRecord({
     required this.id,
@@ -1482,6 +1554,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
     this.note,
     required this.createdAt,
     required this.updatedAt,
+    this.projectId,
     this.deletedAt,
   });
   @override
@@ -1506,6 +1579,9 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || projectId != null) {
+      map['project_id'] = Variable<int>(projectId);
+    }
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
@@ -1531,6 +1607,9 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      projectId: projectId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(projectId),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
@@ -1554,6 +1633,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
       note: serializer.fromJson<String?>(json['note']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      projectId: serializer.fromJson<int?>(json['projectId']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
@@ -1572,6 +1652,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
       'note': serializer.toJson<String?>(note),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'projectId': serializer.toJson<int?>(projectId),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
@@ -1588,6 +1669,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
     Value<String?> note = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
+    Value<int?> projectId = const Value.absent(),
     Value<DateTime?> deletedAt = const Value.absent(),
   }) => BillRecord(
     id: id ?? this.id,
@@ -1601,6 +1683,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
     note: note.present ? note.value : this.note,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
+    projectId: projectId.present ? projectId.value : this.projectId,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   BillRecord copyWithCompanion(BillRecordsCompanion data) {
@@ -1622,6 +1705,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
       note: data.note.present ? data.note.value : this.note,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      projectId: data.projectId.present ? data.projectId.value : this.projectId,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
@@ -1640,6 +1724,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
           ..write('note: $note, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('projectId: $projectId, ')
           ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
@@ -1658,6 +1743,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
     note,
     createdAt,
     updatedAt,
+    projectId,
     deletedAt,
   );
   @override
@@ -1675,6 +1761,7 @@ class BillRecord extends DataClass implements Insertable<BillRecord> {
           other.note == this.note &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
+          other.projectId == this.projectId &&
           other.deletedAt == this.deletedAt);
 }
 
@@ -1690,6 +1777,7 @@ class BillRecordsCompanion extends UpdateCompanion<BillRecord> {
   final Value<String?> note;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<int?> projectId;
   final Value<DateTime?> deletedAt;
   const BillRecordsCompanion({
     this.id = const Value.absent(),
@@ -1703,6 +1791,7 @@ class BillRecordsCompanion extends UpdateCompanion<BillRecord> {
     this.note = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.projectId = const Value.absent(),
     this.deletedAt = const Value.absent(),
   });
   BillRecordsCompanion.insert({
@@ -1717,6 +1806,7 @@ class BillRecordsCompanion extends UpdateCompanion<BillRecord> {
     this.note = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.projectId = const Value.absent(),
     this.deletedAt = const Value.absent(),
   }) : title = Value(title),
        amount = Value(amount),
@@ -1733,6 +1823,7 @@ class BillRecordsCompanion extends UpdateCompanion<BillRecord> {
     Expression<String>? note,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<int>? projectId,
     Expression<DateTime>? deletedAt,
   }) {
     return RawValuesInsertable({
@@ -1747,6 +1838,7 @@ class BillRecordsCompanion extends UpdateCompanion<BillRecord> {
       if (note != null) 'note': note,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (projectId != null) 'project_id': projectId,
       if (deletedAt != null) 'deleted_at': deletedAt,
     });
   }
@@ -1763,6 +1855,7 @@ class BillRecordsCompanion extends UpdateCompanion<BillRecord> {
     Value<String?>? note,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
+    Value<int?>? projectId,
     Value<DateTime?>? deletedAt,
   }) {
     return BillRecordsCompanion(
@@ -1777,6 +1870,7 @@ class BillRecordsCompanion extends UpdateCompanion<BillRecord> {
       note: note ?? this.note,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      projectId: projectId ?? this.projectId,
       deletedAt: deletedAt ?? this.deletedAt,
     );
   }
@@ -1817,6 +1911,9 @@ class BillRecordsCompanion extends UpdateCompanion<BillRecord> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (projectId.present) {
+      map['project_id'] = Variable<int>(projectId.value);
+    }
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
@@ -1837,6 +1934,7 @@ class BillRecordsCompanion extends UpdateCompanion<BillRecord> {
           ..write('note: $note, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('projectId: $projectId, ')
           ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
@@ -2534,6 +2632,1278 @@ class MonthlyBudgetsCompanion extends UpdateCompanion<MonthlyBudget> {
   }
 }
 
+class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProjectsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 200,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _participantMeta = const VerificationMeta(
+    'participant',
+  );
+  @override
+  late final GeneratedColumn<String> participant = GeneratedColumn<String>(
+    'participant',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _projectStatusMeta = const VerificationMeta(
+    'projectStatus',
+  );
+  @override
+  late final GeneratedColumn<String> projectStatus = GeneratedColumn<String>(
+    'project_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('planned'),
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+    'start_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _endDateMeta = const VerificationMeta(
+    'endDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+    'end_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalAmountMeta = const VerificationMeta(
+    'totalAmount',
+  );
+  @override
+  late final GeneratedColumn<int> totalAmount = GeneratedColumn<int>(
+    'total_amount',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _templateKeyMeta = const VerificationMeta(
+    'templateKey',
+  );
+  @override
+  late final GeneratedColumn<String> templateKey = GeneratedColumn<String>(
+    'template_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    categoryId,
+    participant,
+    projectStatus,
+    startDate,
+    endDate,
+    totalAmount,
+    templateKey,
+    note,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'projects';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Project> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('participant')) {
+      context.handle(
+        _participantMeta,
+        participant.isAcceptableOrUnknown(
+          data['participant']!,
+          _participantMeta,
+        ),
+      );
+    }
+    if (data.containsKey('project_status')) {
+      context.handle(
+        _projectStatusMeta,
+        projectStatus.isAcceptableOrUnknown(
+          data['project_status']!,
+          _projectStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(
+        _endDateMeta,
+        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
+      );
+    }
+    if (data.containsKey('total_amount')) {
+      context.handle(
+        _totalAmountMeta,
+        totalAmount.isAcceptableOrUnknown(
+          data['total_amount']!,
+          _totalAmountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('template_key')) {
+      context.handle(
+        _templateKeyMeta,
+        templateKey.isAcceptableOrUnknown(
+          data['template_key']!,
+          _templateKeyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Project map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Project(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}category_id'],
+      ),
+      participant: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}participant'],
+      ),
+      projectStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}project_status'],
+      )!,
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_date'],
+      ),
+      endDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_date'],
+      ),
+      totalAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_amount'],
+      ),
+      templateKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template_key'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  $ProjectsTable createAlias(String alias) {
+    return $ProjectsTable(attachedDatabase, alias);
+  }
+}
+
+class Project extends DataClass implements Insertable<Project> {
+  final int id;
+  final String title;
+  final int? categoryId;
+  final String? participant;
+  final String projectStatus;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final int? totalAmount;
+  final String? templateKey;
+  final String? note;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  const Project({
+    required this.id,
+    required this.title,
+    this.categoryId,
+    this.participant,
+    required this.projectStatus,
+    this.startDate,
+    this.endDate,
+    this.totalAmount,
+    this.templateKey,
+    this.note,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
+    if (!nullToAbsent || participant != null) {
+      map['participant'] = Variable<String>(participant);
+    }
+    map['project_status'] = Variable<String>(projectStatus);
+    if (!nullToAbsent || startDate != null) {
+      map['start_date'] = Variable<DateTime>(startDate);
+    }
+    if (!nullToAbsent || endDate != null) {
+      map['end_date'] = Variable<DateTime>(endDate);
+    }
+    if (!nullToAbsent || totalAmount != null) {
+      map['total_amount'] = Variable<int>(totalAmount);
+    }
+    if (!nullToAbsent || templateKey != null) {
+      map['template_key'] = Variable<String>(templateKey);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  ProjectsCompanion toCompanion(bool nullToAbsent) {
+    return ProjectsCompanion(
+      id: Value(id),
+      title: Value(title),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      participant: participant == null && nullToAbsent
+          ? const Value.absent()
+          : Value(participant),
+      projectStatus: Value(projectStatus),
+      startDate: startDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startDate),
+      endDate: endDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endDate),
+      totalAmount: totalAmount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalAmount),
+      templateKey: templateKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(templateKey),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory Project.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Project(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
+      participant: serializer.fromJson<String?>(json['participant']),
+      projectStatus: serializer.fromJson<String>(json['projectStatus']),
+      startDate: serializer.fromJson<DateTime?>(json['startDate']),
+      endDate: serializer.fromJson<DateTime?>(json['endDate']),
+      totalAmount: serializer.fromJson<int?>(json['totalAmount']),
+      templateKey: serializer.fromJson<String?>(json['templateKey']),
+      note: serializer.fromJson<String?>(json['note']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'categoryId': serializer.toJson<int?>(categoryId),
+      'participant': serializer.toJson<String?>(participant),
+      'projectStatus': serializer.toJson<String>(projectStatus),
+      'startDate': serializer.toJson<DateTime?>(startDate),
+      'endDate': serializer.toJson<DateTime?>(endDate),
+      'totalAmount': serializer.toJson<int?>(totalAmount),
+      'templateKey': serializer.toJson<String?>(templateKey),
+      'note': serializer.toJson<String?>(note),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  Project copyWith({
+    int? id,
+    String? title,
+    Value<int?> categoryId = const Value.absent(),
+    Value<String?> participant = const Value.absent(),
+    String? projectStatus,
+    Value<DateTime?> startDate = const Value.absent(),
+    Value<DateTime?> endDate = const Value.absent(),
+    Value<int?> totalAmount = const Value.absent(),
+    Value<String?> templateKey = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => Project(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    participant: participant.present ? participant.value : this.participant,
+    projectStatus: projectStatus ?? this.projectStatus,
+    startDate: startDate.present ? startDate.value : this.startDate,
+    endDate: endDate.present ? endDate.value : this.endDate,
+    totalAmount: totalAmount.present ? totalAmount.value : this.totalAmount,
+    templateKey: templateKey.present ? templateKey.value : this.templateKey,
+    note: note.present ? note.value : this.note,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  Project copyWithCompanion(ProjectsCompanion data) {
+    return Project(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      participant: data.participant.present
+          ? data.participant.value
+          : this.participant,
+      projectStatus: data.projectStatus.present
+          ? data.projectStatus.value
+          : this.projectStatus,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      totalAmount: data.totalAmount.present
+          ? data.totalAmount.value
+          : this.totalAmount,
+      templateKey: data.templateKey.present
+          ? data.templateKey.value
+          : this.templateKey,
+      note: data.note.present ? data.note.value : this.note,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Project(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('participant: $participant, ')
+          ..write('projectStatus: $projectStatus, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('templateKey: $templateKey, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    categoryId,
+    participant,
+    projectStatus,
+    startDate,
+    endDate,
+    totalAmount,
+    templateKey,
+    note,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Project &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.categoryId == this.categoryId &&
+          other.participant == this.participant &&
+          other.projectStatus == this.projectStatus &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.totalAmount == this.totalAmount &&
+          other.templateKey == this.templateKey &&
+          other.note == this.note &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class ProjectsCompanion extends UpdateCompanion<Project> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<int?> categoryId;
+  final Value<String?> participant;
+  final Value<String> projectStatus;
+  final Value<DateTime?> startDate;
+  final Value<DateTime?> endDate;
+  final Value<int?> totalAmount;
+  final Value<String?> templateKey;
+  final Value<String?> note;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  const ProjectsCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.participant = const Value.absent(),
+    this.projectStatus = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.totalAmount = const Value.absent(),
+    this.templateKey = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+  });
+  ProjectsCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    this.categoryId = const Value.absent(),
+    this.participant = const Value.absent(),
+    this.projectStatus = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.totalAmount = const Value.absent(),
+    this.templateKey = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+  }) : title = Value(title);
+  static Insertable<Project> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<int>? categoryId,
+    Expression<String>? participant,
+    Expression<String>? projectStatus,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<int>? totalAmount,
+    Expression<String>? templateKey,
+    Expression<String>? note,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (categoryId != null) 'category_id': categoryId,
+      if (participant != null) 'participant': participant,
+      if (projectStatus != null) 'project_status': projectStatus,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (totalAmount != null) 'total_amount': totalAmount,
+      if (templateKey != null) 'template_key': templateKey,
+      if (note != null) 'note': note,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+    });
+  }
+
+  ProjectsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? title,
+    Value<int?>? categoryId,
+    Value<String?>? participant,
+    Value<String>? projectStatus,
+    Value<DateTime?>? startDate,
+    Value<DateTime?>? endDate,
+    Value<int?>? totalAmount,
+    Value<String?>? templateKey,
+    Value<String?>? note,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+  }) {
+    return ProjectsCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      categoryId: categoryId ?? this.categoryId,
+      participant: participant ?? this.participant,
+      projectStatus: projectStatus ?? this.projectStatus,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      totalAmount: totalAmount ?? this.totalAmount,
+      templateKey: templateKey ?? this.templateKey,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
+    }
+    if (participant.present) {
+      map['participant'] = Variable<String>(participant.value);
+    }
+    if (projectStatus.present) {
+      map['project_status'] = Variable<String>(projectStatus.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (totalAmount.present) {
+      map['total_amount'] = Variable<int>(totalAmount.value);
+    }
+    if (templateKey.present) {
+      map['template_key'] = Variable<String>(templateKey.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectsCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('participant: $participant, ')
+          ..write('projectStatus: $projectStatus, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('totalAmount: $totalAmount, ')
+          ..write('templateKey: $templateKey, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProjectEventsTable extends ProjectEvents
+    with TableInfo<$ProjectEventsTable, ProjectEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProjectEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _projectIdMeta = const VerificationMeta(
+    'projectId',
+  );
+  @override
+  late final GeneratedColumn<int> projectId = GeneratedColumn<int>(
+    'project_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _eventTypeMeta = const VerificationMeta(
+    'eventType',
+  );
+  @override
+  late final GeneratedColumn<String> eventType = GeneratedColumn<String>(
+    'event_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 200,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventTimeMeta = const VerificationMeta(
+    'eventTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> eventTime = GeneratedColumn<DateTime>(
+    'event_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isSystemMeta = const VerificationMeta(
+    'isSystem',
+  );
+  @override
+  late final GeneratedColumn<bool> isSystem = GeneratedColumn<bool>(
+    'is_system',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_system" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    projectId,
+    eventType,
+    title,
+    description,
+    eventTime,
+    isSystem,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'project_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProjectEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('project_id')) {
+      context.handle(
+        _projectIdMeta,
+        projectId.isAcceptableOrUnknown(data['project_id']!, _projectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_projectIdMeta);
+    }
+    if (data.containsKey('event_type')) {
+      context.handle(
+        _eventTypeMeta,
+        eventType.isAcceptableOrUnknown(data['event_type']!, _eventTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventTypeMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('event_time')) {
+      context.handle(
+        _eventTimeMeta,
+        eventTime.isAcceptableOrUnknown(data['event_time']!, _eventTimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventTimeMeta);
+    }
+    if (data.containsKey('is_system')) {
+      context.handle(
+        _isSystemMeta,
+        isSystem.isAcceptableOrUnknown(data['is_system']!, _isSystemMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProjectEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProjectEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      projectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}project_id'],
+      )!,
+      eventType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_type'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      eventTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}event_time'],
+      )!,
+      isSystem: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_system'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ProjectEventsTable createAlias(String alias) {
+    return $ProjectEventsTable(attachedDatabase, alias);
+  }
+}
+
+class ProjectEvent extends DataClass implements Insertable<ProjectEvent> {
+  final int id;
+  final int projectId;
+  final String eventType;
+  final String title;
+  final String? description;
+  final DateTime eventTime;
+  final bool isSystem;
+  final DateTime createdAt;
+  const ProjectEvent({
+    required this.id,
+    required this.projectId,
+    required this.eventType,
+    required this.title,
+    this.description,
+    required this.eventTime,
+    required this.isSystem,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['project_id'] = Variable<int>(projectId);
+    map['event_type'] = Variable<String>(eventType);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['event_time'] = Variable<DateTime>(eventTime);
+    map['is_system'] = Variable<bool>(isSystem);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ProjectEventsCompanion toCompanion(bool nullToAbsent) {
+    return ProjectEventsCompanion(
+      id: Value(id),
+      projectId: Value(projectId),
+      eventType: Value(eventType),
+      title: Value(title),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      eventTime: Value(eventTime),
+      isSystem: Value(isSystem),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ProjectEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProjectEvent(
+      id: serializer.fromJson<int>(json['id']),
+      projectId: serializer.fromJson<int>(json['projectId']),
+      eventType: serializer.fromJson<String>(json['eventType']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String?>(json['description']),
+      eventTime: serializer.fromJson<DateTime>(json['eventTime']),
+      isSystem: serializer.fromJson<bool>(json['isSystem']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'projectId': serializer.toJson<int>(projectId),
+      'eventType': serializer.toJson<String>(eventType),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String?>(description),
+      'eventTime': serializer.toJson<DateTime>(eventTime),
+      'isSystem': serializer.toJson<bool>(isSystem),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ProjectEvent copyWith({
+    int? id,
+    int? projectId,
+    String? eventType,
+    String? title,
+    Value<String?> description = const Value.absent(),
+    DateTime? eventTime,
+    bool? isSystem,
+    DateTime? createdAt,
+  }) => ProjectEvent(
+    id: id ?? this.id,
+    projectId: projectId ?? this.projectId,
+    eventType: eventType ?? this.eventType,
+    title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    eventTime: eventTime ?? this.eventTime,
+    isSystem: isSystem ?? this.isSystem,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ProjectEvent copyWithCompanion(ProjectEventsCompanion data) {
+    return ProjectEvent(
+      id: data.id.present ? data.id.value : this.id,
+      projectId: data.projectId.present ? data.projectId.value : this.projectId,
+      eventType: data.eventType.present ? data.eventType.value : this.eventType,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      eventTime: data.eventTime.present ? data.eventTime.value : this.eventTime,
+      isSystem: data.isSystem.present ? data.isSystem.value : this.isSystem,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectEvent(')
+          ..write('id: $id, ')
+          ..write('projectId: $projectId, ')
+          ..write('eventType: $eventType, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('eventTime: $eventTime, ')
+          ..write('isSystem: $isSystem, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    projectId,
+    eventType,
+    title,
+    description,
+    eventTime,
+    isSystem,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProjectEvent &&
+          other.id == this.id &&
+          other.projectId == this.projectId &&
+          other.eventType == this.eventType &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.eventTime == this.eventTime &&
+          other.isSystem == this.isSystem &&
+          other.createdAt == this.createdAt);
+}
+
+class ProjectEventsCompanion extends UpdateCompanion<ProjectEvent> {
+  final Value<int> id;
+  final Value<int> projectId;
+  final Value<String> eventType;
+  final Value<String> title;
+  final Value<String?> description;
+  final Value<DateTime> eventTime;
+  final Value<bool> isSystem;
+  final Value<DateTime> createdAt;
+  const ProjectEventsCompanion({
+    this.id = const Value.absent(),
+    this.projectId = const Value.absent(),
+    this.eventType = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.eventTime = const Value.absent(),
+    this.isSystem = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ProjectEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required int projectId,
+    required String eventType,
+    required String title,
+    this.description = const Value.absent(),
+    required DateTime eventTime,
+    this.isSystem = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : projectId = Value(projectId),
+       eventType = Value(eventType),
+       title = Value(title),
+       eventTime = Value(eventTime);
+  static Insertable<ProjectEvent> custom({
+    Expression<int>? id,
+    Expression<int>? projectId,
+    Expression<String>? eventType,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<DateTime>? eventTime,
+    Expression<bool>? isSystem,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (projectId != null) 'project_id': projectId,
+      if (eventType != null) 'event_type': eventType,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (eventTime != null) 'event_time': eventTime,
+      if (isSystem != null) 'is_system': isSystem,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ProjectEventsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? projectId,
+    Value<String>? eventType,
+    Value<String>? title,
+    Value<String?>? description,
+    Value<DateTime>? eventTime,
+    Value<bool>? isSystem,
+    Value<DateTime>? createdAt,
+  }) {
+    return ProjectEventsCompanion(
+      id: id ?? this.id,
+      projectId: projectId ?? this.projectId,
+      eventType: eventType ?? this.eventType,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      eventTime: eventTime ?? this.eventTime,
+      isSystem: isSystem ?? this.isSystem,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (projectId.present) {
+      map['project_id'] = Variable<int>(projectId.value);
+    }
+    if (eventType.present) {
+      map['event_type'] = Variable<String>(eventType.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (eventTime.present) {
+      map['event_time'] = Variable<DateTime>(eventTime.value);
+    }
+    if (isSystem.present) {
+      map['is_system'] = Variable<bool>(isSystem.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('projectId: $projectId, ')
+          ..write('eventType: $eventType, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('eventTime: $eventTime, ')
+          ..write('isSystem: $isSystem, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2542,9 +3912,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BillRecordsTable billRecords = $BillRecordsTable(this);
   late final $AccountsTable accounts = $AccountsTable(this);
   late final $MonthlyBudgetsTable monthlyBudgets = $MonthlyBudgetsTable(this);
+  late final $ProjectsTable projects = $ProjectsTable(this);
+  late final $ProjectEventsTable projectEvents = $ProjectEventsTable(this);
   late final LifeItemDao lifeItemDao = LifeItemDao(this as AppDatabase);
   late final BillRecordDao billRecordDao = BillRecordDao(this as AppDatabase);
   late final CategoryDao categoryDao = CategoryDao(this as AppDatabase);
+  late final ProjectDao projectDao = ProjectDao(this as AppDatabase);
+  late final ProjectEventDao projectEventDao = ProjectEventDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2555,6 +3931,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     billRecords,
     accounts,
     monthlyBudgets,
+    projects,
+    projectEvents,
   ];
 }
 
@@ -2761,6 +4139,7 @@ typedef $$LifeItemsTableCreateCompanionBuilder =
       Value<String> status,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
+      Value<int?> projectId,
       Value<DateTime?> deletedAt,
     });
 typedef $$LifeItemsTableUpdateCompanionBuilder =
@@ -2778,6 +4157,7 @@ typedef $$LifeItemsTableUpdateCompanionBuilder =
       Value<String> status,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
+      Value<int?> projectId,
       Value<DateTime?> deletedAt,
     });
 
@@ -2852,6 +4232,11 @@ class $$LifeItemsTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get projectId => $composableBuilder(
+    column: $table.projectId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2935,6 +4320,11 @@ class $$LifeItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get projectId => $composableBuilder(
+    column: $table.projectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
@@ -2999,6 +4389,9 @@ class $$LifeItemsTableAnnotationComposer
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
+  GeneratedColumn<int> get projectId =>
+      $composableBuilder(column: $table.projectId, builder: (column) => column);
+
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 }
@@ -3044,6 +4437,7 @@ class $$LifeItemsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<int?> projectId = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
               }) => LifeItemsCompanion(
                 id: id,
@@ -3059,6 +4453,7 @@ class $$LifeItemsTableTableManager
                 status: status,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                projectId: projectId,
                 deletedAt: deletedAt,
               ),
           createCompanionCallback:
@@ -3076,6 +4471,7 @@ class $$LifeItemsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<int?> projectId = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
               }) => LifeItemsCompanion.insert(
                 id: id,
@@ -3091,6 +4487,7 @@ class $$LifeItemsTableTableManager
                 status: status,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                projectId: projectId,
                 deletedAt: deletedAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -3128,6 +4525,7 @@ typedef $$BillRecordsTableCreateCompanionBuilder =
       Value<String?> note,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
+      Value<int?> projectId,
       Value<DateTime?> deletedAt,
     });
 typedef $$BillRecordsTableUpdateCompanionBuilder =
@@ -3143,6 +4541,7 @@ typedef $$BillRecordsTableUpdateCompanionBuilder =
       Value<String?> note,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
+      Value<int?> projectId,
       Value<DateTime?> deletedAt,
     });
 
@@ -3207,6 +4606,11 @@ class $$BillRecordsTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get projectId => $composableBuilder(
+    column: $table.projectId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3280,6 +4684,11 @@ class $$BillRecordsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get projectId => $composableBuilder(
+    column: $table.projectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
@@ -3334,6 +4743,9 @@ class $$BillRecordsTableAnnotationComposer
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
+  GeneratedColumn<int> get projectId =>
+      $composableBuilder(column: $table.projectId, builder: (column) => column);
+
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 }
@@ -3380,6 +4792,7 @@ class $$BillRecordsTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<int?> projectId = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
               }) => BillRecordsCompanion(
                 id: id,
@@ -3393,6 +4806,7 @@ class $$BillRecordsTableTableManager
                 note: note,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                projectId: projectId,
                 deletedAt: deletedAt,
               ),
           createCompanionCallback:
@@ -3408,6 +4822,7 @@ class $$BillRecordsTableTableManager
                 Value<String?> note = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<int?> projectId = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
               }) => BillRecordsCompanion.insert(
                 id: id,
@@ -3421,6 +4836,7 @@ class $$BillRecordsTableTableManager
                 note: note,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                projectId: projectId,
                 deletedAt: deletedAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -3834,6 +5250,609 @@ typedef $$MonthlyBudgetsTableProcessedTableManager =
       MonthlyBudget,
       PrefetchHooks Function()
     >;
+typedef $$ProjectsTableCreateCompanionBuilder =
+    ProjectsCompanion Function({
+      Value<int> id,
+      required String title,
+      Value<int?> categoryId,
+      Value<String?> participant,
+      Value<String> projectStatus,
+      Value<DateTime?> startDate,
+      Value<DateTime?> endDate,
+      Value<int?> totalAmount,
+      Value<String?> templateKey,
+      Value<String?> note,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+    });
+typedef $$ProjectsTableUpdateCompanionBuilder =
+    ProjectsCompanion Function({
+      Value<int> id,
+      Value<String> title,
+      Value<int?> categoryId,
+      Value<String?> participant,
+      Value<String> projectStatus,
+      Value<DateTime?> startDate,
+      Value<DateTime?> endDate,
+      Value<int?> totalAmount,
+      Value<String?> templateKey,
+      Value<String?> note,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+    });
+
+class $$ProjectsTableFilterComposer
+    extends Composer<_$AppDatabase, $ProjectsTable> {
+  $$ProjectsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get participant => $composableBuilder(
+    column: $table.participant,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get projectStatus => $composableBuilder(
+    column: $table.projectStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalAmount => $composableBuilder(
+    column: $table.totalAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get templateKey => $composableBuilder(
+    column: $table.templateKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProjectsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProjectsTable> {
+  $$ProjectsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get participant => $composableBuilder(
+    column: $table.participant,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get projectStatus => $composableBuilder(
+    column: $table.projectStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalAmount => $composableBuilder(
+    column: $table.totalAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get templateKey => $composableBuilder(
+    column: $table.templateKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProjectsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProjectsTable> {
+  $$ProjectsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get participant => $composableBuilder(
+    column: $table.participant,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get projectStatus => $composableBuilder(
+    column: $table.projectStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<int> get totalAmount => $composableBuilder(
+    column: $table.totalAmount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get templateKey => $composableBuilder(
+    column: $table.templateKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$ProjectsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProjectsTable,
+          Project,
+          $$ProjectsTableFilterComposer,
+          $$ProjectsTableOrderingComposer,
+          $$ProjectsTableAnnotationComposer,
+          $$ProjectsTableCreateCompanionBuilder,
+          $$ProjectsTableUpdateCompanionBuilder,
+          (Project, BaseReferences<_$AppDatabase, $ProjectsTable, Project>),
+          Project,
+          PrefetchHooks Function()
+        > {
+  $$ProjectsTableTableManager(_$AppDatabase db, $ProjectsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProjectsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProjectsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProjectsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<int?> categoryId = const Value.absent(),
+                Value<String?> participant = const Value.absent(),
+                Value<String> projectStatus = const Value.absent(),
+                Value<DateTime?> startDate = const Value.absent(),
+                Value<DateTime?> endDate = const Value.absent(),
+                Value<int?> totalAmount = const Value.absent(),
+                Value<String?> templateKey = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+              }) => ProjectsCompanion(
+                id: id,
+                title: title,
+                categoryId: categoryId,
+                participant: participant,
+                projectStatus: projectStatus,
+                startDate: startDate,
+                endDate: endDate,
+                totalAmount: totalAmount,
+                templateKey: templateKey,
+                note: note,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String title,
+                Value<int?> categoryId = const Value.absent(),
+                Value<String?> participant = const Value.absent(),
+                Value<String> projectStatus = const Value.absent(),
+                Value<DateTime?> startDate = const Value.absent(),
+                Value<DateTime?> endDate = const Value.absent(),
+                Value<int?> totalAmount = const Value.absent(),
+                Value<String?> templateKey = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+              }) => ProjectsCompanion.insert(
+                id: id,
+                title: title,
+                categoryId: categoryId,
+                participant: participant,
+                projectStatus: projectStatus,
+                startDate: startDate,
+                endDate: endDate,
+                totalAmount: totalAmount,
+                templateKey: templateKey,
+                note: note,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProjectsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProjectsTable,
+      Project,
+      $$ProjectsTableFilterComposer,
+      $$ProjectsTableOrderingComposer,
+      $$ProjectsTableAnnotationComposer,
+      $$ProjectsTableCreateCompanionBuilder,
+      $$ProjectsTableUpdateCompanionBuilder,
+      (Project, BaseReferences<_$AppDatabase, $ProjectsTable, Project>),
+      Project,
+      PrefetchHooks Function()
+    >;
+typedef $$ProjectEventsTableCreateCompanionBuilder =
+    ProjectEventsCompanion Function({
+      Value<int> id,
+      required int projectId,
+      required String eventType,
+      required String title,
+      Value<String?> description,
+      required DateTime eventTime,
+      Value<bool> isSystem,
+      Value<DateTime> createdAt,
+    });
+typedef $$ProjectEventsTableUpdateCompanionBuilder =
+    ProjectEventsCompanion Function({
+      Value<int> id,
+      Value<int> projectId,
+      Value<String> eventType,
+      Value<String> title,
+      Value<String?> description,
+      Value<DateTime> eventTime,
+      Value<bool> isSystem,
+      Value<DateTime> createdAt,
+    });
+
+class $$ProjectEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $ProjectEventsTable> {
+  $$ProjectEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get projectId => $composableBuilder(
+    column: $table.projectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get eventTime => $composableBuilder(
+    column: $table.eventTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSystem => $composableBuilder(
+    column: $table.isSystem,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProjectEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProjectEventsTable> {
+  $$ProjectEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get projectId => $composableBuilder(
+    column: $table.projectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get eventTime => $composableBuilder(
+    column: $table.eventTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSystem => $composableBuilder(
+    column: $table.isSystem,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProjectEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProjectEventsTable> {
+  $$ProjectEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get projectId =>
+      $composableBuilder(column: $table.projectId, builder: (column) => column);
+
+  GeneratedColumn<String> get eventType =>
+      $composableBuilder(column: $table.eventType, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get eventTime =>
+      $composableBuilder(column: $table.eventTime, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSystem =>
+      $composableBuilder(column: $table.isSystem, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ProjectEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProjectEventsTable,
+          ProjectEvent,
+          $$ProjectEventsTableFilterComposer,
+          $$ProjectEventsTableOrderingComposer,
+          $$ProjectEventsTableAnnotationComposer,
+          $$ProjectEventsTableCreateCompanionBuilder,
+          $$ProjectEventsTableUpdateCompanionBuilder,
+          (
+            ProjectEvent,
+            BaseReferences<_$AppDatabase, $ProjectEventsTable, ProjectEvent>,
+          ),
+          ProjectEvent,
+          PrefetchHooks Function()
+        > {
+  $$ProjectEventsTableTableManager(_$AppDatabase db, $ProjectEventsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProjectEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProjectEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProjectEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> projectId = const Value.absent(),
+                Value<String> eventType = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<DateTime> eventTime = const Value.absent(),
+                Value<bool> isSystem = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ProjectEventsCompanion(
+                id: id,
+                projectId: projectId,
+                eventType: eventType,
+                title: title,
+                description: description,
+                eventTime: eventTime,
+                isSystem: isSystem,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int projectId,
+                required String eventType,
+                required String title,
+                Value<String?> description = const Value.absent(),
+                required DateTime eventTime,
+                Value<bool> isSystem = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ProjectEventsCompanion.insert(
+                id: id,
+                projectId: projectId,
+                eventType: eventType,
+                title: title,
+                description: description,
+                eventTime: eventTime,
+                isSystem: isSystem,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProjectEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProjectEventsTable,
+      ProjectEvent,
+      $$ProjectEventsTableFilterComposer,
+      $$ProjectEventsTableOrderingComposer,
+      $$ProjectEventsTableAnnotationComposer,
+      $$ProjectEventsTableCreateCompanionBuilder,
+      $$ProjectEventsTableUpdateCompanionBuilder,
+      (
+        ProjectEvent,
+        BaseReferences<_$AppDatabase, $ProjectEventsTable, ProjectEvent>,
+      ),
+      ProjectEvent,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3848,4 +5867,8 @@ class $AppDatabaseManager {
       $$AccountsTableTableManager(_db, _db.accounts);
   $$MonthlyBudgetsTableTableManager get monthlyBudgets =>
       $$MonthlyBudgetsTableTableManager(_db, _db.monthlyBudgets);
+  $$ProjectsTableTableManager get projects =>
+      $$ProjectsTableTableManager(_db, _db.projects);
+  $$ProjectEventsTableTableManager get projectEvents =>
+      $$ProjectEventsTableTableManager(_db, _db.projectEvents);
 }

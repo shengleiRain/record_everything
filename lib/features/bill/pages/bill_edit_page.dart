@@ -8,6 +8,7 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../domain/enums/bill_amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../project/widgets/project_picker_field.dart';
 import '../providers/bill_providers.dart';
 import '../../../data/database/database_provider.dart';
 
@@ -27,6 +28,8 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
   BillAmountType _amountType = BillAmountType.expense;
   DateTime _billTime = DateTime.now();
   int? _selectedCategoryId;
+  int? _projectId;
+  int? _lifeItemId;
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
@@ -36,6 +39,11 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
     super.didChangeDependencies();
     if (_loaded) return;
     final state = GoRouterState.of(context);
+    final extra = state.extra;
+    if (extra is Map) {
+      _projectId = extra['projectId'] as int?;
+      _lifeItemId = extra['lifeItemId'] as int?;
+    }
     final idStr = state.pathParameters['id'];
     if (idStr != null && idStr != 'new') {
       _isEdit = true;
@@ -56,6 +64,8 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
       _amountType = BillAmountType.fromString(bill.amountType);
       _billTime = bill.billTime;
       _selectedCategoryId = bill.categoryId;
+      _projectId = bill.projectId;
+      _lifeItemId = bill.lifeItemId;
       _noteController.text = bill.note ?? '';
     });
   }
@@ -176,21 +186,30 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
             const SizedBox(height: 16),
             _SectionCard(
               title: '账单时间',
-              child: _DateField(
-                key: const ValueKey('bill-date-field'),
-                label: '日期',
-                value: DateFormatter.formatDate(_billTime),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _billTime,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2030),
-                  );
-                  if (picked != null && mounted) {
-                    setState(() => _billTime = picked);
-                  }
-                },
+              child: Column(
+                children: [
+                  ProjectPickerField(
+                    value: _projectId,
+                    onChanged: (v) => setState(() => _projectId = v),
+                  ),
+                  const SizedBox(height: 16),
+                  _DateField(
+                    key: const ValueKey('bill-date-field'),
+                    label: '日期',
+                    value: DateFormatter.formatDate(_billTime),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _billTime,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2030),
+                      );
+                      if (picked != null && mounted) {
+                        setState(() => _billTime = picked);
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 32),
@@ -222,6 +241,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
                     amount: MoneyFormatter.parse(_amountController.text) ?? 0,
                     amountType: _amountType.value,
                     categoryId: Value(_selectedCategoryId),
+                    projectId: Value(_projectId),
                     billTime: _billTime,
                     note: Value(_noteController.text.trim()),
                     updatedAt: DateTime.now(),
@@ -238,6 +258,8 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
             amount: MoneyFormatter.parse(_amountController.text) ?? 0,
             amountType: _amountType.value,
             categoryId: _selectedCategoryId,
+            projectId: _projectId,
+            lifeItemId: _lifeItemId,
             billTime: _billTime,
             note: _noteController.text.trim().isEmpty
                 ? null

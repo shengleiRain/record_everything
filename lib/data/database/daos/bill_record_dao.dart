@@ -128,4 +128,127 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
       );
     return query.watchSingle().map((row) => row.read(sumExpr) ?? 0);
   }
+
+  Stream<List<BillRecord>> watchByProjectId(int projectId) =>
+      (select(billRecords)
+            ..where((t) => t.projectId.equals(projectId) & t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm.desc(t.billTime)]))
+          .watch();
+
+  Stream<int> watchSumByProjectId(int projectId, String amountType) {
+    final sumExpr = billRecords.amount.sum();
+    final query = selectOnly(billRecords)
+      ..addColumns([sumExpr])
+      ..where(
+        billRecords.projectId.equals(projectId) &
+            billRecords.deletedAt.isNull() &
+            billRecords.amountType.equals(amountType),
+      );
+    return query.watchSingle().map((row) => row.read(sumExpr) ?? 0);
+  }
+
+  Stream<List<MonthlySumRow>> watchMonthlySumsForRange(
+    DateTime start,
+    DateTime end,
+    String amountType,
+  ) {
+    final yearExpr = billRecords.billTime.year;
+    final monthExpr = billRecords.billTime.month;
+    final sumExpr = billRecords.amount.sum();
+    final query = selectOnly(billRecords)
+      ..addColumns([yearExpr, monthExpr, sumExpr])
+      ..where(
+        billRecords.billTime.isBiggerOrEqualValue(start) &
+            billRecords.billTime.isSmallerThanValue(end) &
+            billRecords.deletedAt.isNull() &
+            billRecords.amountType.equals(amountType),
+      )
+      ..groupBy([yearExpr, monthExpr])
+      ..orderBy([OrderingTerm.asc(yearExpr), OrderingTerm.asc(monthExpr)]);
+    return query.watch().map(
+      (rows) => rows
+          .map(
+            (r) => MonthlySumRow(
+              yearMonth:
+                  (r.read(yearExpr) ?? 0) * 100 + (r.read(monthExpr) ?? 0),
+              sum: r.read(sumExpr) ?? 0,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Stream<List<CategoryBreakdownRow>> watchCategoryBreakdown(
+    DateTime month,
+    String amountType,
+  ) {
+    final start = DateTime(month.year, month.month, 1);
+    final end = DateTime(month.year, month.month + 1, 1);
+    final catIdExpr = billRecords.categoryId;
+    final sumExpr = billRecords.amount.sum();
+    final query = selectOnly(billRecords)
+      ..addColumns([catIdExpr, sumExpr])
+      ..where(
+        billRecords.billTime.isBiggerOrEqualValue(start) &
+            billRecords.billTime.isSmallerThanValue(end) &
+            billRecords.deletedAt.isNull() &
+            billRecords.amountType.equals(amountType),
+      )
+      ..groupBy([catIdExpr])
+      ..orderBy([OrderingTerm.desc(sumExpr)]);
+    return query.watch().map(
+      (rows) => rows
+          .map(
+            (r) => CategoryBreakdownRow(
+              categoryId: r.read(catIdExpr),
+              sum: r.read(sumExpr) ?? 0,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Stream<int> watchProjectIncomeForMonth(int projectId, DateTime month) {
+    final start = DateTime(month.year, month.month, 1);
+    final end = DateTime(month.year, month.month + 1, 1);
+    final sumExpr = billRecords.amount.sum();
+    final query = selectOnly(billRecords)
+      ..addColumns([sumExpr])
+      ..where(
+        billRecords.projectId.equals(projectId) &
+            billRecords.billTime.isBiggerOrEqualValue(start) &
+            billRecords.billTime.isSmallerThanValue(end) &
+            billRecords.deletedAt.isNull() &
+            billRecords.amountType.equals('income'),
+      );
+    return query.watchSingle().map((row) => row.read(sumExpr) ?? 0);
+  }
+
+  Stream<int> watchAllProjectIncomeForMonth(DateTime month) {
+    final start = DateTime(month.year, month.month, 1);
+    final end = DateTime(month.year, month.month + 1, 1);
+    final sumExpr = billRecords.amount.sum();
+    final query = selectOnly(billRecords)
+      ..addColumns([sumExpr])
+      ..where(
+        billRecords.projectId.isNotNull() &
+            billRecords.billTime.isBiggerOrEqualValue(start) &
+            billRecords.billTime.isSmallerThanValue(end) &
+            billRecords.deletedAt.isNull() &
+            billRecords.amountType.equals('income'),
+      );
+    return query.watchSingle().map((row) => row.read(sumExpr) ?? 0);
+  }
+}
+
+class MonthlySumRow {
+  final int yearMonth;
+  final int sum;
+  const MonthlySumRow({required this.yearMonth, required this.sum});
+}
+
+class CategoryBreakdownRow {
+  final int? categoryId;
+  final int sum;
+  const CategoryBreakdownRow({this.categoryId, required this.sum});
 }

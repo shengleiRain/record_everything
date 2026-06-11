@@ -14,6 +14,10 @@
 - `/bills/:id/edit`: 编辑账单、删除账单。
 - `/statistics`: 收支统计、事项统计。
 - `/settings`: 通知权限入口、导出、导入。
+- `/projects`: 项目列表、状态筛选、分类筛选。
+- `/projects/new`: 新建项目、项目类型、参与人、关键日期、约定总额、摄影模板。
+- `/projects/:id`: 项目详情、财务概览、事项列表、账单列表、时间线、添加事件。
+- `/projects/:id/edit`: 编辑项目并保存。
 
 ## Automated Coverage
 
@@ -40,6 +44,19 @@
 
 `.maestro/full_pages.yaml` 是设备级截图路径，覆盖每个主要页面并输出截图。
 截图统一归档到 `screenshots/`，该目录被 Git 忽略。
+
+### Maestro 测试脚本
+
+| 文件 | 覆盖范围 |
+|------|----------|
+| `smoke.yaml` | 最小冒烟：启动、首页、设置 Tab |
+| `full_pages.yaml` | 全页面截图：每个顶级 Tab + 子页面 + 项目页面 |
+| `home_flow.yaml` | 首页交互：快速新增（账单/事项/项目）、搜索 |
+| `item_crud.yaml` | 事项全生命周期：创建、详情、编辑、删除 |
+| `bill_crud.yaml` | 账单全生命周期：创建、编辑、月份切换、筛选、删除 |
+| `settings_flow.yaml` | 设置子页面：分类管理（含项目分类）、数据安全、回收站 |
+| `project_crud.yaml` | 项目全生命周期：创建、详情、编辑、添加事件、删除 |
+| `photography_template.yaml` | 摄影模板：创建项目、验证自动生成事项 |
 
 ## Manual Risk Areas
 

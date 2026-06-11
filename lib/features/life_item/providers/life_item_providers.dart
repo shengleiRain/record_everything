@@ -59,6 +59,7 @@ class LifeItemNotifier extends Notifier<void> {
       title: data['title'] as String,
       description: data['description'] as String?,
       categoryId: data['categoryId'] as int?,
+      projectId: data['projectId'] as int?,
       itemType: data['itemType'] as String? ?? 'todo',
       amount: data['amount'] as int?,
       amountType: data['amountType'] as String? ?? 'none',

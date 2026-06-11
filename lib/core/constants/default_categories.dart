@@ -36,4 +36,12 @@ class DefaultCategories {
     {'name': '保险', 'icon': 'security'},
     {'name': '其他事项', 'icon': 'more_horiz'},
   ];
+
+  static const project = [
+    {'name': '摄影接单', 'icon': 'camera_alt'},
+    {'name': '活动策划', 'icon': 'event'},
+    {'name': '旅行规划', 'icon': 'flight'},
+    {'name': '客户项目', 'icon': 'business_center'},
+    {'name': '其他项目', 'icon': 'folder'},
+  ];
 }

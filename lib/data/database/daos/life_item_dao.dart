@@ -166,4 +166,23 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
       );
     return query.watchSingle().map((row) => row.read(countExpr) ?? 0);
   }
+
+  Stream<List<LifeItem>> watchByProjectId(int projectId) =>
+      (select(lifeItems)
+            ..where(
+              (t) => t.projectId.equals(projectId) & t.deletedAt.isNull(),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
+          .watch();
+
+  Stream<List<LifeItem>> watchPaymentDueByProjectId(int projectId) =>
+      (select(lifeItems)
+            ..where(
+              (t) =>
+                  t.projectId.equals(projectId) &
+                  t.itemType.equals('payment_due') &
+                  t.deletedAt.isNull(),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
+          .watch();
 }

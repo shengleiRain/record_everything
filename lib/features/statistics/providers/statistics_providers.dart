@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../data/database/app_database.dart';
+import '../../../data/database/daos/bill_record_dao.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../life_item/providers/life_item_providers.dart';
+import '../../project/providers/project_providers.dart';
 
 final statsMonthProvider = StateProvider<DateTime>((ref) => DateTime.now());
 
@@ -42,4 +45,54 @@ final statsForecastProvider = StreamProvider<int>((ref) {
         ),
         orElse: () => Stream.value(0),
       );
+});
+
+// --- Enhanced statistics providers ---
+
+final statsMonthlyTrendIncomeProvider = StreamProvider<List<MonthlySumRow>>((
+  ref,
+) {
+  final month = ref.watch(statsMonthProvider);
+  final start = DateTime(month.year, month.month - 5, 1);
+  final end = DateTime(month.year, month.month + 1, 1);
+  return ref.watch(projectRepoProvider).watchMonthlySums(start, end, 'income');
+});
+
+final statsMonthlyTrendExpenseProvider = StreamProvider<List<MonthlySumRow>>((
+  ref,
+) {
+  final month = ref.watch(statsMonthProvider);
+  final start = DateTime(month.year, month.month - 5, 1);
+  final end = DateTime(month.year, month.month + 1, 1);
+  return ref.watch(projectRepoProvider).watchMonthlySums(start, end, 'expense');
+});
+
+final statsCategoryBreakdownIncomeProvider =
+    StreamProvider<List<CategoryBreakdownRow>>((ref) {
+      final month = ref.watch(statsMonthProvider);
+      return ref
+          .watch(projectRepoProvider)
+          .watchCategoryBreakdown(month, 'income');
+    });
+
+final statsCategoryBreakdownExpenseProvider =
+    StreamProvider<List<CategoryBreakdownRow>>((ref) {
+      final month = ref.watch(statsMonthProvider);
+      return ref
+          .watch(projectRepoProvider)
+          .watchCategoryBreakdown(month, 'expense');
+    });
+
+// Project stats
+final statsActiveProjectsProvider = StreamProvider<List<Project>>((ref) {
+  return ref.watch(projectRepoProvider).watchByStatus('active');
+});
+
+final statsCompletedProjectsProvider = StreamProvider<List<Project>>((ref) {
+  return ref.watch(projectRepoProvider).watchByStatus('completed');
+});
+
+final statsProjectIncomeProvider = StreamProvider<int>((ref) {
+  final month = ref.watch(statsMonthProvider);
+  return ref.watch(projectRepoProvider).watchAllProjectIncomeForMonth(month);
 });

@@ -1,0 +1,74 @@
+appId: com.lifeitems.record_everything
+---
+# Project lifecycle: quick create -> detail -> status event -> manual event.
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: '.*新增.*'
+- waitForAnimationToEnd
+- tapOn:
+    text: '.*建项目.*'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*新建项目.*'
+
+- tapOn:
+    text: '.*项目标题.*'
+- inputText: 'MaestroProject'
+- hideKeyboard
+
+- tapOn:
+    text: '.*客户/参与人.*'
+- inputText: 'MaestroClient'
+- hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      text: '.*创建项目.*'
+    direction: DOWN
+- tapOn:
+    text: '.*创建项目.*'
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: '.*MaestroProject.*'
+- assertVisible:
+    text: '.*MaestroClient.*'
+- assertVisible:
+    text: '.*财务概览.*'
+
+- scrollUntilVisible:
+    element:
+      text: '.*开始执行.*'
+    direction: DOWN
+- tapOn:
+    text: '.*开始执行.*'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*进行中.*'
+
+- scrollUntilVisible:
+    element:
+      text: '.*添加事件.*'
+    direction: DOWN
+- tapOn:
+    text: '.*添加事件.*'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*添加事件.*'
+- tapOn:
+    text: '.*标题.*'
+- inputText: 'MaestroEvent'
+- hideKeyboard
+- tapOn:
+    text: '.*添加.*'
+- waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: '.*MaestroEvent.*'
+    direction: DOWN
+- assertVisible:
+    text: '.*MaestroEvent.*'

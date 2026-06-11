@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/money_formatter.dart';
+import '../../../data/database/daos/bill_record_dao.dart';
+import '../../../data/database/database_provider.dart';
 import '../providers/statistics_providers.dart';
 
 class StatisticsPage extends ConsumerWidget {
@@ -23,6 +25,27 @@ class StatisticsPage extends ConsumerWidget {
     final completionRate = totalTasks == 0
         ? 0
         : ((completed / totalTasks) * 100).round().clamp(0, 100);
+
+    // Trend data
+    final trendIncome =
+        ref.watch(statsMonthlyTrendIncomeProvider).valueOrNull ?? const [];
+    final trendExpense =
+        ref.watch(statsMonthlyTrendExpenseProvider).valueOrNull ?? const [];
+
+    // Category breakdown
+    final catIncome =
+        ref.watch(statsCategoryBreakdownIncomeProvider).valueOrNull ?? const [];
+    final catExpense =
+        ref.watch(statsCategoryBreakdownExpenseProvider).valueOrNull ??
+        const [];
+
+    // Project stats
+    final activeProjects =
+        ref.watch(statsActiveProjectsProvider).valueOrNull ?? const [];
+    final completedProjects =
+        ref.watch(statsCompletedProjectsProvider).valueOrNull ?? const [];
+    final projectIncome =
+        ref.watch(statsProjectIncomeProvider).valueOrNull ?? 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('统计')),
@@ -62,6 +85,90 @@ class StatisticsPage extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
+
+          // 6-month trend
+          _ChartCard(
+            title: '近6个月趋势',
+            trailing: '收入 / 支出',
+            child: _MonthlyTrendChart(
+              incomeData: trendIncome,
+              expenseData: trendExpense,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Month-over-month comparison
+          _MonthCompareCard(
+            currentMonth: month,
+            currentIncome: income,
+            currentExpense: expense,
+            currentBalance: balance,
+            trendIncome: trendIncome,
+            trendExpense: trendExpense,
+          ),
+          const SizedBox(height: 12),
+
+          // Category breakdown - expense
+          if (catExpense.isNotEmpty) ...[
+            _ChartCard(
+              title: '支出分类占比',
+              trailing: '支出 ${MoneyFormatter.format(expense)}',
+              child: _CategoryBreakdownList(
+                rows: catExpense,
+                categories: ref,
+                amountType: 'expense',
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Category breakdown - income
+          if (catIncome.isNotEmpty) ...[
+            _ChartCard(
+              title: '收入分类占比',
+              trailing: '收入 ${MoneyFormatter.format(income)}',
+              child: _CategoryBreakdownList(
+                rows: catIncome,
+                categories: ref,
+                amountType: 'income',
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Project stats
+          _ChartCard(
+            title: '项目统计',
+            trailing: '项目收入 ${MoneyFormatter.format(projectIncome)}',
+            child: Column(
+              children: [
+                _CategoryRow(
+                  icon: '收',
+                  label: '本月项目收入',
+                  subtitle: '已关联项目的收入账单',
+                  amount: MoneyFormatter.format(projectIncome),
+                  color: AppColors.income,
+                ),
+                _CategoryRow(
+                  icon: '进',
+                  label: '进行中项目',
+                  subtitle: '当前活跃',
+                  amount: '${activeProjects.length} 个',
+                  color: AppColors.income,
+                ),
+                _CategoryRow(
+                  icon: '完',
+                  label: '已完成项目',
+                  subtitle: '已交付/归档',
+                  amount: '${completedProjects.length} 个',
+                  color: AppColors.completed,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Original trend chart
           _ChartCard(
             title: '收支趋势',
             trailing: expense == 0
@@ -71,43 +178,6 @@ class StatisticsPage extends ConsumerWidget {
               income: income,
               expense: expense,
               forecast: forecast,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _ChartCard(
-            title: '分类占比',
-            trailing: '支出 ${MoneyFormatter.format(expense)}',
-            child: Column(
-              children: [
-                _CategoryRow(
-                  icon: '支',
-                  label: '本月支出',
-                  subtitle: '账单流水',
-                  amount: MoneyFormatter.format(expense),
-                  color: AppColors.expense,
-                ),
-                _CategoryRow(
-                  icon: '收',
-                  label: '本月收入',
-                  subtitle: '收入流水',
-                  amount: MoneyFormatter.format(income),
-                  color: AppColors.income,
-                ),
-                _CategoryRow(
-                  icon: '完',
-                  label: '已完成事项',
-                  subtitle: '当月事项完成',
-                  amount: '$completed 个',
-                  color: AppColors.completed,
-                ),
-                _CategoryRow(
-                  icon: '逾',
-                  label: '逾期事项',
-                  subtitle: overdue > 0 ? '需要尽快处理' : '暂无逾期',
-                  amount: '$overdue 个',
-                  color: overdue > 0 ? AppColors.overdue : AppColors.textHint,
-                ),
-              ],
             ),
           ),
           const SizedBox(height: 12),
@@ -126,6 +196,317 @@ class StatisticsPage extends ConsumerWidget {
     );
   }
 }
+
+// --- Multi-month trend chart ---
+
+class _MonthlyTrendChart extends StatelessWidget {
+  const _MonthlyTrendChart({
+    required this.incomeData,
+    required this.expenseData,
+  });
+
+  final List<MonthlySumRow> incomeData;
+  final List<MonthlySumRow> expenseData;
+
+  @override
+  Widget build(BuildContext context) {
+    if (incomeData.isEmpty && expenseData.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(
+          child: Text('暂无趋势数据', style: TextStyle(color: AppColors.textHint)),
+        ),
+      );
+    }
+
+    // Build month labels and values
+    final allMonths = <int>{};
+    for (final r in incomeData) {
+      allMonths.add(r.yearMonth);
+    }
+    for (final r in expenseData) {
+      allMonths.add(r.yearMonth);
+    }
+    final sortedMonths = allMonths.toList()..sort();
+
+    final incomeMap = {for (final r in incomeData) r.yearMonth: r.sum};
+    final expenseMap = {for (final r in expenseData) r.yearMonth: r.sum};
+
+    final allValues = <int>[...incomeMap.values, ...expenseMap.values];
+    final maxValue = allValues.isEmpty
+        ? 1
+        : allValues.reduce((a, b) => a > b ? a : b);
+
+    return SizedBox(
+      height: 140,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (final ym in sortedMonths)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _monthLabel(ym),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        _MiniBar(
+                          value: incomeMap[ym] ?? 0,
+                          maxValue: maxValue,
+                          color: AppColors.income,
+                        ),
+                        const SizedBox(width: 2),
+                        _MiniBar(
+                          value: expenseMap[ym] ?? 0,
+                          maxValue: maxValue,
+                          color: AppColors.expense,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _monthLabel(int yearMonth) {
+    final m = yearMonth % 100;
+    return '$m月';
+  }
+}
+
+class _MiniBar extends StatelessWidget {
+  const _MiniBar({
+    required this.value,
+    required this.maxValue,
+    required this.color,
+  });
+
+  final int value;
+  final int maxValue;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = maxValue > 0 ? (value / maxValue) * 80 : 0.0;
+    return Container(
+      width: 12,
+      height: height.clamp(2.0, 80.0),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.8),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+      ),
+    );
+  }
+}
+
+// --- Month comparison card ---
+
+class _MonthCompareCard extends StatelessWidget {
+  const _MonthCompareCard({
+    required this.currentMonth,
+    required this.currentIncome,
+    required this.currentExpense,
+    required this.currentBalance,
+    required this.trendIncome,
+    required this.trendExpense,
+  });
+
+  final DateTime currentMonth;
+  final int currentIncome;
+  final int currentExpense;
+  final int currentBalance;
+  final List<MonthlySumRow> trendIncome;
+  final List<MonthlySumRow> trendExpense;
+
+  @override
+  Widget build(BuildContext context) {
+    final prevYm = currentMonth.year * 100 + currentMonth.month - 1;
+    final prevIncome = _findSum(trendIncome, prevYm);
+    final prevExpense = _findSum(trendExpense, prevYm);
+    final prevBalance = prevIncome - prevExpense;
+
+    return _ChartCard(
+      title: '月度环比',
+      trailing: DateFormatter.formatMonth(currentMonth),
+      child: Column(
+        children: [
+          _CompareRow(
+            label: '收入',
+            current: currentIncome,
+            previous: prevIncome,
+          ),
+          _CompareRow(
+            label: '支出',
+            current: currentExpense,
+            previous: prevExpense,
+          ),
+          _CompareRow(
+            label: '结余',
+            current: currentBalance,
+            previous: prevBalance,
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _findSum(List<MonthlySumRow> data, int yearMonth) {
+    for (final r in data) {
+      if (r.yearMonth == yearMonth) return r.sum;
+    }
+    return 0;
+  }
+}
+
+class _CompareRow extends StatelessWidget {
+  const _CompareRow({
+    required this.label,
+    required this.current,
+    required this.previous,
+  });
+
+  final String label;
+  final int current;
+  final int previous;
+
+  @override
+  Widget build(BuildContext context) {
+    final diff = current - previous;
+    final hasData = previous > 0;
+    final percentChange = hasData
+        ? ((diff / previous) * 100).round()
+        : (current > 0 ? 100 : 0);
+    final isUp = diff > 0;
+    final color = isUp
+        ? AppColors.income
+        : (diff < 0 ? AppColors.expense : AppColors.textHint);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 40,
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          Expanded(
+            child: Text(
+              MoneyFormatter.format(current),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          if (previous > 0 || current > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                previous == 0
+                    ? (current > 0 ? '新增' : '无数据')
+                    : '${isUp ? '+' : ''}$percentChange%',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            Text(
+              '无上月数据',
+              style: TextStyle(color: AppColors.textHint, fontSize: 12),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- Category breakdown list ---
+
+class _CategoryBreakdownList extends ConsumerWidget {
+  const _CategoryBreakdownList({
+    required this.rows,
+    required this.categories,
+    required this.amountType,
+  });
+
+  final List<CategoryBreakdownRow> rows;
+  final WidgetRef categories;
+  final String amountType;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final total = rows.fold<int>(0, (sum, r) => sum + r.sum);
+    final displayRows = rows.take(5).toList();
+    final otherSum = rows.skip(5).fold<int>(0, (sum, r) => sum + r.sum);
+    final color = amountType == 'income' ? AppColors.income : AppColors.expense;
+
+    return Column(
+      children: [
+        for (final row in displayRows)
+          FutureBuilder<String>(
+            future: _getCategoryName(ref, row.categoryId),
+            builder: (context, snapshot) {
+              final name = snapshot.data ?? '加载中...';
+              final percent = total > 0 ? ((row.sum / total) * 100).round() : 0;
+              return _CategoryRow(
+                icon: name.isNotEmpty ? name.characters.first : '?',
+                label: name,
+                subtitle: '$percent%',
+                amount: MoneyFormatter.format(row.sum),
+                color: color,
+              );
+            },
+          ),
+        if (otherSum > 0)
+          _CategoryRow(
+            icon: '他',
+            label: '其他',
+            subtitle: '${total > 0 ? ((otherSum / total) * 100).round() : 0}%',
+            amount: MoneyFormatter.format(otherSum),
+            color: AppColors.textSecondary,
+          ),
+      ],
+    );
+  }
+
+  Future<String> _getCategoryName(WidgetRef ref, int? categoryId) async {
+    if (categoryId == null) return '未分类';
+    try {
+      final db = ref.read(databaseProvider);
+      final cats = await db.categoryDao.getAll();
+      final cat = cats.where((c) => c.id == categoryId).firstOrNull;
+      return cat?.name ?? '未分类';
+    } catch (_) {
+      return '未分类';
+    }
+  }
+}
+
+// --- Existing widgets (kept) ---
 
 class _BudgetRiskCard extends StatelessWidget {
   const _BudgetRiskCard({required this.expense, required this.budget});

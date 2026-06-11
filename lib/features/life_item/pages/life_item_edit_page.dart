@@ -12,6 +12,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../models/reminder_preset.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../project/widgets/project_picker_field.dart';
 import '../providers/life_item_providers.dart';
 import '../widgets/quick_template_sheet.dart';
 
@@ -35,6 +36,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   bool _hasRepeat = false;
   DateTime _dueDate = DateTime.now().add(const Duration(days: 1));
   int? _selectedCategoryId;
+  int? _projectId;
   ReminderPreset _reminderPreset = ReminderPreset.none;
   DateTime? _customReminderTime;
   bool _isEdit = false;
@@ -48,16 +50,26 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     final state = GoRouterState.of(context);
     final extra = state.extra;
     if (extra != null && extra is Map<String, dynamic>) {
-      _isEdit = true;
-      _editId = extra['id'] as int?;
-      _loadFromMap(extra);
-    } else {
+      if (extra.containsKey('projectId') && !_isEdit) {
+        _projectId = extra['projectId'] as int?;
+      }
+      if (extra.containsKey('id')) {
+        _isEdit = true;
+        _editId = extra['id'] as int?;
+        _loadFromMap(extra);
+      }
+    }
+    if (!_isEdit) {
       final idStr = state.pathParameters['id'];
       if (idStr != null && idStr != 'new') {
         _isEdit = true;
         _editId = int.tryParse(idStr);
         _loadFromDatabase();
       }
+    }
+    // Also check extra for projectId when navigating from project detail
+    if (!_isEdit && extra is Map && extra['projectId'] != null) {
+      _projectId = extra['projectId'] as int?;
     }
     _loaded = true;
   }
@@ -67,7 +79,10 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     if (id == null) return;
     final item = await ref.read(databaseProvider).lifeItemDao.getById(id);
     if (!mounted) return;
-    setState(() => _loadFromItem(item));
+    setState(() {
+      _loadFromItem(item);
+      _projectId = item.projectId;
+    });
   }
 
   void _loadFromMap(Map<String, dynamic> data) {
@@ -229,6 +244,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                 ),
                 itemType: _itemType.value,
                 categoryId: Value(_selectedCategoryId),
+                projectId: Value(_projectId),
                 amount: Value(
                   _amountType != AmountType.none
                       ? MoneyFormatter.parse(_amountController.text)
@@ -254,6 +270,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                 : _descController.text.trim(),
             'itemType': _itemType.value,
             'categoryId': _selectedCategoryId,
+            'projectId': _projectId,
             'amount': _amountType != AmountType.none
                 ? MoneyFormatter.parse(_amountController.text)
                 : null,
@@ -360,6 +377,11 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
               title: '时间与金额',
               child: Column(
                 children: [
+                  ProjectPickerField(
+                    value: _projectId,
+                    onChanged: (v) => setState(() => _projectId = v),
+                  ),
+                  const SizedBox(height: 16),
                   _DateField(
                     key: const ValueKey('life-item-date-field'),
                     label: '日期',

@@ -30,6 +30,18 @@ appId: com.lifeitems.record_everything
 - back
 - waitForAnimationToEnd
 
+# Open quick create sheet again for project
+- tapOn: '新增'
+- waitForAnimationToEnd
+
+# Navigate to project creation via quick create
+- tapOn:
+    text: '.*建项目.*'
+- waitForAnimationToEnd
+- takeScreenshot: home-quick-create-project
+- back
+- waitForAnimationToEnd
+
 # Open search page from AppBar
 - tapOn: '搜索'
 - waitForAnimationToEnd

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/database/app_database.dart';
 import '../bill/providers/bill_providers.dart';
 import '../life_item/providers/life_item_providers.dart';
+import '../project/providers/project_providers.dart';
 import 'search_service.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
@@ -28,6 +29,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget build(BuildContext context) {
     final lifeItems = ref.watch(lifeItemsProvider).valueOrNull ?? const [];
     final bills = ref.watch(billRepoProvider).watchAll();
+    final projects = ref.watch(projectsProvider).valueOrNull ?? const [];
 
     return Scaffold(
       appBar: AppBar(title: const Text('搜索')),
@@ -38,6 +40,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             query: _query,
             lifeItems: lifeItems,
             billRecords: snapshot.data ?? const [],
+            projects: projects,
           );
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -46,7 +49,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                 controller: _controller,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  labelText: '搜索事项和账单',
+                  labelText: '搜索事项、账单和项目',
                   prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder(),
                 ),
@@ -63,13 +66,21 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     leading: Icon(
                       result.kind == SearchResultKind.lifeItem
                           ? Icons.event_note
-                          : Icons.receipt_long,
+                          : result.kind == SearchResultKind.project
+                              ? Icons.folder_outlined
+                              : Icons.receipt_long,
                     ),
                     title: Text(result.title),
                     subtitle: Text(result.subtitle),
-                    onTap: () => result.kind == SearchResultKind.lifeItem
-                        ? context.push('/items/${result.id}')
-                        : context.push('/bills/${result.id}/edit'),
+                    onTap: () {
+                      if (result.kind == SearchResultKind.lifeItem) {
+                        context.push('/items/${result.id}');
+                      } else if (result.kind == SearchResultKind.project) {
+                        context.push('/projects/${result.id}');
+                      } else {
+                        context.push('/bills/${result.id}/edit');
+                      }
+                    },
                   ),
             ],
           );

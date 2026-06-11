@@ -11,9 +11,9 @@ void showQuickCreateSheet(BuildContext context) {
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (sheetContext) => QuickCreateSheet(
-      onNavigate: (location) {
+      onNavigate: (location, {extra}) {
         Navigator.of(sheetContext).pop();
-        context.push(location);
+        context.push(location, extra: extra);
       },
     ),
   );
@@ -22,7 +22,7 @@ void showQuickCreateSheet(BuildContext context) {
 class QuickCreateSheet extends StatelessWidget {
   const QuickCreateSheet({super.key, required this.onNavigate});
 
-  final void Function(String location) onNavigate;
+  final void Function(String location, {Object? extra}) onNavigate;
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +92,23 @@ class QuickCreateSheet extends StatelessWidget {
                           title: '周期模板',
                           subtitle: '会员 / 耗材',
                           onTap: () => onNavigate('/items/new'),
+                        ),
+                        _QuickCreateAction(
+                          key: const ValueKey('quick-create-project'),
+                          icon: Icons.folder_outlined,
+                          title: '建项目',
+                          subtitle: '项目 / 订单',
+                          onTap: () => onNavigate('/projects/new'),
+                        ),
+                        _QuickCreateAction(
+                          key: const ValueKey('quick-create-photography'),
+                          icon: Icons.photo_camera_outlined,
+                          title: '摄影接单',
+                          subtitle: '定金 / 尾款',
+                          onTap: () => onNavigate(
+                            '/projects/new',
+                            extra: {'template': 'photography'},
+                          ),
                         ),
                       ],
                     ),

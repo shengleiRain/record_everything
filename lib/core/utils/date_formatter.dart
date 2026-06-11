@@ -52,4 +52,8 @@ class DateFormatter {
     final target = DateTime(date.year, date.month, date.day);
     return target.difference(today).inDays;
   }
+
+  static String formatDateTime(DateTime date) {
+    return DateFormat('yyyy-MM-dd HH:mm').format(date);
+  }
 }

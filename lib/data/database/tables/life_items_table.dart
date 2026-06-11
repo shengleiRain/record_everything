@@ -15,5 +15,6 @@ class LifeItems extends Table {
   TextColumn get status => text().withDefault(const Constant('pending'))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get projectId => integer().nullable()();
   DateTimeColumn get deletedAt => dateTime().nullable()();
 }

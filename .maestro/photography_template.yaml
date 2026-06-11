@@ -1,0 +1,100 @@
+appId: com.lifeitems.record_everything
+---
+# Photography template: quick create -> fill contract -> verify payment and delivery nodes.
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: '.*新增.*'
+- waitForAnimationToEnd
+- tapOn:
+    text: '.*摄影接单.*'
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: '.*新建项目.*'
+- assertVisible:
+    text: '.*摄影接单模板.*'
+
+- tapOn:
+    text: '.*项目标题.*'
+- inputText: 'MaestroPhotoWedding'
+- hideKeyboard
+
+- tapOn:
+    text: '.*客户/参与人.*'
+- inputText: 'MaestroClient'
+- hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      text: '.*约定总额.*'
+    direction: DOWN
+- tapOn:
+    text: '.*约定总额.*'
+- inputText: '6800'
+- hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      text: '.*拍摄类型.*'
+    direction: DOWN
+- tapOn:
+    text: '.*拍摄类型.*'
+- inputText: 'Wedding'
+- hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      text: '.*定金金额.*'
+    direction: DOWN
+- tapOn:
+    text: '.*定金金额.*'
+- inputText: '2000'
+- hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      text: '.*尾款金额.*'
+    direction: DOWN
+- tapOn:
+    text: '.*尾款金额.*'
+- inputText: '4800'
+- hideKeyboard
+
+- scrollUntilVisible:
+    element:
+      text: '.*创建项目.*'
+    direction: DOWN
+- tapOn:
+    text: '.*创建项目.*'
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: '.*MaestroPhotoWedding.*'
+- assertVisible:
+    text: '.*财务概览.*'
+- assertVisible:
+    text: '.*待收.*'
+
+- scrollUntilVisible:
+    element:
+      text: '.*收定金.*'
+    direction: DOWN
+- assertVisible:
+    text: '.*收定金.*'
+
+- scrollUntilVisible:
+    element:
+      text: '.*拍摄日提醒.*'
+    direction: DOWN
+- assertVisible:
+    text: '.*拍摄日提醒.*'
+
+- scrollUntilVisible:
+    element:
+      text: '.*收尾款.*'
+    direction: DOWN
+- assertVisible:
+    text: '.*收尾款.*'

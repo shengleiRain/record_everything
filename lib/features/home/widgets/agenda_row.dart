@@ -77,6 +77,7 @@ class AgendaRow extends StatelessWidget {
   IconData get _icon {
     if (item.isOverdue) return Icons.warning_amber_rounded;
     if (item.kind == AgendaItemKind.billRecord) return Icons.receipt_long;
+    if (item.kind == AgendaItemKind.project) return Icons.folder_outlined;
     if (item.isCompleted) return Icons.check_circle;
     return Icons.radio_button_unchecked;
   }

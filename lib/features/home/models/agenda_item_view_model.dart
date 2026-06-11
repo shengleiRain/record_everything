@@ -1,7 +1,7 @@
 import '../../../data/database/app_database.dart';
 import 'calendar_window.dart';
 
-enum AgendaItemKind { lifeItem, billRecord }
+enum AgendaItemKind { lifeItem, billRecord, project }
 
 class AgendaItemViewModel {
   const AgendaItemViewModel({
@@ -17,6 +17,7 @@ class AgendaItemViewModel {
     required this.isCompleted,
     this.lifeItem,
     this.billRecord,
+    this.project,
   });
 
   final AgendaItemKind kind;
@@ -31,6 +32,7 @@ class AgendaItemViewModel {
   final bool isCompleted;
   final LifeItem? lifeItem;
   final BillRecord? billRecord;
+  final Project? project;
 
   factory AgendaItemViewModel.fromLifeItem(LifeItem item, DateTime today) {
     final dueDate = CalendarWindow.dateOnly(item.dueTime);
@@ -70,6 +72,25 @@ class AgendaItemViewModel {
       isOverdue: false,
       isCompleted: true,
       billRecord: record,
+    );
+  }
+
+  factory AgendaItemViewModel.fromProject(Project project) {
+    final startDate = project.startDate;
+    return AgendaItemViewModel(
+      kind: AgendaItemKind.project,
+      id: project.id,
+      date: startDate != null
+          ? CalendarWindow.dateOnly(startDate)
+          : CalendarWindow.dateOnly(DateTime.now()),
+      title: project.title,
+      subtitle: '项目',
+      amount: project.totalAmount,
+      amountType: 'income',
+      status: project.projectStatus,
+      isOverdue: false,
+      isCompleted: project.projectStatus == 'completed',
+      project: project,
     );
   }
 }

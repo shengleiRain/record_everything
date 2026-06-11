@@ -1,6 +1,6 @@
 import '../../data/database/app_database.dart';
 
-enum SearchResultKind { lifeItem, billRecord }
+enum SearchResultKind { lifeItem, billRecord, project }
 
 class SearchResult {
   const SearchResult({
@@ -25,6 +25,7 @@ class SearchService {
     required String query,
     required List<LifeItem> lifeItems,
     required List<BillRecord> billRecords,
+    List<Project> projects = const [],
   }) {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return const [];
@@ -49,6 +50,18 @@ class SearchService {
             title: bill.title,
             subtitle: bill.note?.isNotEmpty == true ? bill.note! : '账单',
             date: bill.billTime,
+          ),
+      for (final project in projects)
+        if (_matches(
+            [project.title, project.participant, project.note], normalized))
+          SearchResult(
+            kind: SearchResultKind.project,
+            id: project.id,
+            title: project.title,
+            subtitle: project.participant?.isNotEmpty == true
+                ? '${project.participant!} · 项目'
+                : '项目',
+            date: project.startDate ?? project.createdAt,
           ),
     ]..sort((a, b) => b.date.compareTo(a.date));
 
