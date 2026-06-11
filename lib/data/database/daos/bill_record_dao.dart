@@ -38,6 +38,9 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
   Future<BillRecord> getById(int id) =>
       (select(billRecords)..where((t) => t.id.equals(id))).getSingle();
 
+  Stream<BillRecord> watchById(int id) =>
+      (select(billRecords)..where((t) => t.id.equals(id))).watchSingle();
+
   Future<BillRecord> insertOne(BillRecordsCompanion entry) =>
       into(billRecords).insertReturning(entry);
 

@@ -17,7 +17,16 @@ class ProjectListPage extends ConsumerWidget {
     final categoryFilter = ref.watch(projectCategoryFilterProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('项目')),
+      appBar: AppBar(
+        title: const Text('项目'),
+        actions: [
+          IconButton(
+            tooltip: '项目模板',
+            icon: const Icon(Icons.view_timeline_outlined),
+            onPressed: () => context.push('/projects/templates'),
+          ),
+        ],
+      ),
       body: projectsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('加载失败: $e')),
@@ -68,7 +77,7 @@ class ProjectListPage extends ConsumerWidget {
                           ],
                         ),
                       )
-                    : _ProjectListWithIncome(projects: filtered),
+                    : _GroupedProjectList(projects: filtered),
               ),
             ],
           );
@@ -82,21 +91,123 @@ class ProjectListPage extends ConsumerWidget {
   }
 }
 
-class _ProjectListWithIncome extends ConsumerWidget {
-  const _ProjectListWithIncome({required this.projects});
+class _GroupedProjectList extends ConsumerWidget {
+  const _GroupedProjectList({required this.projects});
+
   final List<Project> projects;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: projects.length,
-      itemBuilder: (context, index) {
-        final project = projects[index];
-        return _ProjectCardWithIncome(project: project);
+    return FutureBuilder<List<Category>>(
+      future: ref.read(databaseProvider).categoryDao.getByType('project'),
+      builder: (context, snapshot) {
+        final categories = snapshot.data ?? const <Category>[];
+        final grouped = _groupProjects(projects, categories);
+        return ListView.builder(
+          padding: const EdgeInsets.only(bottom: 88),
+          itemCount: grouped.length,
+          itemBuilder: (context, index) {
+            final group = grouped[index];
+            return _ProjectCategorySection(group: group);
+          },
+        );
       },
     );
   }
+
+  List<_ProjectGroup> _groupProjects(
+    List<Project> projects,
+    List<Category> categories,
+  ) {
+    final categoryMap = {
+      for (final category in categories) category.id: category,
+    };
+    final grouped = <int?, List<Project>>{};
+    for (final project in projects) {
+      grouped.putIfAbsent(project.categoryId, () => []).add(project);
+    }
+
+    final result = <_ProjectGroup>[];
+    for (final category in categories) {
+      final items = grouped.remove(category.id);
+      if (items == null || items.isEmpty) continue;
+      result.add(_ProjectGroup(label: category.name, projects: items));
+    }
+    const nullCategorySortValue = 1 << 30;
+    final remainingKeys = grouped.keys.toList()
+      ..sort(
+        (a, b) =>
+            (a ?? nullCategorySortValue).compareTo(b ?? nullCategorySortValue),
+      );
+    for (final key in remainingKeys) {
+      final items = grouped[key] ?? const <Project>[];
+      if (items.isEmpty) continue;
+      result.add(
+        _ProjectGroup(
+          label: key == null ? '未分类' : categoryMap[key]?.name ?? '其他项目',
+          projects: items,
+        ),
+      );
+    }
+    return result;
+  }
+}
+
+class _ProjectCategorySection extends StatelessWidget {
+  const _ProjectCategorySection({required this.group});
+
+  final _ProjectGroup group;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(
+              children: [
+                Text(
+                  group.label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${group.projects.length}',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (final project in group.projects)
+            _ProjectCardWithIncome(project: project),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectGroup {
+  const _ProjectGroup({required this.label, required this.projects});
+
+  final String label;
+  final List<Project> projects;
 }
 
 class _ProjectCardWithIncome extends ConsumerWidget {

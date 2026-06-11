@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
@@ -86,7 +87,7 @@ class SelectedDayAgenda extends StatelessWidget {
             )
           else
             for (final item in items) ...[
-              AgendaRow(item: item),
+              AgendaRow(item: item, onTap: () => _openItem(context, item)),
               if (item != items.last)
                 Divider(height: 1, color: Colors.black.withValues(alpha: 0.06)),
             ],
@@ -98,4 +99,15 @@ class SelectedDayAgenda extends StatelessWidget {
 
 String _weekdayLabel(DateTime date) {
   return const ['周一', '周二', '周三', '周四', '周五', '周六', '周日'][date.weekday - 1];
+}
+
+void _openItem(BuildContext context, AgendaItemViewModel item) {
+  switch (item.kind) {
+    case AgendaItemKind.lifeItem:
+      context.push('/items/${item.id}');
+    case AgendaItemKind.billRecord:
+      context.push('/bills/${item.id}');
+    case AgendaItemKind.project:
+      context.push('/projects/${item.id}');
+  }
 }

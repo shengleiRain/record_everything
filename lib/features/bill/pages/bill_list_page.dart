@@ -139,7 +139,7 @@ class _BillListPageState extends ConsumerState<BillListPage> {
                   itemBuilder: (context, index) => BillDayGroup(
                     date: groups[index].date,
                     bills: groups[index].bills,
-                    onBillTap: (bill) => context.push('/bills/${bill.id}/edit'),
+                    onBillTap: (bill) => context.push('/bills/${bill.id}'),
                   ),
                 );
               },

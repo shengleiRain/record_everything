@@ -14,7 +14,6 @@ import '../models/reminder_preset.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../project/widgets/project_picker_field.dart';
 import '../providers/life_item_providers.dart';
-import '../widgets/quick_template_sheet.dart';
 
 class LifeItemEditPage extends ConsumerStatefulWidget {
   const LifeItemEditPage({super.key});
@@ -37,11 +36,26 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   DateTime _dueDate = DateTime.now().add(const Duration(days: 1));
   int? _selectedCategoryId;
   int? _projectId;
+  int? _selectedTemplateId;
+  String _titleInput = '';
   ReminderPreset _reminderPreset = ReminderPreset.none;
   DateTime? _customReminderTime;
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController.addListener(_onTitleChanged);
+  }
+
+  void _onTitleChanged() {
+    if (_isEdit) return;
+    final next = _titleController.text;
+    if (next == _titleInput) return;
+    setState(() => _titleInput = next);
+  }
 
   @override
   void didChangeDependencies() {
@@ -151,32 +165,43 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     }
   }
 
-  void _applyTemplate(TemplateData t) {
+  void _applyItemTemplate(ItemTemplate template, {bool replaceTitle = true}) {
+    final dueDate = DateTime.now().add(Duration(days: template.dueOffsetDays));
     setState(() {
-      _titleController.text = t.title;
-      _itemType = ItemType.fromString(t.itemType);
-      _amountType = AmountType.fromString(t.amountType);
-      if (t.repeatRule != null) {
+      _selectedTemplateId = template.id;
+      if (replaceTitle || _titleController.text.trim().isEmpty) {
+        _titleController.text = template.name;
+      }
+      _itemType = ItemType.fromString(template.itemType);
+      _amountType = AmountType.fromString(template.amountType);
+      if (template.amount != null) {
+        _amountController.text = (template.amount! / 100).toStringAsFixed(2);
+      } else if (_amountType == AmountType.none) {
+        _amountController.clear();
+      }
+      _dueDate = dueDate;
+      _selectedCategoryId = template.categoryId ?? _selectedCategoryId;
+      final reminderOffset = template.reminderOffsetDays;
+      if (reminderOffset == null) {
+        _reminderPreset = ReminderPreset.none;
+        _customReminderTime = null;
+      } else {
+        _reminderPreset = ReminderPreset.custom;
+        _customReminderTime = dueDate.add(Duration(days: reminderOffset));
+      }
+      final repeatRule = template.repeatRule;
+      if (repeatRule != null) {
         _hasRepeat = true;
-        if (t.repeatRule!.startsWith('every:')) {
+        if (repeatRule.startsWith('every:')) {
           _repeatPeriod = RepeatPeriod.custom;
-          _customRepeatDays = int.tryParse(t.repeatRule!.split(':')[1]) ?? 30;
+          _customRepeatDays = int.tryParse(repeatRule.split(':')[1]) ?? 30;
         } else {
-          _repeatPeriod = RepeatPeriod.fromString(t.repeatRule!);
+          _repeatPeriod = RepeatPeriod.fromString(repeatRule);
         }
+      } else {
+        _hasRepeat = false;
       }
     });
-    _findCategoryByName(t.categoryName);
-  }
-
-  Future<void> _findCategoryByName(String? name) async {
-    if (name == null) return;
-    final db = ref.read(databaseProvider);
-    final cats = await db.categoryDao.getAll();
-    final match = cats.where((c) => c.name == name).firstOrNull;
-    if (match != null && mounted) {
-      setState(() => _selectedCategoryId = match.id);
-    }
   }
 
   @override
@@ -289,21 +314,25 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(_isEdit ? '编辑事项' : '新建事项'),
-        actions: [
-          if (!_isEdit)
-            TextButton(
-              onPressed: () => showQuickTemplateSheet(context, _applyTemplate),
-              child: const Text('模板'),
-            ),
-        ],
-      ),
+      appBar: AppBar(title: Text(_isEdit ? '编辑事项' : '新建事项')),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (!_isEdit) ...[
+              _ItemTemplateSelector(
+                selectedTemplateId: _selectedTemplateId,
+                onSelected: (template) {
+                  if (template == null) {
+                    setState(() => _selectedTemplateId = null);
+                  } else {
+                    _applyItemTemplate(template);
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
             _SectionCard(
               title: '事项内容',
               child: Column(
@@ -314,6 +343,14 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? '请输入标题' : null,
                   ),
+                  if (!_isEdit) ...[
+                    _ItemTemplateRecommendations(
+                      title: _titleInput,
+                      selectedTemplateId: _selectedTemplateId,
+                      onApply: (template) =>
+                          _applyItemTemplate(template, replaceTitle: false),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _descController,
@@ -574,6 +611,366 @@ class _DateField extends StatelessWidget {
           suffixIcon: const Icon(Icons.calendar_today),
         ),
         child: Text(value, style: Theme.of(context).textTheme.bodyLarge),
+      ),
+    );
+  }
+}
+
+class _ItemTemplateSelector extends ConsumerWidget {
+  const _ItemTemplateSelector({
+    required this.selectedTemplateId,
+    required this.onSelected,
+  });
+
+  final int? selectedTemplateId;
+  final ValueChanged<ItemTemplate?> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final templatesAsync = ref.watch(itemTemplatesProvider);
+    return templatesAsync.when(
+      loading: () => const _ItemTemplateShell(
+        title: '事项模板',
+        subtitle: '正在加载模板...',
+        child: LinearProgressIndicator(),
+      ),
+      error: (error, _) => _ItemTemplateShell(
+        title: '事项模板',
+        subtitle: '模板加载失败',
+        child: Text('$error'),
+      ),
+      data: (templates) {
+        final selected = templates
+            .where((template) => template.id == selectedTemplateId)
+            .firstOrNull;
+        return _ItemTemplateShell(
+          title: selected?.name ?? '不使用模板',
+          subtitle: selected == null ? '手动设置类型、分类、日期和金额' : '已套用默认类型、分类、日期和提醒',
+          child: Row(
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _openPicker(context, templates),
+                icon: const Icon(Icons.auto_awesome_motion_outlined),
+                label: Text(selected == null ? '选择模板' : '更换模板'),
+              ),
+              if (selected != null) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () => onSelected(null),
+                  child: const Text('清除'),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _openPicker(BuildContext context, List<ItemTemplate> templates) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => _ItemTemplatePickerSheet(
+        templates: templates,
+        selectedTemplateId: selectedTemplateId,
+        onSelected: (template) {
+          Navigator.of(sheetContext).pop();
+          onSelected(template);
+        },
+      ),
+    );
+  }
+}
+
+class _ItemTemplateRecommendations extends ConsumerWidget {
+  const _ItemTemplateRecommendations({
+    required this.title,
+    required this.selectedTemplateId,
+    required this.onApply,
+  });
+
+  final String title;
+  final int? selectedTemplateId;
+  final ValueChanged<ItemTemplate> onApply;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return const SizedBox.shrink();
+    final recommendations = ref.watch(
+      itemTemplateRecommendationsProvider(trimmed),
+    );
+    return recommendations.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (templates) {
+        final rows = templates
+            .where((template) => template.id != selectedTemplateId)
+            .toList();
+        if (rows.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final template in rows)
+                  ActionChip(
+                    avatar: const Icon(Icons.tips_and_updates_outlined),
+                    label: Text('推荐：${template.name}'),
+                    onPressed: () => onApply(template),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ItemTemplateShell extends StatelessWidget {
+  const _ItemTemplateShell({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        color: Theme.of(context).colorScheme.surface,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_motion_outlined,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ItemTemplatePickerSheet extends ConsumerWidget {
+  const _ItemTemplatePickerSheet({
+    required this.templates,
+    required this.selectedTemplateId,
+    required this.onSelected,
+  });
+
+  final List<ItemTemplate> templates;
+  final int? selectedTemplateId;
+  final ValueChanged<ItemTemplate?> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final categoriesAsync = ref.watch(
+      FutureProvider.autoDispose(
+        (ref) => ref.read(databaseProvider).categoryDao.getByType('item'),
+      ),
+    );
+    final categories = categoriesAsync.valueOrNull ?? const <Category>[];
+    final categoryNames = {
+      for (final category in categories) category.id: category.name,
+    };
+
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        children: [
+          Text(
+            '选择事项模板',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          _ItemTemplateOptionFrame(
+            selected: selectedTemplateId == null,
+            onTap: () => onSelected(null),
+            child: Row(
+              children: [
+                Icon(
+                  selectedTemplateId == null
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  color: selectedTemplateId == null
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '不使用模板',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      SizedBox(height: 2),
+                      Text('手动设置事项字段'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (final template in templates) ...[
+            _ItemTemplateTile(
+              template: template,
+              categoryName: categoryNames[template.categoryId],
+              selected: selectedTemplateId == template.id,
+              onTap: () => onSelected(template),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ItemTemplateTile extends StatelessWidget {
+  const _ItemTemplateTile({
+    required this.template,
+    required this.categoryName,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ItemTemplate template;
+  final String? categoryName;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ItemTemplateOptionFrame(
+      selected: selected,
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            selected ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: selected ? AppColors.primary : AppColors.textSecondary,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  template.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  [
+                    if (categoryName != null) categoryName!,
+                    ItemType.fromString(template.itemType).label,
+                    if (template.repeatRule != null) '重复',
+                  ].join(' · '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ItemTemplateOptionFrame extends StatelessWidget {
+  const _ItemTemplateOptionFrame({
+    required this.selected,
+    required this.onTap,
+    required this.child,
+  });
+
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryLight : AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected
+                ? AppColors.primary
+                : Colors.black.withValues(alpha: 0.08),
+          ),
+        ),
+        child: Padding(padding: const EdgeInsets.all(12), child: child),
       ),
     );
   }

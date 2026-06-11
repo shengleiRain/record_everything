@@ -69,8 +69,58 @@ class $CategoriesTable extends Categories
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isHiddenMeta = const VerificationMeta(
+    'isHidden',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, type, icon, isDefault];
+  late final GeneratedColumn<bool> isHidden = GeneratedColumn<bool>(
+    'is_hidden',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_hidden" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isPinnedMeta = const VerificationMeta(
+    'isPinned',
+  );
+  @override
+  late final GeneratedColumn<bool> isPinned = GeneratedColumn<bool>(
+    'is_pinned',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_pinned" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _lastUsedAtMeta = const VerificationMeta(
+    'lastUsedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastUsedAt = GeneratedColumn<DateTime>(
+    'last_used_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    type,
+    icon,
+    isDefault,
+    isHidden,
+    isPinned,
+    lastUsedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -114,6 +164,27 @@ class $CategoriesTable extends Categories
         isDefault.isAcceptableOrUnknown(data['is_default']!, _isDefaultMeta),
       );
     }
+    if (data.containsKey('is_hidden')) {
+      context.handle(
+        _isHiddenMeta,
+        isHidden.isAcceptableOrUnknown(data['is_hidden']!, _isHiddenMeta),
+      );
+    }
+    if (data.containsKey('is_pinned')) {
+      context.handle(
+        _isPinnedMeta,
+        isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta),
+      );
+    }
+    if (data.containsKey('last_used_at')) {
+      context.handle(
+        _lastUsedAtMeta,
+        lastUsedAt.isAcceptableOrUnknown(
+          data['last_used_at']!,
+          _lastUsedAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -143,6 +214,18 @@ class $CategoriesTable extends Categories
         DriftSqlType.bool,
         data['${effectivePrefix}is_default'],
       )!,
+      isHidden: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_hidden'],
+      )!,
+      isPinned: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_pinned'],
+      )!,
+      lastUsedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_used_at'],
+      ),
     );
   }
 
@@ -158,12 +241,18 @@ class Category extends DataClass implements Insertable<Category> {
   final String type;
   final String icon;
   final bool isDefault;
+  final bool isHidden;
+  final bool isPinned;
+  final DateTime? lastUsedAt;
   const Category({
     required this.id,
     required this.name,
     required this.type,
     required this.icon,
     required this.isDefault,
+    required this.isHidden,
+    required this.isPinned,
+    this.lastUsedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -173,6 +262,11 @@ class Category extends DataClass implements Insertable<Category> {
     map['type'] = Variable<String>(type);
     map['icon'] = Variable<String>(icon);
     map['is_default'] = Variable<bool>(isDefault);
+    map['is_hidden'] = Variable<bool>(isHidden);
+    map['is_pinned'] = Variable<bool>(isPinned);
+    if (!nullToAbsent || lastUsedAt != null) {
+      map['last_used_at'] = Variable<DateTime>(lastUsedAt);
+    }
     return map;
   }
 
@@ -183,6 +277,11 @@ class Category extends DataClass implements Insertable<Category> {
       type: Value(type),
       icon: Value(icon),
       isDefault: Value(isDefault),
+      isHidden: Value(isHidden),
+      isPinned: Value(isPinned),
+      lastUsedAt: lastUsedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastUsedAt),
     );
   }
 
@@ -197,6 +296,9 @@ class Category extends DataClass implements Insertable<Category> {
       type: serializer.fromJson<String>(json['type']),
       icon: serializer.fromJson<String>(json['icon']),
       isDefault: serializer.fromJson<bool>(json['isDefault']),
+      isHidden: serializer.fromJson<bool>(json['isHidden']),
+      isPinned: serializer.fromJson<bool>(json['isPinned']),
+      lastUsedAt: serializer.fromJson<DateTime?>(json['lastUsedAt']),
     );
   }
   @override
@@ -208,6 +310,9 @@ class Category extends DataClass implements Insertable<Category> {
       'type': serializer.toJson<String>(type),
       'icon': serializer.toJson<String>(icon),
       'isDefault': serializer.toJson<bool>(isDefault),
+      'isHidden': serializer.toJson<bool>(isHidden),
+      'isPinned': serializer.toJson<bool>(isPinned),
+      'lastUsedAt': serializer.toJson<DateTime?>(lastUsedAt),
     };
   }
 
@@ -217,12 +322,18 @@ class Category extends DataClass implements Insertable<Category> {
     String? type,
     String? icon,
     bool? isDefault,
+    bool? isHidden,
+    bool? isPinned,
+    Value<DateTime?> lastUsedAt = const Value.absent(),
   }) => Category(
     id: id ?? this.id,
     name: name ?? this.name,
     type: type ?? this.type,
     icon: icon ?? this.icon,
     isDefault: isDefault ?? this.isDefault,
+    isHidden: isHidden ?? this.isHidden,
+    isPinned: isPinned ?? this.isPinned,
+    lastUsedAt: lastUsedAt.present ? lastUsedAt.value : this.lastUsedAt,
   );
   Category copyWithCompanion(CategoriesCompanion data) {
     return Category(
@@ -231,6 +342,11 @@ class Category extends DataClass implements Insertable<Category> {
       type: data.type.present ? data.type.value : this.type,
       icon: data.icon.present ? data.icon.value : this.icon,
       isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
+      isHidden: data.isHidden.present ? data.isHidden.value : this.isHidden,
+      isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
+      lastUsedAt: data.lastUsedAt.present
+          ? data.lastUsedAt.value
+          : this.lastUsedAt,
     );
   }
 
@@ -241,13 +357,25 @@ class Category extends DataClass implements Insertable<Category> {
           ..write('name: $name, ')
           ..write('type: $type, ')
           ..write('icon: $icon, ')
-          ..write('isDefault: $isDefault')
+          ..write('isDefault: $isDefault, ')
+          ..write('isHidden: $isHidden, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('lastUsedAt: $lastUsedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, type, icon, isDefault);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    type,
+    icon,
+    isDefault,
+    isHidden,
+    isPinned,
+    lastUsedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -256,7 +384,10 @@ class Category extends DataClass implements Insertable<Category> {
           other.name == this.name &&
           other.type == this.type &&
           other.icon == this.icon &&
-          other.isDefault == this.isDefault);
+          other.isDefault == this.isDefault &&
+          other.isHidden == this.isHidden &&
+          other.isPinned == this.isPinned &&
+          other.lastUsedAt == this.lastUsedAt);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
@@ -265,12 +396,18 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<String> type;
   final Value<String> icon;
   final Value<bool> isDefault;
+  final Value<bool> isHidden;
+  final Value<bool> isPinned;
+  final Value<DateTime?> lastUsedAt;
   const CategoriesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.type = const Value.absent(),
     this.icon = const Value.absent(),
     this.isDefault = const Value.absent(),
+    this.isHidden = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.lastUsedAt = const Value.absent(),
   });
   CategoriesCompanion.insert({
     this.id = const Value.absent(),
@@ -278,6 +415,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     required String type,
     this.icon = const Value.absent(),
     this.isDefault = const Value.absent(),
+    this.isHidden = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.lastUsedAt = const Value.absent(),
   }) : name = Value(name),
        type = Value(type);
   static Insertable<Category> custom({
@@ -286,6 +426,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Expression<String>? type,
     Expression<String>? icon,
     Expression<bool>? isDefault,
+    Expression<bool>? isHidden,
+    Expression<bool>? isPinned,
+    Expression<DateTime>? lastUsedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -293,6 +436,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       if (type != null) 'type': type,
       if (icon != null) 'icon': icon,
       if (isDefault != null) 'is_default': isDefault,
+      if (isHidden != null) 'is_hidden': isHidden,
+      if (isPinned != null) 'is_pinned': isPinned,
+      if (lastUsedAt != null) 'last_used_at': lastUsedAt,
     });
   }
 
@@ -302,6 +448,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Value<String>? type,
     Value<String>? icon,
     Value<bool>? isDefault,
+    Value<bool>? isHidden,
+    Value<bool>? isPinned,
+    Value<DateTime?>? lastUsedAt,
   }) {
     return CategoriesCompanion(
       id: id ?? this.id,
@@ -309,6 +458,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       type: type ?? this.type,
       icon: icon ?? this.icon,
       isDefault: isDefault ?? this.isDefault,
+      isHidden: isHidden ?? this.isHidden,
+      isPinned: isPinned ?? this.isPinned,
+      lastUsedAt: lastUsedAt ?? this.lastUsedAt,
     );
   }
 
@@ -330,6 +482,15 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (isDefault.present) {
       map['is_default'] = Variable<bool>(isDefault.value);
     }
+    if (isHidden.present) {
+      map['is_hidden'] = Variable<bool>(isHidden.value);
+    }
+    if (isPinned.present) {
+      map['is_pinned'] = Variable<bool>(isPinned.value);
+    }
+    if (lastUsedAt.present) {
+      map['last_used_at'] = Variable<DateTime>(lastUsedAt.value);
+    }
     return map;
   }
 
@@ -340,7 +501,10 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
           ..write('name: $name, ')
           ..write('type: $type, ')
           ..write('icon: $icon, ')
-          ..write('isDefault: $isDefault')
+          ..write('isDefault: $isDefault, ')
+          ..write('isHidden: $isHidden, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('lastUsedAt: $lastUsedAt')
           ..write(')'))
         .toString();
   }
@@ -3904,6 +4068,2016 @@ class ProjectEventsCompanion extends UpdateCompanion<ProjectEvent> {
   }
 }
 
+class $ProjectTemplatesTable extends ProjectTemplates
+    with TableInfo<$ProjectTemplatesTable, ProjectTemplate> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProjectTemplatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 80,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _templateKeyMeta = const VerificationMeta(
+    'templateKey',
+  );
+  @override
+  late final GeneratedColumn<String> templateKey = GeneratedColumn<String>(
+    'template_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDefaultMeta = const VerificationMeta(
+    'isDefault',
+  );
+  @override
+  late final GeneratedColumn<bool> isDefault = GeneratedColumn<bool>(
+    'is_default',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_default" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    templateKey,
+    categoryId,
+    note,
+    isDefault,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'project_templates';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProjectTemplate> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('template_key')) {
+      context.handle(
+        _templateKeyMeta,
+        templateKey.isAcceptableOrUnknown(
+          data['template_key']!,
+          _templateKeyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('is_default')) {
+      context.handle(
+        _isDefaultMeta,
+        isDefault.isAcceptableOrUnknown(data['is_default']!, _isDefaultMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProjectTemplate map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProjectTemplate(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      templateKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template_key'],
+      ),
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}category_id'],
+      ),
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      isDefault: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_default'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  $ProjectTemplatesTable createAlias(String alias) {
+    return $ProjectTemplatesTable(attachedDatabase, alias);
+  }
+}
+
+class ProjectTemplate extends DataClass implements Insertable<ProjectTemplate> {
+  final int id;
+  final String name;
+  final String? templateKey;
+  final int? categoryId;
+  final String? note;
+  final bool isDefault;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  const ProjectTemplate({
+    required this.id,
+    required this.name,
+    this.templateKey,
+    this.categoryId,
+    this.note,
+    required this.isDefault,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || templateKey != null) {
+      map['template_key'] = Variable<String>(templateKey);
+    }
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['is_default'] = Variable<bool>(isDefault);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  ProjectTemplatesCompanion toCompanion(bool nullToAbsent) {
+    return ProjectTemplatesCompanion(
+      id: Value(id),
+      name: Value(name),
+      templateKey: templateKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(templateKey),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      isDefault: Value(isDefault),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory ProjectTemplate.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProjectTemplate(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      templateKey: serializer.fromJson<String?>(json['templateKey']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
+      note: serializer.fromJson<String?>(json['note']),
+      isDefault: serializer.fromJson<bool>(json['isDefault']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'templateKey': serializer.toJson<String?>(templateKey),
+      'categoryId': serializer.toJson<int?>(categoryId),
+      'note': serializer.toJson<String?>(note),
+      'isDefault': serializer.toJson<bool>(isDefault),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  ProjectTemplate copyWith({
+    int? id,
+    String? name,
+    Value<String?> templateKey = const Value.absent(),
+    Value<int?> categoryId = const Value.absent(),
+    Value<String?> note = const Value.absent(),
+    bool? isDefault,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => ProjectTemplate(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    templateKey: templateKey.present ? templateKey.value : this.templateKey,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    note: note.present ? note.value : this.note,
+    isDefault: isDefault ?? this.isDefault,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  ProjectTemplate copyWithCompanion(ProjectTemplatesCompanion data) {
+    return ProjectTemplate(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      templateKey: data.templateKey.present
+          ? data.templateKey.value
+          : this.templateKey,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      note: data.note.present ? data.note.value : this.note,
+      isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectTemplate(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('templateKey: $templateKey, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('note: $note, ')
+          ..write('isDefault: $isDefault, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    templateKey,
+    categoryId,
+    note,
+    isDefault,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProjectTemplate &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.templateKey == this.templateKey &&
+          other.categoryId == this.categoryId &&
+          other.note == this.note &&
+          other.isDefault == this.isDefault &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class ProjectTemplatesCompanion extends UpdateCompanion<ProjectTemplate> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> templateKey;
+  final Value<int?> categoryId;
+  final Value<String?> note;
+  final Value<bool> isDefault;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  const ProjectTemplatesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.templateKey = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.note = const Value.absent(),
+    this.isDefault = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+  });
+  ProjectTemplatesCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.templateKey = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.note = const Value.absent(),
+    this.isDefault = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<ProjectTemplate> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? templateKey,
+    Expression<int>? categoryId,
+    Expression<String>? note,
+    Expression<bool>? isDefault,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (templateKey != null) 'template_key': templateKey,
+      if (categoryId != null) 'category_id': categoryId,
+      if (note != null) 'note': note,
+      if (isDefault != null) 'is_default': isDefault,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+    });
+  }
+
+  ProjectTemplatesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String?>? templateKey,
+    Value<int?>? categoryId,
+    Value<String?>? note,
+    Value<bool>? isDefault,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+  }) {
+    return ProjectTemplatesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      templateKey: templateKey ?? this.templateKey,
+      categoryId: categoryId ?? this.categoryId,
+      note: note ?? this.note,
+      isDefault: isDefault ?? this.isDefault,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (templateKey.present) {
+      map['template_key'] = Variable<String>(templateKey.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (isDefault.present) {
+      map['is_default'] = Variable<bool>(isDefault.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectTemplatesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('templateKey: $templateKey, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('note: $note, ')
+          ..write('isDefault: $isDefault, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProjectTemplateStepsTable extends ProjectTemplateSteps
+    with TableInfo<$ProjectTemplateStepsTable, ProjectTemplateStep> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProjectTemplateStepsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _templateIdMeta = const VerificationMeta(
+    'templateId',
+  );
+  @override
+  late final GeneratedColumn<int> templateId = GeneratedColumn<int>(
+    'template_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 120,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _itemTypeMeta = const VerificationMeta(
+    'itemType',
+  );
+  @override
+  late final GeneratedColumn<String> itemType = GeneratedColumn<String>(
+    'item_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('todo'),
+  );
+  static const VerificationMeta _amountTypeMeta = const VerificationMeta(
+    'amountType',
+  );
+  @override
+  late final GeneratedColumn<String> amountType = GeneratedColumn<String>(
+    'amount_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('none'),
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _offsetDaysMeta = const VerificationMeta(
+    'offsetDays',
+  );
+  @override
+  late final GeneratedColumn<int> offsetDays = GeneratedColumn<int>(
+    'offset_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    templateId,
+    title,
+    itemType,
+    amountType,
+    amount,
+    offsetDays,
+    sortOrder,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'project_template_steps';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProjectTemplateStep> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('template_id')) {
+      context.handle(
+        _templateIdMeta,
+        templateId.isAcceptableOrUnknown(data['template_id']!, _templateIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_templateIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('item_type')) {
+      context.handle(
+        _itemTypeMeta,
+        itemType.isAcceptableOrUnknown(data['item_type']!, _itemTypeMeta),
+      );
+    }
+    if (data.containsKey('amount_type')) {
+      context.handle(
+        _amountTypeMeta,
+        amountType.isAcceptableOrUnknown(data['amount_type']!, _amountTypeMeta),
+      );
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    }
+    if (data.containsKey('offset_days')) {
+      context.handle(
+        _offsetDaysMeta,
+        offsetDays.isAcceptableOrUnknown(data['offset_days']!, _offsetDaysMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProjectTemplateStep map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProjectTemplateStep(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      templateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}template_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      itemType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_type'],
+      )!,
+      amountType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}amount_type'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      ),
+      offsetDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}offset_days'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ProjectTemplateStepsTable createAlias(String alias) {
+    return $ProjectTemplateStepsTable(attachedDatabase, alias);
+  }
+}
+
+class ProjectTemplateStep extends DataClass
+    implements Insertable<ProjectTemplateStep> {
+  final int id;
+  final int templateId;
+  final String title;
+  final String itemType;
+  final String amountType;
+  final int? amount;
+  final int offsetDays;
+  final int sortOrder;
+  final DateTime createdAt;
+  const ProjectTemplateStep({
+    required this.id,
+    required this.templateId,
+    required this.title,
+    required this.itemType,
+    required this.amountType,
+    this.amount,
+    required this.offsetDays,
+    required this.sortOrder,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['template_id'] = Variable<int>(templateId);
+    map['title'] = Variable<String>(title);
+    map['item_type'] = Variable<String>(itemType);
+    map['amount_type'] = Variable<String>(amountType);
+    if (!nullToAbsent || amount != null) {
+      map['amount'] = Variable<int>(amount);
+    }
+    map['offset_days'] = Variable<int>(offsetDays);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ProjectTemplateStepsCompanion toCompanion(bool nullToAbsent) {
+    return ProjectTemplateStepsCompanion(
+      id: Value(id),
+      templateId: Value(templateId),
+      title: Value(title),
+      itemType: Value(itemType),
+      amountType: Value(amountType),
+      amount: amount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amount),
+      offsetDays: Value(offsetDays),
+      sortOrder: Value(sortOrder),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ProjectTemplateStep.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProjectTemplateStep(
+      id: serializer.fromJson<int>(json['id']),
+      templateId: serializer.fromJson<int>(json['templateId']),
+      title: serializer.fromJson<String>(json['title']),
+      itemType: serializer.fromJson<String>(json['itemType']),
+      amountType: serializer.fromJson<String>(json['amountType']),
+      amount: serializer.fromJson<int?>(json['amount']),
+      offsetDays: serializer.fromJson<int>(json['offsetDays']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'templateId': serializer.toJson<int>(templateId),
+      'title': serializer.toJson<String>(title),
+      'itemType': serializer.toJson<String>(itemType),
+      'amountType': serializer.toJson<String>(amountType),
+      'amount': serializer.toJson<int?>(amount),
+      'offsetDays': serializer.toJson<int>(offsetDays),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ProjectTemplateStep copyWith({
+    int? id,
+    int? templateId,
+    String? title,
+    String? itemType,
+    String? amountType,
+    Value<int?> amount = const Value.absent(),
+    int? offsetDays,
+    int? sortOrder,
+    DateTime? createdAt,
+  }) => ProjectTemplateStep(
+    id: id ?? this.id,
+    templateId: templateId ?? this.templateId,
+    title: title ?? this.title,
+    itemType: itemType ?? this.itemType,
+    amountType: amountType ?? this.amountType,
+    amount: amount.present ? amount.value : this.amount,
+    offsetDays: offsetDays ?? this.offsetDays,
+    sortOrder: sortOrder ?? this.sortOrder,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ProjectTemplateStep copyWithCompanion(ProjectTemplateStepsCompanion data) {
+    return ProjectTemplateStep(
+      id: data.id.present ? data.id.value : this.id,
+      templateId: data.templateId.present
+          ? data.templateId.value
+          : this.templateId,
+      title: data.title.present ? data.title.value : this.title,
+      itemType: data.itemType.present ? data.itemType.value : this.itemType,
+      amountType: data.amountType.present
+          ? data.amountType.value
+          : this.amountType,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      offsetDays: data.offsetDays.present
+          ? data.offsetDays.value
+          : this.offsetDays,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectTemplateStep(')
+          ..write('id: $id, ')
+          ..write('templateId: $templateId, ')
+          ..write('title: $title, ')
+          ..write('itemType: $itemType, ')
+          ..write('amountType: $amountType, ')
+          ..write('amount: $amount, ')
+          ..write('offsetDays: $offsetDays, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    templateId,
+    title,
+    itemType,
+    amountType,
+    amount,
+    offsetDays,
+    sortOrder,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProjectTemplateStep &&
+          other.id == this.id &&
+          other.templateId == this.templateId &&
+          other.title == this.title &&
+          other.itemType == this.itemType &&
+          other.amountType == this.amountType &&
+          other.amount == this.amount &&
+          other.offsetDays == this.offsetDays &&
+          other.sortOrder == this.sortOrder &&
+          other.createdAt == this.createdAt);
+}
+
+class ProjectTemplateStepsCompanion
+    extends UpdateCompanion<ProjectTemplateStep> {
+  final Value<int> id;
+  final Value<int> templateId;
+  final Value<String> title;
+  final Value<String> itemType;
+  final Value<String> amountType;
+  final Value<int?> amount;
+  final Value<int> offsetDays;
+  final Value<int> sortOrder;
+  final Value<DateTime> createdAt;
+  const ProjectTemplateStepsCompanion({
+    this.id = const Value.absent(),
+    this.templateId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.itemType = const Value.absent(),
+    this.amountType = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.offsetDays = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ProjectTemplateStepsCompanion.insert({
+    this.id = const Value.absent(),
+    required int templateId,
+    required String title,
+    this.itemType = const Value.absent(),
+    this.amountType = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.offsetDays = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : templateId = Value(templateId),
+       title = Value(title);
+  static Insertable<ProjectTemplateStep> custom({
+    Expression<int>? id,
+    Expression<int>? templateId,
+    Expression<String>? title,
+    Expression<String>? itemType,
+    Expression<String>? amountType,
+    Expression<int>? amount,
+    Expression<int>? offsetDays,
+    Expression<int>? sortOrder,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (templateId != null) 'template_id': templateId,
+      if (title != null) 'title': title,
+      if (itemType != null) 'item_type': itemType,
+      if (amountType != null) 'amount_type': amountType,
+      if (amount != null) 'amount': amount,
+      if (offsetDays != null) 'offset_days': offsetDays,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ProjectTemplateStepsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? templateId,
+    Value<String>? title,
+    Value<String>? itemType,
+    Value<String>? amountType,
+    Value<int?>? amount,
+    Value<int>? offsetDays,
+    Value<int>? sortOrder,
+    Value<DateTime>? createdAt,
+  }) {
+    return ProjectTemplateStepsCompanion(
+      id: id ?? this.id,
+      templateId: templateId ?? this.templateId,
+      title: title ?? this.title,
+      itemType: itemType ?? this.itemType,
+      amountType: amountType ?? this.amountType,
+      amount: amount ?? this.amount,
+      offsetDays: offsetDays ?? this.offsetDays,
+      sortOrder: sortOrder ?? this.sortOrder,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (templateId.present) {
+      map['template_id'] = Variable<int>(templateId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (itemType.present) {
+      map['item_type'] = Variable<String>(itemType.value);
+    }
+    if (amountType.present) {
+      map['amount_type'] = Variable<String>(amountType.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (offsetDays.present) {
+      map['offset_days'] = Variable<int>(offsetDays.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProjectTemplateStepsCompanion(')
+          ..write('id: $id, ')
+          ..write('templateId: $templateId, ')
+          ..write('title: $title, ')
+          ..write('itemType: $itemType, ')
+          ..write('amountType: $amountType, ')
+          ..write('amount: $amount, ')
+          ..write('offsetDays: $offsetDays, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ItemTemplatesTable extends ItemTemplates
+    with TableInfo<$ItemTemplatesTable, ItemTemplate> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ItemTemplatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 80,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _templateKeyMeta = const VerificationMeta(
+    'templateKey',
+  );
+  @override
+  late final GeneratedColumn<String> templateKey = GeneratedColumn<String>(
+    'template_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _categoryIdMeta = const VerificationMeta(
+    'categoryId',
+  );
+  @override
+  late final GeneratedColumn<int> categoryId = GeneratedColumn<int>(
+    'category_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _itemTypeMeta = const VerificationMeta(
+    'itemType',
+  );
+  @override
+  late final GeneratedColumn<String> itemType = GeneratedColumn<String>(
+    'item_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('todo'),
+  );
+  static const VerificationMeta _amountTypeMeta = const VerificationMeta(
+    'amountType',
+  );
+  @override
+  late final GeneratedColumn<String> amountType = GeneratedColumn<String>(
+    'amount_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('none'),
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dueOffsetDaysMeta = const VerificationMeta(
+    'dueOffsetDays',
+  );
+  @override
+  late final GeneratedColumn<int> dueOffsetDays = GeneratedColumn<int>(
+    'due_offset_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _reminderOffsetDaysMeta =
+      const VerificationMeta('reminderOffsetDays');
+  @override
+  late final GeneratedColumn<int> reminderOffsetDays = GeneratedColumn<int>(
+    'reminder_offset_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _repeatRuleMeta = const VerificationMeta(
+    'repeatRule',
+  );
+  @override
+  late final GeneratedColumn<String> repeatRule = GeneratedColumn<String>(
+    'repeat_rule',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _keywordsMeta = const VerificationMeta(
+    'keywords',
+  );
+  @override
+  late final GeneratedColumn<String> keywords = GeneratedColumn<String>(
+    'keywords',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _isDefaultMeta = const VerificationMeta(
+    'isDefault',
+  );
+  @override
+  late final GeneratedColumn<bool> isDefault = GeneratedColumn<bool>(
+    'is_default',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_default" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isPinnedMeta = const VerificationMeta(
+    'isPinned',
+  );
+  @override
+  late final GeneratedColumn<bool> isPinned = GeneratedColumn<bool>(
+    'is_pinned',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_pinned" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    templateKey,
+    categoryId,
+    itemType,
+    amountType,
+    amount,
+    dueOffsetDays,
+    reminderOffsetDays,
+    repeatRule,
+    keywords,
+    isDefault,
+    isPinned,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'item_templates';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ItemTemplate> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('template_key')) {
+      context.handle(
+        _templateKeyMeta,
+        templateKey.isAcceptableOrUnknown(
+          data['template_key']!,
+          _templateKeyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('category_id')) {
+      context.handle(
+        _categoryIdMeta,
+        categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
+      );
+    }
+    if (data.containsKey('item_type')) {
+      context.handle(
+        _itemTypeMeta,
+        itemType.isAcceptableOrUnknown(data['item_type']!, _itemTypeMeta),
+      );
+    }
+    if (data.containsKey('amount_type')) {
+      context.handle(
+        _amountTypeMeta,
+        amountType.isAcceptableOrUnknown(data['amount_type']!, _amountTypeMeta),
+      );
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    }
+    if (data.containsKey('due_offset_days')) {
+      context.handle(
+        _dueOffsetDaysMeta,
+        dueOffsetDays.isAcceptableOrUnknown(
+          data['due_offset_days']!,
+          _dueOffsetDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_offset_days')) {
+      context.handle(
+        _reminderOffsetDaysMeta,
+        reminderOffsetDays.isAcceptableOrUnknown(
+          data['reminder_offset_days']!,
+          _reminderOffsetDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('repeat_rule')) {
+      context.handle(
+        _repeatRuleMeta,
+        repeatRule.isAcceptableOrUnknown(data['repeat_rule']!, _repeatRuleMeta),
+      );
+    }
+    if (data.containsKey('keywords')) {
+      context.handle(
+        _keywordsMeta,
+        keywords.isAcceptableOrUnknown(data['keywords']!, _keywordsMeta),
+      );
+    }
+    if (data.containsKey('is_default')) {
+      context.handle(
+        _isDefaultMeta,
+        isDefault.isAcceptableOrUnknown(data['is_default']!, _isDefaultMeta),
+      );
+    }
+    if (data.containsKey('is_pinned')) {
+      context.handle(
+        _isPinnedMeta,
+        isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ItemTemplate map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ItemTemplate(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      templateKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}template_key'],
+      ),
+      categoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}category_id'],
+      ),
+      itemType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_type'],
+      )!,
+      amountType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}amount_type'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      ),
+      dueOffsetDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}due_offset_days'],
+      )!,
+      reminderOffsetDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_offset_days'],
+      ),
+      repeatRule: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}repeat_rule'],
+      ),
+      keywords: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}keywords'],
+      )!,
+      isDefault: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_default'],
+      )!,
+      isPinned: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_pinned'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+    );
+  }
+
+  @override
+  $ItemTemplatesTable createAlias(String alias) {
+    return $ItemTemplatesTable(attachedDatabase, alias);
+  }
+}
+
+class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
+  final int id;
+  final String name;
+  final String? templateKey;
+  final int? categoryId;
+  final String itemType;
+  final String amountType;
+  final int? amount;
+  final int dueOffsetDays;
+  final int? reminderOffsetDays;
+  final String? repeatRule;
+  final String keywords;
+  final bool isDefault;
+  final bool isPinned;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  const ItemTemplate({
+    required this.id,
+    required this.name,
+    this.templateKey,
+    this.categoryId,
+    required this.itemType,
+    required this.amountType,
+    this.amount,
+    required this.dueOffsetDays,
+    this.reminderOffsetDays,
+    this.repeatRule,
+    required this.keywords,
+    required this.isDefault,
+    required this.isPinned,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || templateKey != null) {
+      map['template_key'] = Variable<String>(templateKey);
+    }
+    if (!nullToAbsent || categoryId != null) {
+      map['category_id'] = Variable<int>(categoryId);
+    }
+    map['item_type'] = Variable<String>(itemType);
+    map['amount_type'] = Variable<String>(amountType);
+    if (!nullToAbsent || amount != null) {
+      map['amount'] = Variable<int>(amount);
+    }
+    map['due_offset_days'] = Variable<int>(dueOffsetDays);
+    if (!nullToAbsent || reminderOffsetDays != null) {
+      map['reminder_offset_days'] = Variable<int>(reminderOffsetDays);
+    }
+    if (!nullToAbsent || repeatRule != null) {
+      map['repeat_rule'] = Variable<String>(repeatRule);
+    }
+    map['keywords'] = Variable<String>(keywords);
+    map['is_default'] = Variable<bool>(isDefault);
+    map['is_pinned'] = Variable<bool>(isPinned);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    return map;
+  }
+
+  ItemTemplatesCompanion toCompanion(bool nullToAbsent) {
+    return ItemTemplatesCompanion(
+      id: Value(id),
+      name: Value(name),
+      templateKey: templateKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(templateKey),
+      categoryId: categoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(categoryId),
+      itemType: Value(itemType),
+      amountType: Value(amountType),
+      amount: amount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amount),
+      dueOffsetDays: Value(dueOffsetDays),
+      reminderOffsetDays: reminderOffsetDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reminderOffsetDays),
+      repeatRule: repeatRule == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repeatRule),
+      keywords: Value(keywords),
+      isDefault: Value(isDefault),
+      isPinned: Value(isPinned),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+    );
+  }
+
+  factory ItemTemplate.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ItemTemplate(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      templateKey: serializer.fromJson<String?>(json['templateKey']),
+      categoryId: serializer.fromJson<int?>(json['categoryId']),
+      itemType: serializer.fromJson<String>(json['itemType']),
+      amountType: serializer.fromJson<String>(json['amountType']),
+      amount: serializer.fromJson<int?>(json['amount']),
+      dueOffsetDays: serializer.fromJson<int>(json['dueOffsetDays']),
+      reminderOffsetDays: serializer.fromJson<int?>(json['reminderOffsetDays']),
+      repeatRule: serializer.fromJson<String?>(json['repeatRule']),
+      keywords: serializer.fromJson<String>(json['keywords']),
+      isDefault: serializer.fromJson<bool>(json['isDefault']),
+      isPinned: serializer.fromJson<bool>(json['isPinned']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'templateKey': serializer.toJson<String?>(templateKey),
+      'categoryId': serializer.toJson<int?>(categoryId),
+      'itemType': serializer.toJson<String>(itemType),
+      'amountType': serializer.toJson<String>(amountType),
+      'amount': serializer.toJson<int?>(amount),
+      'dueOffsetDays': serializer.toJson<int>(dueOffsetDays),
+      'reminderOffsetDays': serializer.toJson<int?>(reminderOffsetDays),
+      'repeatRule': serializer.toJson<String?>(repeatRule),
+      'keywords': serializer.toJson<String>(keywords),
+      'isDefault': serializer.toJson<bool>(isDefault),
+      'isPinned': serializer.toJson<bool>(isPinned),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+    };
+  }
+
+  ItemTemplate copyWith({
+    int? id,
+    String? name,
+    Value<String?> templateKey = const Value.absent(),
+    Value<int?> categoryId = const Value.absent(),
+    String? itemType,
+    String? amountType,
+    Value<int?> amount = const Value.absent(),
+    int? dueOffsetDays,
+    Value<int?> reminderOffsetDays = const Value.absent(),
+    Value<String?> repeatRule = const Value.absent(),
+    String? keywords,
+    bool? isDefault,
+    bool? isPinned,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+  }) => ItemTemplate(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    templateKey: templateKey.present ? templateKey.value : this.templateKey,
+    categoryId: categoryId.present ? categoryId.value : this.categoryId,
+    itemType: itemType ?? this.itemType,
+    amountType: amountType ?? this.amountType,
+    amount: amount.present ? amount.value : this.amount,
+    dueOffsetDays: dueOffsetDays ?? this.dueOffsetDays,
+    reminderOffsetDays: reminderOffsetDays.present
+        ? reminderOffsetDays.value
+        : this.reminderOffsetDays,
+    repeatRule: repeatRule.present ? repeatRule.value : this.repeatRule,
+    keywords: keywords ?? this.keywords,
+    isDefault: isDefault ?? this.isDefault,
+    isPinned: isPinned ?? this.isPinned,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+  );
+  ItemTemplate copyWithCompanion(ItemTemplatesCompanion data) {
+    return ItemTemplate(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      templateKey: data.templateKey.present
+          ? data.templateKey.value
+          : this.templateKey,
+      categoryId: data.categoryId.present
+          ? data.categoryId.value
+          : this.categoryId,
+      itemType: data.itemType.present ? data.itemType.value : this.itemType,
+      amountType: data.amountType.present
+          ? data.amountType.value
+          : this.amountType,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      dueOffsetDays: data.dueOffsetDays.present
+          ? data.dueOffsetDays.value
+          : this.dueOffsetDays,
+      reminderOffsetDays: data.reminderOffsetDays.present
+          ? data.reminderOffsetDays.value
+          : this.reminderOffsetDays,
+      repeatRule: data.repeatRule.present
+          ? data.repeatRule.value
+          : this.repeatRule,
+      keywords: data.keywords.present ? data.keywords.value : this.keywords,
+      isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
+      isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItemTemplate(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('templateKey: $templateKey, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('itemType: $itemType, ')
+          ..write('amountType: $amountType, ')
+          ..write('amount: $amount, ')
+          ..write('dueOffsetDays: $dueOffsetDays, ')
+          ..write('reminderOffsetDays: $reminderOffsetDays, ')
+          ..write('repeatRule: $repeatRule, ')
+          ..write('keywords: $keywords, ')
+          ..write('isDefault: $isDefault, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    templateKey,
+    categoryId,
+    itemType,
+    amountType,
+    amount,
+    dueOffsetDays,
+    reminderOffsetDays,
+    repeatRule,
+    keywords,
+    isDefault,
+    isPinned,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ItemTemplate &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.templateKey == this.templateKey &&
+          other.categoryId == this.categoryId &&
+          other.itemType == this.itemType &&
+          other.amountType == this.amountType &&
+          other.amount == this.amount &&
+          other.dueOffsetDays == this.dueOffsetDays &&
+          other.reminderOffsetDays == this.reminderOffsetDays &&
+          other.repeatRule == this.repeatRule &&
+          other.keywords == this.keywords &&
+          other.isDefault == this.isDefault &&
+          other.isPinned == this.isPinned &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
+}
+
+class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> templateKey;
+  final Value<int?> categoryId;
+  final Value<String> itemType;
+  final Value<String> amountType;
+  final Value<int?> amount;
+  final Value<int> dueOffsetDays;
+  final Value<int?> reminderOffsetDays;
+  final Value<String?> repeatRule;
+  final Value<String> keywords;
+  final Value<bool> isDefault;
+  final Value<bool> isPinned;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
+  const ItemTemplatesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.templateKey = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.itemType = const Value.absent(),
+    this.amountType = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.dueOffsetDays = const Value.absent(),
+    this.reminderOffsetDays = const Value.absent(),
+    this.repeatRule = const Value.absent(),
+    this.keywords = const Value.absent(),
+    this.isDefault = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+  });
+  ItemTemplatesCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.templateKey = const Value.absent(),
+    this.categoryId = const Value.absent(),
+    this.itemType = const Value.absent(),
+    this.amountType = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.dueOffsetDays = const Value.absent(),
+    this.reminderOffsetDays = const Value.absent(),
+    this.repeatRule = const Value.absent(),
+    this.keywords = const Value.absent(),
+    this.isDefault = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<ItemTemplate> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? templateKey,
+    Expression<int>? categoryId,
+    Expression<String>? itemType,
+    Expression<String>? amountType,
+    Expression<int>? amount,
+    Expression<int>? dueOffsetDays,
+    Expression<int>? reminderOffsetDays,
+    Expression<String>? repeatRule,
+    Expression<String>? keywords,
+    Expression<bool>? isDefault,
+    Expression<bool>? isPinned,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (templateKey != null) 'template_key': templateKey,
+      if (categoryId != null) 'category_id': categoryId,
+      if (itemType != null) 'item_type': itemType,
+      if (amountType != null) 'amount_type': amountType,
+      if (amount != null) 'amount': amount,
+      if (dueOffsetDays != null) 'due_offset_days': dueOffsetDays,
+      if (reminderOffsetDays != null)
+        'reminder_offset_days': reminderOffsetDays,
+      if (repeatRule != null) 'repeat_rule': repeatRule,
+      if (keywords != null) 'keywords': keywords,
+      if (isDefault != null) 'is_default': isDefault,
+      if (isPinned != null) 'is_pinned': isPinned,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+    });
+  }
+
+  ItemTemplatesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String?>? templateKey,
+    Value<int?>? categoryId,
+    Value<String>? itemType,
+    Value<String>? amountType,
+    Value<int?>? amount,
+    Value<int>? dueOffsetDays,
+    Value<int?>? reminderOffsetDays,
+    Value<String?>? repeatRule,
+    Value<String>? keywords,
+    Value<bool>? isDefault,
+    Value<bool>? isPinned,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
+  }) {
+    return ItemTemplatesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      templateKey: templateKey ?? this.templateKey,
+      categoryId: categoryId ?? this.categoryId,
+      itemType: itemType ?? this.itemType,
+      amountType: amountType ?? this.amountType,
+      amount: amount ?? this.amount,
+      dueOffsetDays: dueOffsetDays ?? this.dueOffsetDays,
+      reminderOffsetDays: reminderOffsetDays ?? this.reminderOffsetDays,
+      repeatRule: repeatRule ?? this.repeatRule,
+      keywords: keywords ?? this.keywords,
+      isDefault: isDefault ?? this.isDefault,
+      isPinned: isPinned ?? this.isPinned,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (templateKey.present) {
+      map['template_key'] = Variable<String>(templateKey.value);
+    }
+    if (categoryId.present) {
+      map['category_id'] = Variable<int>(categoryId.value);
+    }
+    if (itemType.present) {
+      map['item_type'] = Variable<String>(itemType.value);
+    }
+    if (amountType.present) {
+      map['amount_type'] = Variable<String>(amountType.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (dueOffsetDays.present) {
+      map['due_offset_days'] = Variable<int>(dueOffsetDays.value);
+    }
+    if (reminderOffsetDays.present) {
+      map['reminder_offset_days'] = Variable<int>(reminderOffsetDays.value);
+    }
+    if (repeatRule.present) {
+      map['repeat_rule'] = Variable<String>(repeatRule.value);
+    }
+    if (keywords.present) {
+      map['keywords'] = Variable<String>(keywords.value);
+    }
+    if (isDefault.present) {
+      map['is_default'] = Variable<bool>(isDefault.value);
+    }
+    if (isPinned.present) {
+      map['is_pinned'] = Variable<bool>(isPinned.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItemTemplatesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('templateKey: $templateKey, ')
+          ..write('categoryId: $categoryId, ')
+          ..write('itemType: $itemType, ')
+          ..write('amountType: $amountType, ')
+          ..write('amount: $amount, ')
+          ..write('dueOffsetDays: $dueOffsetDays, ')
+          ..write('reminderOffsetDays: $reminderOffsetDays, ')
+          ..write('repeatRule: $repeatRule, ')
+          ..write('keywords: $keywords, ')
+          ..write('isDefault: $isDefault, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3914,11 +6088,23 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MonthlyBudgetsTable monthlyBudgets = $MonthlyBudgetsTable(this);
   late final $ProjectsTable projects = $ProjectsTable(this);
   late final $ProjectEventsTable projectEvents = $ProjectEventsTable(this);
+  late final $ProjectTemplatesTable projectTemplates = $ProjectTemplatesTable(
+    this,
+  );
+  late final $ProjectTemplateStepsTable projectTemplateSteps =
+      $ProjectTemplateStepsTable(this);
+  late final $ItemTemplatesTable itemTemplates = $ItemTemplatesTable(this);
   late final LifeItemDao lifeItemDao = LifeItemDao(this as AppDatabase);
   late final BillRecordDao billRecordDao = BillRecordDao(this as AppDatabase);
   late final CategoryDao categoryDao = CategoryDao(this as AppDatabase);
   late final ProjectDao projectDao = ProjectDao(this as AppDatabase);
   late final ProjectEventDao projectEventDao = ProjectEventDao(
+    this as AppDatabase,
+  );
+  late final ProjectTemplateDao projectTemplateDao = ProjectTemplateDao(
+    this as AppDatabase,
+  );
+  late final ItemTemplateDao itemTemplateDao = ItemTemplateDao(
     this as AppDatabase,
   );
   @override
@@ -3933,6 +6119,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     monthlyBudgets,
     projects,
     projectEvents,
+    projectTemplates,
+    projectTemplateSteps,
+    itemTemplates,
   ];
 }
 
@@ -3943,6 +6132,9 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       required String type,
       Value<String> icon,
       Value<bool> isDefault,
+      Value<bool> isHidden,
+      Value<bool> isPinned,
+      Value<DateTime?> lastUsedAt,
     });
 typedef $$CategoriesTableUpdateCompanionBuilder =
     CategoriesCompanion Function({
@@ -3951,6 +6143,9 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<String> type,
       Value<String> icon,
       Value<bool> isDefault,
+      Value<bool> isHidden,
+      Value<bool> isPinned,
+      Value<DateTime?> lastUsedAt,
     });
 
 class $$CategoriesTableFilterComposer
@@ -3984,6 +6179,21 @@ class $$CategoriesTableFilterComposer
 
   ColumnFilters<bool> get isDefault => $composableBuilder(
     column: $table.isDefault,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isHidden => $composableBuilder(
+    column: $table.isHidden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPinned => $composableBuilder(
+    column: $table.isPinned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4021,6 +6231,21 @@ class $$CategoriesTableOrderingComposer
     column: $table.isDefault,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isHidden => $composableBuilder(
+    column: $table.isHidden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPinned => $composableBuilder(
+    column: $table.isPinned,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CategoriesTableAnnotationComposer
@@ -4046,6 +6271,17 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<bool> get isDefault =>
       $composableBuilder(column: $table.isDefault, builder: (column) => column);
+
+  GeneratedColumn<bool> get isHidden =>
+      $composableBuilder(column: $table.isHidden, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPinned =>
+      $composableBuilder(column: $table.isPinned, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastUsedAt => $composableBuilder(
+    column: $table.lastUsedAt,
+    builder: (column) => column,
+  );
 }
 
 class $$CategoriesTableTableManager
@@ -4081,12 +6317,18 @@ class $$CategoriesTableTableManager
                 Value<String> type = const Value.absent(),
                 Value<String> icon = const Value.absent(),
                 Value<bool> isDefault = const Value.absent(),
+                Value<bool> isHidden = const Value.absent(),
+                Value<bool> isPinned = const Value.absent(),
+                Value<DateTime?> lastUsedAt = const Value.absent(),
               }) => CategoriesCompanion(
                 id: id,
                 name: name,
                 type: type,
                 icon: icon,
                 isDefault: isDefault,
+                isHidden: isHidden,
+                isPinned: isPinned,
+                lastUsedAt: lastUsedAt,
               ),
           createCompanionCallback:
               ({
@@ -4095,12 +6337,18 @@ class $$CategoriesTableTableManager
                 required String type,
                 Value<String> icon = const Value.absent(),
                 Value<bool> isDefault = const Value.absent(),
+                Value<bool> isHidden = const Value.absent(),
+                Value<bool> isPinned = const Value.absent(),
+                Value<DateTime?> lastUsedAt = const Value.absent(),
               }) => CategoriesCompanion.insert(
                 id: id,
                 name: name,
                 type: type,
                 icon: icon,
                 isDefault: isDefault,
+                isHidden: isHidden,
+                isPinned: isPinned,
+                lastUsedAt: lastUsedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5853,6 +8101,993 @@ typedef $$ProjectEventsTableProcessedTableManager =
       ProjectEvent,
       PrefetchHooks Function()
     >;
+typedef $$ProjectTemplatesTableCreateCompanionBuilder =
+    ProjectTemplatesCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<String?> templateKey,
+      Value<int?> categoryId,
+      Value<String?> note,
+      Value<bool> isDefault,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+    });
+typedef $$ProjectTemplatesTableUpdateCompanionBuilder =
+    ProjectTemplatesCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String?> templateKey,
+      Value<int?> categoryId,
+      Value<String?> note,
+      Value<bool> isDefault,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+    });
+
+class $$ProjectTemplatesTableFilterComposer
+    extends Composer<_$AppDatabase, $ProjectTemplatesTable> {
+  $$ProjectTemplatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get templateKey => $composableBuilder(
+    column: $table.templateKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDefault => $composableBuilder(
+    column: $table.isDefault,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProjectTemplatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProjectTemplatesTable> {
+  $$ProjectTemplatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get templateKey => $composableBuilder(
+    column: $table.templateKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDefault => $composableBuilder(
+    column: $table.isDefault,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProjectTemplatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProjectTemplatesTable> {
+  $$ProjectTemplatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get templateKey => $composableBuilder(
+    column: $table.templateKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDefault =>
+      $composableBuilder(column: $table.isDefault, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$ProjectTemplatesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProjectTemplatesTable,
+          ProjectTemplate,
+          $$ProjectTemplatesTableFilterComposer,
+          $$ProjectTemplatesTableOrderingComposer,
+          $$ProjectTemplatesTableAnnotationComposer,
+          $$ProjectTemplatesTableCreateCompanionBuilder,
+          $$ProjectTemplatesTableUpdateCompanionBuilder,
+          (
+            ProjectTemplate,
+            BaseReferences<
+              _$AppDatabase,
+              $ProjectTemplatesTable,
+              ProjectTemplate
+            >,
+          ),
+          ProjectTemplate,
+          PrefetchHooks Function()
+        > {
+  $$ProjectTemplatesTableTableManager(
+    _$AppDatabase db,
+    $ProjectTemplatesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProjectTemplatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProjectTemplatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProjectTemplatesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> templateKey = const Value.absent(),
+                Value<int?> categoryId = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<bool> isDefault = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+              }) => ProjectTemplatesCompanion(
+                id: id,
+                name: name,
+                templateKey: templateKey,
+                categoryId: categoryId,
+                note: note,
+                isDefault: isDefault,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<String?> templateKey = const Value.absent(),
+                Value<int?> categoryId = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<bool> isDefault = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+              }) => ProjectTemplatesCompanion.insert(
+                id: id,
+                name: name,
+                templateKey: templateKey,
+                categoryId: categoryId,
+                note: note,
+                isDefault: isDefault,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProjectTemplatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProjectTemplatesTable,
+      ProjectTemplate,
+      $$ProjectTemplatesTableFilterComposer,
+      $$ProjectTemplatesTableOrderingComposer,
+      $$ProjectTemplatesTableAnnotationComposer,
+      $$ProjectTemplatesTableCreateCompanionBuilder,
+      $$ProjectTemplatesTableUpdateCompanionBuilder,
+      (
+        ProjectTemplate,
+        BaseReferences<_$AppDatabase, $ProjectTemplatesTable, ProjectTemplate>,
+      ),
+      ProjectTemplate,
+      PrefetchHooks Function()
+    >;
+typedef $$ProjectTemplateStepsTableCreateCompanionBuilder =
+    ProjectTemplateStepsCompanion Function({
+      Value<int> id,
+      required int templateId,
+      required String title,
+      Value<String> itemType,
+      Value<String> amountType,
+      Value<int?> amount,
+      Value<int> offsetDays,
+      Value<int> sortOrder,
+      Value<DateTime> createdAt,
+    });
+typedef $$ProjectTemplateStepsTableUpdateCompanionBuilder =
+    ProjectTemplateStepsCompanion Function({
+      Value<int> id,
+      Value<int> templateId,
+      Value<String> title,
+      Value<String> itemType,
+      Value<String> amountType,
+      Value<int?> amount,
+      Value<int> offsetDays,
+      Value<int> sortOrder,
+      Value<DateTime> createdAt,
+    });
+
+class $$ProjectTemplateStepsTableFilterComposer
+    extends Composer<_$AppDatabase, $ProjectTemplateStepsTable> {
+  $$ProjectTemplateStepsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get templateId => $composableBuilder(
+    column: $table.templateId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get itemType => $composableBuilder(
+    column: $table.itemType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get amountType => $composableBuilder(
+    column: $table.amountType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get offsetDays => $composableBuilder(
+    column: $table.offsetDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProjectTemplateStepsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProjectTemplateStepsTable> {
+  $$ProjectTemplateStepsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get templateId => $composableBuilder(
+    column: $table.templateId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get itemType => $composableBuilder(
+    column: $table.itemType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get amountType => $composableBuilder(
+    column: $table.amountType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get offsetDays => $composableBuilder(
+    column: $table.offsetDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProjectTemplateStepsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProjectTemplateStepsTable> {
+  $$ProjectTemplateStepsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get templateId => $composableBuilder(
+    column: $table.templateId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get itemType =>
+      $composableBuilder(column: $table.itemType, builder: (column) => column);
+
+  GeneratedColumn<String> get amountType => $composableBuilder(
+    column: $table.amountType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<int> get offsetDays => $composableBuilder(
+    column: $table.offsetDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ProjectTemplateStepsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProjectTemplateStepsTable,
+          ProjectTemplateStep,
+          $$ProjectTemplateStepsTableFilterComposer,
+          $$ProjectTemplateStepsTableOrderingComposer,
+          $$ProjectTemplateStepsTableAnnotationComposer,
+          $$ProjectTemplateStepsTableCreateCompanionBuilder,
+          $$ProjectTemplateStepsTableUpdateCompanionBuilder,
+          (
+            ProjectTemplateStep,
+            BaseReferences<
+              _$AppDatabase,
+              $ProjectTemplateStepsTable,
+              ProjectTemplateStep
+            >,
+          ),
+          ProjectTemplateStep,
+          PrefetchHooks Function()
+        > {
+  $$ProjectTemplateStepsTableTableManager(
+    _$AppDatabase db,
+    $ProjectTemplateStepsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProjectTemplateStepsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProjectTemplateStepsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ProjectTemplateStepsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> templateId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> itemType = const Value.absent(),
+                Value<String> amountType = const Value.absent(),
+                Value<int?> amount = const Value.absent(),
+                Value<int> offsetDays = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ProjectTemplateStepsCompanion(
+                id: id,
+                templateId: templateId,
+                title: title,
+                itemType: itemType,
+                amountType: amountType,
+                amount: amount,
+                offsetDays: offsetDays,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int templateId,
+                required String title,
+                Value<String> itemType = const Value.absent(),
+                Value<String> amountType = const Value.absent(),
+                Value<int?> amount = const Value.absent(),
+                Value<int> offsetDays = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ProjectTemplateStepsCompanion.insert(
+                id: id,
+                templateId: templateId,
+                title: title,
+                itemType: itemType,
+                amountType: amountType,
+                amount: amount,
+                offsetDays: offsetDays,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProjectTemplateStepsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProjectTemplateStepsTable,
+      ProjectTemplateStep,
+      $$ProjectTemplateStepsTableFilterComposer,
+      $$ProjectTemplateStepsTableOrderingComposer,
+      $$ProjectTemplateStepsTableAnnotationComposer,
+      $$ProjectTemplateStepsTableCreateCompanionBuilder,
+      $$ProjectTemplateStepsTableUpdateCompanionBuilder,
+      (
+        ProjectTemplateStep,
+        BaseReferences<
+          _$AppDatabase,
+          $ProjectTemplateStepsTable,
+          ProjectTemplateStep
+        >,
+      ),
+      ProjectTemplateStep,
+      PrefetchHooks Function()
+    >;
+typedef $$ItemTemplatesTableCreateCompanionBuilder =
+    ItemTemplatesCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<String?> templateKey,
+      Value<int?> categoryId,
+      Value<String> itemType,
+      Value<String> amountType,
+      Value<int?> amount,
+      Value<int> dueOffsetDays,
+      Value<int?> reminderOffsetDays,
+      Value<String?> repeatRule,
+      Value<String> keywords,
+      Value<bool> isDefault,
+      Value<bool> isPinned,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+    });
+typedef $$ItemTemplatesTableUpdateCompanionBuilder =
+    ItemTemplatesCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String?> templateKey,
+      Value<int?> categoryId,
+      Value<String> itemType,
+      Value<String> amountType,
+      Value<int?> amount,
+      Value<int> dueOffsetDays,
+      Value<int?> reminderOffsetDays,
+      Value<String?> repeatRule,
+      Value<String> keywords,
+      Value<bool> isDefault,
+      Value<bool> isPinned,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
+    });
+
+class $$ItemTemplatesTableFilterComposer
+    extends Composer<_$AppDatabase, $ItemTemplatesTable> {
+  $$ItemTemplatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get templateKey => $composableBuilder(
+    column: $table.templateKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get itemType => $composableBuilder(
+    column: $table.itemType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get amountType => $composableBuilder(
+    column: $table.amountType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get dueOffsetDays => $composableBuilder(
+    column: $table.dueOffsetDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderOffsetDays => $composableBuilder(
+    column: $table.reminderOffsetDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get repeatRule => $composableBuilder(
+    column: $table.repeatRule,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get keywords => $composableBuilder(
+    column: $table.keywords,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDefault => $composableBuilder(
+    column: $table.isDefault,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPinned => $composableBuilder(
+    column: $table.isPinned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ItemTemplatesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ItemTemplatesTable> {
+  $$ItemTemplatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get templateKey => $composableBuilder(
+    column: $table.templateKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get itemType => $composableBuilder(
+    column: $table.itemType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get amountType => $composableBuilder(
+    column: $table.amountType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get dueOffsetDays => $composableBuilder(
+    column: $table.dueOffsetDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reminderOffsetDays => $composableBuilder(
+    column: $table.reminderOffsetDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get repeatRule => $composableBuilder(
+    column: $table.repeatRule,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get keywords => $composableBuilder(
+    column: $table.keywords,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDefault => $composableBuilder(
+    column: $table.isDefault,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPinned => $composableBuilder(
+    column: $table.isPinned,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ItemTemplatesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ItemTemplatesTable> {
+  $$ItemTemplatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get templateKey => $composableBuilder(
+    column: $table.templateKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get categoryId => $composableBuilder(
+    column: $table.categoryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get itemType =>
+      $composableBuilder(column: $table.itemType, builder: (column) => column);
+
+  GeneratedColumn<String> get amountType => $composableBuilder(
+    column: $table.amountType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<int> get dueOffsetDays => $composableBuilder(
+    column: $table.dueOffsetDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reminderOffsetDays => $composableBuilder(
+    column: $table.reminderOffsetDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get repeatRule => $composableBuilder(
+    column: $table.repeatRule,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get keywords =>
+      $composableBuilder(column: $table.keywords, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDefault =>
+      $composableBuilder(column: $table.isDefault, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPinned =>
+      $composableBuilder(column: $table.isPinned, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$ItemTemplatesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ItemTemplatesTable,
+          ItemTemplate,
+          $$ItemTemplatesTableFilterComposer,
+          $$ItemTemplatesTableOrderingComposer,
+          $$ItemTemplatesTableAnnotationComposer,
+          $$ItemTemplatesTableCreateCompanionBuilder,
+          $$ItemTemplatesTableUpdateCompanionBuilder,
+          (
+            ItemTemplate,
+            BaseReferences<_$AppDatabase, $ItemTemplatesTable, ItemTemplate>,
+          ),
+          ItemTemplate,
+          PrefetchHooks Function()
+        > {
+  $$ItemTemplatesTableTableManager(_$AppDatabase db, $ItemTemplatesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ItemTemplatesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ItemTemplatesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ItemTemplatesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> templateKey = const Value.absent(),
+                Value<int?> categoryId = const Value.absent(),
+                Value<String> itemType = const Value.absent(),
+                Value<String> amountType = const Value.absent(),
+                Value<int?> amount = const Value.absent(),
+                Value<int> dueOffsetDays = const Value.absent(),
+                Value<int?> reminderOffsetDays = const Value.absent(),
+                Value<String?> repeatRule = const Value.absent(),
+                Value<String> keywords = const Value.absent(),
+                Value<bool> isDefault = const Value.absent(),
+                Value<bool> isPinned = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+              }) => ItemTemplatesCompanion(
+                id: id,
+                name: name,
+                templateKey: templateKey,
+                categoryId: categoryId,
+                itemType: itemType,
+                amountType: amountType,
+                amount: amount,
+                dueOffsetDays: dueOffsetDays,
+                reminderOffsetDays: reminderOffsetDays,
+                repeatRule: repeatRule,
+                keywords: keywords,
+                isDefault: isDefault,
+                isPinned: isPinned,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<String?> templateKey = const Value.absent(),
+                Value<int?> categoryId = const Value.absent(),
+                Value<String> itemType = const Value.absent(),
+                Value<String> amountType = const Value.absent(),
+                Value<int?> amount = const Value.absent(),
+                Value<int> dueOffsetDays = const Value.absent(),
+                Value<int?> reminderOffsetDays = const Value.absent(),
+                Value<String?> repeatRule = const Value.absent(),
+                Value<String> keywords = const Value.absent(),
+                Value<bool> isDefault = const Value.absent(),
+                Value<bool> isPinned = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+              }) => ItemTemplatesCompanion.insert(
+                id: id,
+                name: name,
+                templateKey: templateKey,
+                categoryId: categoryId,
+                itemType: itemType,
+                amountType: amountType,
+                amount: amount,
+                dueOffsetDays: dueOffsetDays,
+                reminderOffsetDays: reminderOffsetDays,
+                repeatRule: repeatRule,
+                keywords: keywords,
+                isDefault: isDefault,
+                isPinned: isPinned,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ItemTemplatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ItemTemplatesTable,
+      ItemTemplate,
+      $$ItemTemplatesTableFilterComposer,
+      $$ItemTemplatesTableOrderingComposer,
+      $$ItemTemplatesTableAnnotationComposer,
+      $$ItemTemplatesTableCreateCompanionBuilder,
+      $$ItemTemplatesTableUpdateCompanionBuilder,
+      (
+        ItemTemplate,
+        BaseReferences<_$AppDatabase, $ItemTemplatesTable, ItemTemplate>,
+      ),
+      ItemTemplate,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5871,4 +9106,10 @@ class $AppDatabaseManager {
       $$ProjectsTableTableManager(_db, _db.projects);
   $$ProjectEventsTableTableManager get projectEvents =>
       $$ProjectEventsTableTableManager(_db, _db.projectEvents);
+  $$ProjectTemplatesTableTableManager get projectTemplates =>
+      $$ProjectTemplatesTableTableManager(_db, _db.projectTemplates);
+  $$ProjectTemplateStepsTableTableManager get projectTemplateSteps =>
+      $$ProjectTemplateStepsTableTableManager(_db, _db.projectTemplateSteps);
+  $$ItemTemplatesTableTableManager get itemTemplates =>
+      $$ItemTemplatesTableTableManager(_db, _db.itemTemplates);
 }

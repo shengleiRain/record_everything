@@ -1,0 +1,72 @@
+appId: com.lifeitems.record_everything
+---
+# Custom project template: home project entry -> template management -> apply template.
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+- tapOn: '项目'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*项目.*'
+
+- tapOn: '项目模板'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*项目模板.*'
+- assertVisible:
+    text: '.*摄影接单模板.*'
+
+- tapOn:
+    text: '.*新模板.*'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*新建项目模板.*'
+
+- tapOn:
+    text: '.*模板名称.*'
+- inputText: 'MaestroTemplate'
+- hideKeyboard
+
+- tapOn: '保存'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*MaestroTemplate.*'
+
+- back
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "89%,86%"
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*新建项目.*'
+
+- tapOn:
+    text: '.*项目标题.*'
+- inputText: 'FromTemplateProject'
+- hideKeyboard
+
+- tapOn:
+    text: '.*选择模板.*'
+- waitForAnimationToEnd
+- tapOn:
+    text: '.*MaestroTemplate.*'
+- waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element:
+      text: '.*创建项目.*'
+    direction: DOWN
+- tapOn:
+    text: '.*创建项目.*'
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: '.*FromTemplateProject.*'
+- scrollUntilVisible:
+    element:
+      text: '.*下一步行动.*'
+    direction: DOWN
+- assertVisible:
+    text: '.*下一步行动.*'

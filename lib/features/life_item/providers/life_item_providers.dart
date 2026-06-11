@@ -45,6 +45,15 @@ final lifeItemByIdProvider = StreamProvider.family<LifeItem, int>((ref, id) {
   return ref.watch(lifeItemRepoProvider).watchById(id);
 });
 
+final itemTemplatesProvider = StreamProvider<List<ItemTemplate>>((ref) {
+  return ref.watch(lifeItemRepoProvider).watchTemplates();
+});
+
+final itemTemplateRecommendationsProvider = FutureProvider.autoDispose
+    .family<List<ItemTemplate>, String>((ref, title) {
+      return ref.watch(lifeItemRepoProvider).recommendTemplates(title);
+    });
+
 class LifeItemNotifier extends Notifier<void> {
   @override
   void build() {}

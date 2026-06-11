@@ -41,6 +41,13 @@ class CategoryNotifier extends Notifier<void> {
   Future<Category> update(Category category) => _repo.updateCategory(category);
 
   Future<void> delete(int id) => _repo.deleteCategory(id);
+
+  Future<void> setHidden(int id, bool hidden) => _repo.setHidden(id, hidden);
+
+  Future<void> setPinned(int id, bool pinned) => _repo.setPinned(id, pinned);
+
+  Future<void> merge({required int sourceId, required int targetId}) =>
+      _repo.mergeCategory(sourceId: sourceId, targetId: targetId);
 }
 
 final categoryNotifierProvider = NotifierProvider<CategoryNotifier, void>(

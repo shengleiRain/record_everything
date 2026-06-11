@@ -16,10 +16,12 @@ appId: com.lifeitems.record_everything
     point: "92%,86%"
 - waitForAnimationToEnd
 - takeScreenshot: item-create-form
+- assertVisible:
+    text: '.*不使用模板.*'
 
 # Fill title
 - tapOn:
-    point: "20%,23%"
+    text: '.*标题.*'
 - inputText: 'MaestroItem'
 - hideKeyboard
 
@@ -49,7 +51,7 @@ appId: com.lifeitems.record_everything
 
 # Modify title
 - tapOn:
-    point: "20%,23%"
+    text: '.*标题.*'
 - inputText: '-edited'
 - hideKeyboard
 

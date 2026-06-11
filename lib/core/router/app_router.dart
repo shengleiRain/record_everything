@@ -5,10 +5,13 @@ import '../../features/life_item/pages/life_item_list_page.dart';
 import '../../features/life_item/pages/life_item_detail_page.dart';
 import '../../features/life_item/pages/life_item_edit_page.dart';
 import '../../features/bill/pages/bill_list_page.dart';
+import '../../features/bill/pages/bill_detail_page.dart';
 import '../../features/bill/pages/bill_edit_page.dart';
 import '../../features/project/pages/project_list_page.dart';
 import '../../features/project/pages/project_detail_page.dart';
 import '../../features/project/pages/project_edit_page.dart';
+import '../../features/project/pages/project_template_list_page.dart';
+import '../../features/project/pages/project_template_edit_page.dart';
 import '../../features/statistics/pages/statistics_page.dart';
 import '../../features/settings/pages/settings_page.dart';
 import '../../features/settings/pages/category_management_page.dart';
@@ -105,6 +108,10 @@ final appRouter = GoRouter(
               builder: (context, state) => const BillEditPage(),
             ),
             GoRoute(
+              path: ':id',
+              builder: (context, state) => const BillDetailPage(),
+            ),
+            GoRoute(
               path: ':id/edit',
               builder: (context, state) => const BillEditPage(),
             ),
@@ -117,6 +124,20 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'new',
               builder: (context, state) => const ProjectEditPage(),
+            ),
+            GoRoute(
+              path: 'templates',
+              builder: (context, state) => const ProjectTemplateListPage(),
+              routes: [
+                GoRoute(
+                  path: 'new',
+                  builder: (context, state) => const ProjectTemplateEditPage(),
+                ),
+                GoRoute(
+                  path: ':id/edit',
+                  builder: (context, state) => const ProjectTemplateEditPage(),
+                ),
+              ],
             ),
             GoRoute(
               path: ':id',

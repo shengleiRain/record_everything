@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/theme/app_theme.dart';
-import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/features/settings/pages/category_management_page.dart';
 import 'package:record_everything/features/settings/pages/data_safety_page.dart';
 import 'package:record_everything/features/settings/pages/settings_page.dart';
@@ -26,17 +25,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          categoriesProvider.overrideWith(
-            (ref) => Stream.value(const [
-              Category(
-                id: 1,
-                name: '餐饮',
-                type: 'expense',
-                icon: 'restaurant',
-                isDefault: true,
-              ),
-            ]),
-          ),
+          categoriesProvider.overrideWith((ref) => Stream.value(const [])),
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme(),

@@ -1,0 +1,40 @@
+appId: com.lifeitems.record_everything
+---
+# Item template: create an item from the shared template selector.
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+- tapOn:
+    text: '.*事项.*Tab 2.*'
+- waitForAnimationToEnd
+
+- tapOn:
+    point: "92%,86%"
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*不使用模板.*'
+
+- tapOn:
+    text: '.*选择模板.*'
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: '.*会员续费.*'
+    direction: DOWN
+- tapOn:
+    text: '.*会员续费.*'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*会员续费.*'
+
+- scrollUntilVisible:
+    element:
+      text: '.*创建事项.*'
+    direction: DOWN
+- tapOn:
+    text: '.*创建事项.*'
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: '.*会员续费.*'

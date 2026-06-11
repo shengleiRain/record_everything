@@ -66,6 +66,14 @@ appId: com.lifeitems.record_everything
 - takeScreenshot: categories-after-edit
 
 # Switch to project categories
+- swipe:
+    start: "50%,30%"
+    end: "50%,82%"
+    duration: 500
+- swipe:
+    start: "50%,30%"
+    end: "50%,82%"
+    duration: 500
 - tapOn:
     text: '.*项目.*'
 - waitForAnimationToEnd

@@ -18,6 +18,30 @@ class LifeItemRepository {
       _db.lifeItemDao.watchForecastExpenses(days);
   Stream<LifeItem> watchById(int id) => _db.lifeItemDao.watchById(id);
 
+  Stream<List<ItemTemplate>> watchTemplates() => _db.itemTemplateDao.watchAll();
+
+  Future<List<ItemTemplate>> getTemplates() => _db.itemTemplateDao.getAll();
+
+  Future<ItemTemplate> getTemplateById(int id) =>
+      _db.itemTemplateDao.getById(id);
+
+  Future<List<ItemTemplate>> recommendTemplates(String title) async {
+    final normalized = title.trim().toLowerCase();
+    if (normalized.isEmpty) return const [];
+    final templates = await _db.itemTemplateDao.getAll();
+    final matches = templates.where((template) {
+      final words = [
+        template.name,
+        ...template.keywords
+            .split(',')
+            .map((word) => word.trim())
+            .where((word) => word.isNotEmpty),
+      ];
+      return words.any((word) => normalized.contains(word.toLowerCase()));
+    }).toList();
+    return matches.take(3).toList(growable: false);
+  }
+
   Future<LifeItem> create({
     required String title,
     String? description,
@@ -30,8 +54,8 @@ class LifeItemRepository {
     DateTime? remindTime,
     String? repeatRule,
     String status = 'pending',
-  }) {
-    return _db.lifeItemDao.insertOne(
+  }) async {
+    final item = await _db.lifeItemDao.insertOne(
       LifeItemsCompanion.insert(
         title: title,
         description: Value(description),
@@ -46,29 +70,31 @@ class LifeItemRepository {
         status: Value(status),
       ),
     );
+    await _markCategoryUsed(categoryId);
+    return item;
   }
 
-  Future<LifeItem> updateItem(LifeItem item) {
-    return _db.lifeItemDao
-        .updateOne(
-          LifeItemsCompanion(
-            id: Value(item.id),
-            title: Value(item.title),
-            description: Value(item.description),
-            categoryId: Value(item.categoryId),
-            projectId: Value(item.projectId),
-            itemType: Value(item.itemType),
-            amount: Value(item.amount),
-            amountType: Value(item.amountType),
-            dueTime: Value(item.dueTime),
-            remindTime: Value(item.remindTime),
-            repeatRule: Value(item.repeatRule),
-            status: Value(item.status),
-            createdAt: Value(item.createdAt),
-            updatedAt: Value(DateTime.now()),
-          ),
-        )
-        .then((_) => item);
+  Future<LifeItem> updateItem(LifeItem item) async {
+    await _db.lifeItemDao.updateOne(
+      LifeItemsCompanion(
+        id: Value(item.id),
+        title: Value(item.title),
+        description: Value(item.description),
+        categoryId: Value(item.categoryId),
+        projectId: Value(item.projectId),
+        itemType: Value(item.itemType),
+        amount: Value(item.amount),
+        amountType: Value(item.amountType),
+        dueTime: Value(item.dueTime),
+        remindTime: Value(item.remindTime),
+        repeatRule: Value(item.repeatRule),
+        status: Value(item.status),
+        createdAt: Value(item.createdAt),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+    await _markCategoryUsed(item.categoryId);
+    return item;
   }
 
   Future<void> deleteItem(int id) => _db.lifeItemDao.softDeleteById(id);
@@ -99,6 +125,7 @@ class LifeItemRepository {
         updatedAt: Value(updated.updatedAt),
       ),
     );
+    await _markCategoryUsed(updated.categoryId);
     return updated;
   }
 
@@ -126,6 +153,7 @@ class LifeItemRepository {
         updatedAt: Value(updated.updatedAt),
       ),
     );
+    await _markCategoryUsed(updated.categoryId);
     return updated;
   }
 
@@ -157,4 +185,9 @@ class LifeItemRepository {
       _db.lifeItemDao.countCompletedInMonth(month);
   Stream<int> watchCompletedCountInMonth(DateTime month) =>
       _db.lifeItemDao.watchCompletedCountInMonth(month);
+
+  Future<void> _markCategoryUsed(int? categoryId) async {
+    if (categoryId == null) return;
+    await _db.categoryDao.markUsed(categoryId);
+  }
 }

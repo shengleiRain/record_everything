@@ -68,6 +68,15 @@ final projectEventsProvider = StreamProvider.family<List<ProjectEvent>, int>((
   return ref.watch(projectRepoProvider).watchProjectEvents(projectId);
 });
 
+final projectTemplatesProvider = StreamProvider<List<ProjectTemplate>>((ref) {
+  return ref.watch(projectRepoProvider).watchTemplates();
+});
+
+final projectTemplateStepsProvider =
+    StreamProvider.family<List<ProjectTemplateStep>, int>((ref, templateId) {
+      return ref.watch(projectRepoProvider).watchTemplateSteps(templateId);
+    });
+
 // UI state
 final projectStatusFilterProvider = StateProvider<String?>((ref) => null);
 final projectCategoryFilterProvider = StateProvider<int?>((ref) => null);
@@ -102,33 +111,68 @@ class ProjectNotifier extends Notifier<void> {
     );
   }
 
-  Future<Project> createPhotography({
+  Future<Project> createFromTemplate({
+    required int templateId,
     required String title,
-    required String participant,
-    required DateTime shootDate,
-    required int totalAmount,
-    String? shootType,
-    int? depositAmount,
-    DateTime? depositDueDate,
-    int? finalPaymentAmount,
-    DateTime? finalPaymentDueDate,
+    List<ProjectTemplateStepInput>? steps,
+    int? categoryId,
+    String? participant,
+    String projectStatus = 'planned',
+    DateTime? startDate,
+    DateTime? endDate,
+    int? totalAmount,
     String? note,
-    int? projectCategoryId,
-  }) {
-    return _repo.createPhotographyProjectFromTemplate(
+  }) async {
+    final template = await _repo.getTemplateById(templateId);
+    final resolvedSteps =
+        steps ??
+        (await _repo.getTemplateSteps(templateId))
+            .map(
+              (step) => ProjectTemplateStepInput(
+                title: step.title,
+                itemType: step.itemType,
+                amountType: step.amountType,
+                amount: step.amount,
+                offsetDays: step.offsetDays,
+              ),
+            )
+            .toList(growable: false);
+    return _repo.createProjectFromTemplate(
+      template: template,
+      steps: resolvedSteps,
       title: title,
+      categoryId: categoryId,
       participant: participant,
-      shootDate: shootDate,
+      projectStatus: projectStatus,
+      startDate: startDate,
+      endDate: endDate,
       totalAmount: totalAmount,
-      shootType: shootType,
-      depositAmount: depositAmount,
-      depositDueDate: depositDueDate,
-      finalPaymentAmount: finalPaymentAmount,
-      finalPaymentDueDate: finalPaymentDueDate,
       note: note,
-      projectCategoryId: projectCategoryId,
     );
   }
+
+  Future<ProjectTemplate> createTemplate({
+    required String name,
+    int? categoryId,
+    String? note,
+    required List<ProjectTemplateStepInput> steps,
+  }) {
+    return _repo.createProjectTemplate(
+      name: name,
+      categoryId: categoryId,
+      note: note,
+      steps: steps,
+    );
+  }
+
+  Future<void> updateTemplate({
+    required ProjectTemplate template,
+    required List<ProjectTemplateStepInput> steps,
+  }) {
+    return _repo.updateProjectTemplate(template: template, steps: steps);
+  }
+
+  Future<void> deleteTemplate(int id) => _repo.deleteProjectTemplate(id);
 
   Future<void> update(Project project) => _repo.updateProject(project);
 

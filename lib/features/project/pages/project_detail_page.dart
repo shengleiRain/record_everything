@@ -7,6 +7,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../domain/enums/project_event_type.dart';
 import '../../../domain/enums/project_status.dart';
+import '../../bill/providers/bill_providers.dart';
+import '../../life_item/providers/life_item_providers.dart';
 import '../providers/project_providers.dart';
 import '../widgets/project_status_chip.dart';
 import '../widgets/project_financial_bar.dart';
@@ -150,6 +152,26 @@ class _ProjectDetailBody extends ConsumerWidget {
             ),
           ),
 
+          _SectionCard(
+            title: '下一步',
+            child: itemsAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => Text('加载失败: $e'),
+              data: (items) => _NextStepPanel(
+                items: _nextItems(items),
+                onOpen: (item) => context.push('/items/${item.id}'),
+                onRecordPayment: (item) => _recordPayment(context, ref, item),
+                onAddItem: () => context.push(
+                  '/items/new',
+                  extra: {'projectId': project.id},
+                ),
+              ),
+            ),
+          ),
+
           // Financial summary
           _SectionCard(
             title: '财务概览',
@@ -279,6 +301,15 @@ class _ProjectDetailBody extends ConsumerWidget {
                                   ),
                                 )
                               : null,
+                          trailing:
+                              item.itemType == 'payment_due' &&
+                                  item.status == 'pending'
+                              ? TextButton(
+                                  onPressed: () =>
+                                      _recordPayment(context, ref, item),
+                                  child: const Text('记录收款'),
+                                )
+                              : null,
                           onTap: () => context.push('/items/${item.id}'),
                         ),
                       )
@@ -340,7 +371,7 @@ class _ProjectDetailBody extends ConsumerWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          onTap: () => context.push('/bills/${bill.id}/edit'),
+                          onTap: () => context.push('/bills/${bill.id}'),
                         ),
                       )
                       .toList(),
@@ -440,6 +471,103 @@ class _ProjectDetailBody extends ConsumerWidget {
     if (total == null) return null;
     final remaining = total - received;
     return remaining > 0 ? remaining : 0;
+  }
+
+  List<LifeItem> _nextItems(List<LifeItem> items) {
+    final pending = items
+        .where((item) => item.status == 'pending')
+        .toList(growable: false);
+    final sorted = [...pending]
+      ..sort((a, b) {
+        final paymentCompare = _paymentPriority(
+          a,
+        ).compareTo(_paymentPriority(b));
+        if (paymentCompare != 0) return paymentCompare;
+        return a.dueTime.compareTo(b.dueTime);
+      });
+    return sorted.take(3).toList(growable: false);
+  }
+
+  int _paymentPriority(LifeItem item) => item.itemType == 'payment_due' ? 0 : 1;
+
+  Future<void> _recordPayment(
+    BuildContext context,
+    WidgetRef ref,
+    LifeItem item,
+  ) async {
+    await ref.read(lifeItemNotifierProvider.notifier).complete(item.id);
+    await ref
+        .read(billNotifierProvider.notifier)
+        .createFromLifeItem(item, item.amount, item.categoryId, '项目收款');
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已记录收款')));
+    }
+  }
+}
+
+class _NextStepPanel extends StatelessWidget {
+  const _NextStepPanel({
+    required this.items,
+    required this.onOpen,
+    required this.onRecordPayment,
+    required this.onAddItem,
+  });
+
+  final List<LifeItem> items;
+  final ValueChanged<LifeItem> onOpen;
+  final ValueChanged<LifeItem> onRecordPayment;
+  final VoidCallback onAddItem;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '暂无待处理节点',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: onAddItem,
+            icon: const Icon(Icons.add_task),
+            label: const Text('添加下一步'),
+          ),
+        ],
+      );
+    }
+    return Column(
+      children: [
+        for (final item in items)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              item.itemType == 'payment_due'
+                  ? Icons.payments_outlined
+                  : Icons.radio_button_unchecked,
+              color: item.itemType == 'payment_due'
+                  ? Colors.orange
+                  : Theme.of(context).colorScheme.outline,
+            ),
+            title: Text(item.title),
+            subtitle: Text(
+              '${DateFormatter.formatDate(item.dueTime)}${item.amount != null ? ' · ${MoneyFormatter.formatInt(item.amount!)}' : ''}',
+            ),
+            trailing: item.itemType == 'payment_due'
+                ? FilledButton.tonal(
+                    onPressed: () => onRecordPayment(item),
+                    child: const Text('记录收款'),
+                  )
+                : const Icon(Icons.chevron_right),
+            onTap: () => onOpen(item),
+          ),
+      ],
+    );
   }
 }
 

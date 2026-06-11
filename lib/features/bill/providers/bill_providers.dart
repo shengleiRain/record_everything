@@ -24,6 +24,10 @@ final billsByMonthProvider = StreamProvider<List<BillRecord>>((ref) {
   return ref.watch(billRepoProvider).watchByMonth(month);
 });
 
+final billByIdProvider = StreamProvider.family<BillRecord, int>((ref, id) {
+  return ref.watch(billRepoProvider).watchById(id);
+});
+
 final monthlyIncomeProvider = StreamProvider<int>((ref) {
   final month = ref.watch(currentMonthProvider);
   return ref.watch(billRepoProvider).watchIncomeForMonth(month);
@@ -77,16 +81,21 @@ class BillNotifier extends Notifier<void> {
     int? customAmount,
     int? customCategoryId,
     String? note,
-  ) => _repo.create(
-    title: item.title,
-    amount: customAmount ?? item.amount ?? 0,
-    amountType: item.amountType,
-    categoryId: customCategoryId ?? item.categoryId,
-    projectId: item.projectId,
-    billTime: DateTime.now(),
-    note: note,
-    lifeItemId: item.id,
-  );
+  ) async {
+    final accountId =
+        (await ref.read(accountRepoProvider).ensureDefaultAccount()).id;
+    return _repo.create(
+      title: item.title,
+      amount: customAmount ?? item.amount ?? 0,
+      amountType: item.amountType,
+      categoryId: customCategoryId ?? item.categoryId,
+      accountId: accountId,
+      projectId: item.projectId,
+      billTime: DateTime.now(),
+      note: note,
+      lifeItemId: item.id,
+    );
+  }
 
   Future<void> delete(int id) => _repo.deleteRecord(id);
 }

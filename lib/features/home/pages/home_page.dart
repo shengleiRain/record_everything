@@ -77,6 +77,11 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
           actions: [
             IconButton(
+              tooltip: '项目',
+              icon: const Icon(Icons.folder_outlined),
+              onPressed: () => context.push('/projects'),
+            ),
+            IconButton(
               tooltip: '搜索',
               icon: const Icon(Icons.search),
               onPressed: () => context.push('/search'),

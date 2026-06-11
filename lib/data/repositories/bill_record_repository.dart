@@ -10,6 +10,7 @@ class BillRecordRepository {
       _db.billRecordDao.watchBetween(start, end);
   Stream<List<BillRecord>> watchByMonth(DateTime month) =>
       _db.billRecordDao.watchByMonth(month);
+  Stream<BillRecord> watchById(int id) => _db.billRecordDao.watchById(id);
 
   Future<BillRecord> create({
     int? lifeItemId,
@@ -21,8 +22,8 @@ class BillRecordRepository {
     String amountType = 'expense',
     required DateTime billTime,
     String? note,
-  }) {
-    return _db.billRecordDao.insertOne(
+  }) async {
+    final record = await _db.billRecordDao.insertOne(
       BillRecordsCompanion.insert(
         lifeItemId: Value(lifeItemId),
         accountId: Value(accountId),
@@ -35,10 +36,12 @@ class BillRecordRepository {
         note: Value(note),
       ),
     );
+    await _markCategoryUsed(categoryId);
+    return record;
   }
 
-  Future<void> updateRecord(BillRecord record) {
-    return _db.billRecordDao.updateOne(
+  Future<void> updateRecord(BillRecord record) async {
+    await _db.billRecordDao.updateOne(
       BillRecordsCompanion(
         id: Value(record.id),
         lifeItemId: Value(record.lifeItemId),
@@ -54,6 +57,7 @@ class BillRecordRepository {
         updatedAt: Value(DateTime.now()),
       ),
     );
+    await _markCategoryUsed(record.categoryId);
   }
 
   Future<void> deleteRecord(int id) => _db.billRecordDao.softDeleteById(id);
@@ -68,4 +72,9 @@ class BillRecordRepository {
       _db.billRecordDao.watchSumForMonth(month, 'income');
   Stream<int> watchExpenseForMonth(DateTime month) =>
       _db.billRecordDao.watchSumForMonth(month, 'expense');
+
+  Future<void> _markCategoryUsed(int? categoryId) async {
+    if (categoryId == null) return;
+    await _db.categoryDao.markUsed(categoryId);
+  }
 }

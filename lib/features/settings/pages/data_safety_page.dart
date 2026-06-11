@@ -78,7 +78,7 @@ class DataSafetyPage extends ConsumerWidget {
       if (context.mounted) {
         final message = summary == null
             ? '已取消导入'
-            : '导入成功: 分类 ${summary.categoriesImported}，项目 ${summary.projectsImported}，事项 ${summary.lifeItemsImported}，账单 ${summary.billRecordsImported}';
+            : '导入成功: 分类 ${summary.categoriesImported}，模板 ${summary.projectTemplatesImported}，项目 ${summary.projectsImported}，事项 ${summary.lifeItemsImported}，账单 ${summary.billRecordsImported}';
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(message)));

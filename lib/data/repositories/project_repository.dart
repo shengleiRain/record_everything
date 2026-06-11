@@ -2,6 +2,22 @@ import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../database/daos/bill_record_dao.dart';
 
+class ProjectTemplateStepInput {
+  const ProjectTemplateStepInput({
+    required this.title,
+    required this.itemType,
+    required this.amountType,
+    required this.offsetDays,
+    this.amount,
+  });
+
+  final String title;
+  final String itemType;
+  final String amountType;
+  final int offsetDays;
+  final int? amount;
+}
+
 class ProjectRepository {
   final AppDatabase _db;
   ProjectRepository(this._db);
@@ -33,8 +49,8 @@ class ProjectRepository {
     int? totalAmount,
     String? templateKey,
     String? note,
-  }) {
-    return _db.projectDao.insertOne(
+  }) async {
+    final project = await _db.projectDao.insertOne(
       ProjectsCompanion.insert(
         title: title,
         categoryId: Value(categoryId),
@@ -47,10 +63,12 @@ class ProjectRepository {
         note: Value(note),
       ),
     );
+    await _markCategoryUsed(categoryId);
+    return project;
   }
 
-  Future<void> updateProject(Project project) {
-    return _db.projectDao.updateOne(
+  Future<void> updateProject(Project project) async {
+    await _db.projectDao.updateOne(
       ProjectsCompanion(
         id: Value(project.id),
         title: Value(project.title),
@@ -66,6 +84,7 @@ class ProjectRepository {
         updatedAt: Value(DateTime.now()),
       ),
     );
+    await _markCategoryUsed(project.categoryId);
   }
 
   Future<void> softDeleteProject(int id) => _db.projectDao.softDeleteById(id);
@@ -74,103 +93,102 @@ class ProjectRepository {
 
   Future<bool> hasLinkedRecords(int id) => _db.projectDao.hasLinkedRecords(id);
 
-  // --- Photography template ---
+  // --- Project templates ---
 
-  Future<Project> createPhotographyProjectFromTemplate({
-    required String title,
-    required String participant,
-    required DateTime shootDate,
-    required int totalAmount,
-    String? shootType,
-    int? depositAmount,
-    DateTime? depositDueDate,
-    int? finalPaymentAmount,
-    DateTime? finalPaymentDueDate,
+  Stream<List<ProjectTemplate>> watchTemplates() =>
+      _db.projectTemplateDao.watchAll();
+
+  Future<ProjectTemplate> getTemplateById(int id) =>
+      _db.projectTemplateDao.getById(id);
+
+  Future<ProjectTemplate?> getTemplateByKey(String templateKey) =>
+      _db.projectTemplateDao.getByTemplateKey(templateKey);
+
+  Future<List<ProjectTemplateStep>> getTemplateSteps(int templateId) =>
+      _db.projectTemplateDao.getSteps(templateId);
+
+  Stream<List<ProjectTemplateStep>> watchTemplateSteps(int templateId) =>
+      _db.projectTemplateDao.watchSteps(templateId);
+
+  Future<ProjectTemplate> createProjectTemplate({
+    required String name,
+    int? categoryId,
     String? note,
-    int? projectCategoryId,
+    bool isDefault = false,
+    required List<ProjectTemplateStepInput> steps,
   }) async {
-    final noteBuffer = StringBuffer();
-    if (shootType != null && shootType.isNotEmpty) {
-      noteBuffer.writeln('拍摄类型: $shootType');
-    }
-    if (note != null && note.isNotEmpty) {
-      noteBuffer.write(note);
-    }
+    final template = await _db.projectTemplateDao.insertTemplate(
+      ProjectTemplatesCompanion.insert(
+        name: name,
+        categoryId: Value(categoryId),
+        note: Value(note),
+        isDefault: Value(isDefault),
+      ),
+    );
+    await _replaceTemplateSteps(template.id, steps);
+    return template;
+  }
 
+  Future<void> updateProjectTemplate({
+    required ProjectTemplate template,
+    required List<ProjectTemplateStepInput> steps,
+  }) async {
+    await _db.projectTemplateDao.updateTemplate(
+      ProjectTemplatesCompanion(
+        id: Value(template.id),
+        name: Value(template.name),
+        templateKey: Value(template.templateKey),
+        categoryId: Value(template.categoryId),
+        note: Value(template.note),
+        isDefault: Value(template.isDefault),
+        createdAt: Value(template.createdAt),
+        updatedAt: Value(DateTime.now()),
+        deletedAt: Value(template.deletedAt),
+      ),
+    );
+    await _replaceTemplateSteps(template.id, steps);
+  }
+
+  Future<void> deleteProjectTemplate(int id) =>
+      _db.projectTemplateDao.softDeleteTemplate(id);
+
+  Future<Project> createProjectFromTemplate({
+    required ProjectTemplate template,
+    required List<ProjectTemplateStepInput> steps,
+    required String title,
+    int? categoryId,
+    String? participant,
+    String projectStatus = 'planned',
+    DateTime? startDate,
+    DateTime? endDate,
+    int? totalAmount,
+    String? note,
+  }) async {
     final project = await createProject(
       title: title,
-      categoryId: projectCategoryId,
+      categoryId: categoryId ?? template.categoryId,
       participant: participant,
-      projectStatus: 'active',
-      startDate: shootDate,
+      projectStatus: projectStatus,
+      startDate: startDate,
+      endDate: endDate,
       totalAmount: totalAmount,
-      templateKey: 'photography_order',
-      note: noteBuffer.toString().trim(),
+      templateKey: template.templateKey ?? 'custom:${template.id}',
+      note: _mergeTemplateNote(template.note, note),
     );
 
-    // Auto-generate life items
-    final lifeItemDao = _db.lifeItemDao;
-
-    // Deposit payment due
-    if (depositAmount != null && depositAmount > 0) {
-      await lifeItemDao.insertOne(
+    final baseDate = startDate ?? DateTime.now();
+    for (final step in steps) {
+      await _db.lifeItemDao.insertOne(
         LifeItemsCompanion.insert(
-          title: '收定金',
-          dueTime:
-              depositDueDate ?? shootDate.subtract(const Duration(days: 7)),
+          title: step.title,
+          dueTime: baseDate.add(Duration(days: step.offsetDays)),
           projectId: Value(project.id),
-          itemType: const Value('payment_due'),
-          amountType: const Value('income'),
-          amount: Value(depositAmount),
+          itemType: Value(step.itemType),
+          amountType: Value(step.amountType),
+          amount: Value(step.amount),
         ),
       );
     }
-
-    // Shoot day reminder
-    await lifeItemDao.insertOne(
-      LifeItemsCompanion.insert(
-        title: '拍摄日提醒',
-        dueTime: shootDate,
-        projectId: Value(project.id),
-        itemType: const Value('milestone'),
-      ),
-    );
-
-    // Selection/delivery confirmation
-    await lifeItemDao.insertOne(
-      LifeItemsCompanion.insert(
-        title: '选片/确认交付内容',
-        dueTime: shootDate.add(const Duration(days: 3)),
-        projectId: Value(project.id),
-        itemType: const Value('todo'),
-      ),
-    );
-
-    // Retouching delivery
-    await lifeItemDao.insertOne(
-      LifeItemsCompanion.insert(
-        title: '修图交付',
-        dueTime: shootDate.add(const Duration(days: 14)),
-        projectId: Value(project.id),
-        itemType: const Value('delivery'),
-      ),
-    );
-
-    // Final payment due
-    if (finalPaymentAmount != null && finalPaymentAmount > 0) {
-      await lifeItemDao.insertOne(
-        LifeItemsCompanion.insert(
-          title: '收尾款',
-          dueTime:
-              finalPaymentDueDate ?? shootDate.add(const Duration(days: 14)),
-          projectId: Value(project.id),
-          itemType: const Value('payment_due'),
-          amountType: const Value('income'),
-          amount: Value(finalPaymentAmount),
-        ),
-      );
-    }
-
     return project;
   }
 
@@ -239,4 +257,37 @@ class ProjectRepository {
 
   Stream<int> watchCompletedCountInMonth(DateTime month) =>
       _db.lifeItemDao.watchCompletedCountInMonth(month);
+
+  Future<void> _replaceTemplateSteps(
+    int templateId,
+    List<ProjectTemplateStepInput> steps,
+  ) {
+    return _db.projectTemplateDao.replaceSteps(templateId, [
+      for (var index = 0; index < steps.length; index++)
+        ProjectTemplateStepsCompanion.insert(
+          templateId: templateId,
+          title: steps[index].title,
+          itemType: Value(steps[index].itemType),
+          amountType: Value(steps[index].amountType),
+          amount: Value(steps[index].amount),
+          offsetDays: Value(steps[index].offsetDays),
+          sortOrder: Value(index),
+        ),
+    ]);
+  }
+
+  String? _mergeTemplateNote(String? templateNote, String? projectNote) {
+    final parts = [
+      if (templateNote != null && templateNote.trim().isNotEmpty)
+        templateNote.trim(),
+      if (projectNote != null && projectNote.trim().isNotEmpty)
+        projectNote.trim(),
+    ];
+    return parts.isEmpty ? null : parts.join('\n');
+  }
+
+  Future<void> _markCategoryUsed(int? categoryId) async {
+    if (categoryId == null) return;
+    await _db.categoryDao.markUsed(categoryId);
+  }
 }

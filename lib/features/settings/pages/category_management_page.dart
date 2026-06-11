@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../data/database/app_database.dart';
-import '../../../data/repositories/category_repository.dart';
+import '../../../shared/widgets/app_dropdown_field.dart';
 import '../providers/settings_providers.dart';
 
 class CategoryManagementPage extends ConsumerStatefulWidget {
@@ -51,6 +51,7 @@ class _CategoryManagementPageState
               final rows = categories
                   .where((category) => category.type == _selectedType)
                   .toList();
+              rows.sort(_compareCategories);
               if (rows.isEmpty) {
                 return const _EmptyState();
               }
@@ -59,6 +60,10 @@ class _CategoryManagementPageState
                 onEdit: (category) =>
                     _showCategoryDialog(context, category: category),
                 onDelete: _deleteCategory,
+                onToggleHidden: _toggleHidden,
+                onTogglePinned: _togglePinned,
+                onMerge: (category) =>
+                    _showMergeDialog(context, category, rows),
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -138,7 +143,84 @@ class _CategoryManagementPageState
         ],
       ),
     );
+  }
 
+  int _compareCategories(Category a, Category b) {
+    if (a.isHidden != b.isHidden) return a.isHidden ? 1 : -1;
+    if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+    if (a.isDefault != b.isDefault) return a.isDefault ? -1 : 1;
+    return a.name.compareTo(b.name);
+  }
+
+  Future<void> _toggleHidden(Category category) async {
+    await ref
+        .read(categoryNotifierProvider.notifier)
+        .setHidden(category.id, !category.isHidden);
+  }
+
+  Future<void> _togglePinned(Category category) async {
+    await ref
+        .read(categoryNotifierProvider.notifier)
+        .setPinned(category.id, !category.isPinned);
+  }
+
+  Future<void> _showMergeDialog(
+    BuildContext context,
+    Category category,
+    List<Category> rows,
+  ) async {
+    int? targetId = rows
+        .where((row) => row.id != category.id && !row.isHidden)
+        .map((row) => row.id)
+        .firstOrNull;
+    final targets = rows
+        .where((row) => row.id != category.id && !row.isHidden)
+        .toList();
+    if (targets.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('没有可合并的目标分类')));
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('合并“${category.name}”'),
+          content: AppDropdownField<int>(
+            label: '合并到',
+            value: targetId,
+            options: targets
+                .map(
+                  (target) =>
+                      AppDropdownOption(value: target.id, label: target.name),
+                )
+                .toList(),
+            onSelected: (value) => setDialogState(() => targetId = value),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: targetId == null
+                  ? null
+                  : () async {
+                      await ref
+                          .read(categoryNotifierProvider.notifier)
+                          .merge(sourceId: category.id, targetId: targetId!);
+                      if (dialogContext.mounted) {
+                        Navigator.pop(dialogContext);
+                      }
+                    },
+              child: const Text('合并'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteCategory(Category category) async {
@@ -147,9 +229,9 @@ class _CategoryManagementPageState
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('已删除 ${category.name}')));
+        ).showSnackBar(SnackBar(content: Text('已处理 ${category.name}')));
       }
-    } on CategoryDeleteException catch (error) {
+    } on Object catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -164,11 +246,17 @@ class _CategoryGroup extends StatelessWidget {
     required this.rows,
     required this.onEdit,
     required this.onDelete,
+    required this.onToggleHidden,
+    required this.onTogglePinned,
+    required this.onMerge,
   });
 
   final List<Category> rows;
   final ValueChanged<Category> onEdit;
   final ValueChanged<Category> onDelete;
+  final ValueChanged<Category> onToggleHidden;
+  final ValueChanged<Category> onTogglePinned;
+  final ValueChanged<Category> onMerge;
 
   @override
   Widget build(BuildContext context) {
@@ -184,9 +272,12 @@ class _CategoryGroup extends StatelessWidget {
             _CategoryRow(
               category: rows[index],
               onEdit: () => onEdit(rows[index]),
-              onDelete: rows[index].isDefault
+              onDelete: () => onDelete(rows[index]),
+              onToggleHidden: () => onToggleHidden(rows[index]),
+              onTogglePinned: () => onTogglePinned(rows[index]),
+              onMerge: rows[index].isDefault
                   ? null
-                  : () => onDelete(rows[index]),
+                  : () => onMerge(rows[index]),
             ),
             if (index != rows.length - 1)
               Divider(
@@ -206,44 +297,109 @@ class _CategoryRow extends StatelessWidget {
     required this.category,
     required this.onEdit,
     required this.onDelete,
+    required this.onToggleHidden,
+    required this.onTogglePinned,
+    required this.onMerge,
   });
 
   final Category category;
   final VoidCallback onEdit;
-  final VoidCallback? onDelete;
+  final VoidCallback onDelete;
+  final VoidCallback onToggleHidden;
+  final VoidCallback onTogglePinned;
+  final VoidCallback? onMerge;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      minLeadingWidth: 28,
-      leading: Container(
-        width: 28,
-        height: 28,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight.withValues(alpha: 0.28),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          category.name.characters.first,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: AppColors.primaryDark,
-            fontWeight: FontWeight.w800,
+    return Opacity(
+      opacity: category.isHidden ? 0.58 : 1,
+      child: ListTile(
+        minLeadingWidth: 28,
+        leading: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight.withValues(alpha: 0.28),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            category.name.characters.first,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: AppColors.primaryDark,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
-      ),
-      title: Text(category.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(category.isDefault ? '默认分类' : category.icon),
-      onTap: onEdit,
-      trailing: IconButton(
-        tooltip: category.isDefault ? '默认分类不能删除' : '删除',
-        icon: Icon(
-          category.isDefault ? Icons.lock_outline : Icons.delete_outline,
-          color: category.isDefault ? AppColors.textHint : AppColors.overdue,
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                category.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (category.isPinned) const Icon(Icons.push_pin, size: 16),
+          ],
         ),
-        onPressed: onDelete,
+        subtitle: _CategoryUsageLabel(category: category),
+        onTap: category.isDefault ? null : onEdit,
+        trailing: PopupMenuButton<String>(
+          onSelected: (action) {
+            switch (action) {
+              case 'edit':
+                onEdit();
+                break;
+              case 'pin':
+                onTogglePinned();
+                break;
+              case 'hidden':
+                onToggleHidden();
+                break;
+              case 'merge':
+                onMerge?.call();
+                break;
+              case 'delete':
+                onDelete();
+                break;
+            }
+          },
+          itemBuilder: (_) => [
+            if (!category.isDefault)
+              const PopupMenuItem(value: 'edit', child: Text('重命名')),
+            PopupMenuItem(
+              value: 'pin',
+              child: Text(category.isPinned ? '取消常用置顶' : '常用置顶'),
+            ),
+            PopupMenuItem(
+              value: 'hidden',
+              child: Text(category.isHidden ? '恢复显示' : '隐藏'),
+            ),
+            if (!category.isDefault)
+              const PopupMenuItem(value: 'merge', child: Text('合并到...')),
+            if (!category.isDefault)
+              const PopupMenuItem(value: 'delete', child: Text('删除')),
+          ],
+        ),
       ),
     );
+  }
+}
+
+class _CategoryUsageLabel extends StatelessWidget {
+  const _CategoryUsageLabel({required this.category});
+
+  final Category category;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = [
+      if (category.isDefault) '默认分类' else '自定义分类',
+      if (category.isHidden) '已隐藏',
+      if (category.isPinned) '常用置顶',
+    ];
+    return Text(parts.join(' · '));
   }
 }
 

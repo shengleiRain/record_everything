@@ -6,4 +6,7 @@ class Categories extends Table {
   TextColumn get type => text()();
   TextColumn get icon => text().withDefault(const Constant('category'))();
   BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
+  BoolColumn get isHidden => boolean().withDefault(const Constant(false))();
+  BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastUsedAt => dateTime().nullable()();
 }

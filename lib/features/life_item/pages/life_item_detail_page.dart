@@ -13,6 +13,7 @@ import '../../../core/utils/dialog_helper.dart';
 import '../providers/life_item_providers.dart';
 import '../widgets/complete_action_sheet.dart';
 import '../../bill/providers/bill_providers.dart';
+import '../../project/providers/project_providers.dart';
 
 class LifeItemDetailPage extends ConsumerWidget {
   const LifeItemDetailPage({super.key});
@@ -95,6 +96,10 @@ class LifeItemDetailPage extends ConsumerWidget {
                 ),
               ],
             ),
+            if (item.projectId != null) ...[
+              const SizedBox(height: 16),
+              _ProjectLink(projectId: item.projectId!),
+            ],
             if (item.status == 'pending') ...[
               const SizedBox(height: 16),
               _ActionPanel(
@@ -392,6 +397,29 @@ class _ActionPanel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProjectLink extends ConsumerWidget {
+  const _ProjectLink({required this.projectId});
+
+  final int projectId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final project = ref.watch(projectByIdProvider(projectId)).valueOrNull;
+    return Card(
+      elevation: 0,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        leading: const Icon(Icons.folder_outlined),
+        title: const Text('归属项目'),
+        subtitle: Text(project?.title ?? '加载中'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.push('/projects/$projectId'),
+      ),
     );
   }
 }

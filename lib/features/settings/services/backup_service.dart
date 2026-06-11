@@ -20,6 +20,9 @@ class BackupImportSummary {
     required this.lifeItemsImported,
     required this.billRecordsImported,
     required this.projectEventsImported,
+    this.projectTemplatesImported = 0,
+    this.projectTemplateStepsImported = 0,
+    this.itemTemplatesImported = 0,
   });
 
   final int categoriesImported;
@@ -27,6 +30,9 @@ class BackupImportSummary {
   final int lifeItemsImported;
   final int billRecordsImported;
   final int projectEventsImported;
+  final int projectTemplatesImported;
+  final int projectTemplateStepsImported;
+  final int itemTemplatesImported;
 }
 
 class BackupService {
@@ -39,17 +45,29 @@ class BackupService {
     final billRecords = await _db.billRecordDao.getAll();
     final categories = await _db.categoryDao.getAll();
     final projects = await _db.projectDao.getAll();
+    final projectTemplates = await _db.projectTemplateDao.getAll();
+    final itemTemplates = await _db.itemTemplateDao.getAll();
 
     final projectEvents = <ProjectEvent>[];
     for (final project in projects) {
       final events = await _db.projectEventDao.getByProject(project.id);
       projectEvents.addAll(events);
     }
+    final projectTemplateSteps = <ProjectTemplateStep>[];
+    for (final template in projectTemplates) {
+      final steps = await _db.projectTemplateDao.getSteps(template.id);
+      projectTemplateSteps.addAll(steps);
+    }
 
     final data = {
-      'version': 2,
+      'version': 5,
       'exportedAt': DateTime.now().toIso8601String(),
       'categories': categories.map(_categoryToMap).toList(),
+      'itemTemplates': itemTemplates.map(_itemTemplateToMap).toList(),
+      'projectTemplates': projectTemplates.map(_projectTemplateToMap).toList(),
+      'projectTemplateSteps': projectTemplateSteps
+          .map(_projectTemplateStepToMap)
+          .toList(),
       'projects': projects.map(_projectToMap).toList(),
       'lifeItems': lifeItems.map(_lifeItemToMap).toList(),
       'billRecords': billRecords.map(_billRecordToMap).toList(),
@@ -71,6 +89,15 @@ class BackupService {
     final projectEvents = version >= 2
         ? data['projectEvents'] as List<Map<String, Object?>>
         : <Map<String, Object?>>[];
+    final projectTemplates = version >= 3
+        ? data['projectTemplates'] as List<Map<String, Object?>>
+        : <Map<String, Object?>>[];
+    final projectTemplateSteps = version >= 3
+        ? data['projectTemplateSteps'] as List<Map<String, Object?>>
+        : <Map<String, Object?>>[];
+    final itemTemplates = version >= 5
+        ? data['itemTemplates'] as List<Map<String, Object?>>
+        : <Map<String, Object?>>[];
 
     return _db.transaction(() async {
       final categoryIdMap = <int, int>{};
@@ -82,6 +109,9 @@ class BackupService {
         final type = _requiredString(map, 'type');
         final icon = _optionalString(map, 'icon') ?? 'category';
         final isDefault = _optionalBool(map, 'isDefault') ?? false;
+        final isHidden = _optionalBool(map, 'isHidden') ?? false;
+        final isPinned = _optionalBool(map, 'isPinned') ?? false;
+        final lastUsedAt = _optionalDate(map, 'lastUsedAt');
 
         final existing = (await _db.categoryDao.getByType(
           type,
@@ -94,10 +124,123 @@ class BackupService {
                 type: type,
                 icon: Value(icon),
                 isDefault: Value(isDefault),
+                isHidden: Value(isHidden),
+                isPinned: Value(isPinned),
+                lastUsedAt: Value(lastUsedAt),
               ),
             );
         if (existing == null) categoriesImported++;
         if (oldId != null) categoryIdMap[oldId] = category.id;
+      }
+
+      var itemTemplatesImported = 0;
+      for (final map in itemTemplates) {
+        final name = _requiredString(map, 'name');
+        final templateKey = _optionalString(map, 'templateKey');
+        final createdAt = _optionalDate(map, 'createdAt') ?? DateTime.now();
+        final existingByKey = templateKey == null
+            ? null
+            : await _db.itemTemplateDao.getByTemplateKey(templateKey);
+        final existingTemplate =
+            existingByKey ??
+            (await _db.itemTemplateDao.getAll()).where((template) {
+              return template.name == name && template.createdAt == createdAt;
+            }).firstOrNull;
+        if (existingTemplate != null) continue;
+        await _db.itemTemplateDao.insertTemplate(
+          ItemTemplatesCompanion.insert(
+            name: name,
+            templateKey: Value(templateKey),
+            categoryId: Value(
+              _mappedId(_optionalInt(map, 'categoryId'), categoryIdMap),
+            ),
+            itemType: Value(_optionalString(map, 'itemType') ?? 'todo'),
+            amountType: Value(_optionalString(map, 'amountType') ?? 'none'),
+            amount: Value(_optionalInt(map, 'amount')),
+            dueOffsetDays: Value(_optionalInt(map, 'dueOffsetDays') ?? 1),
+            reminderOffsetDays: Value(_optionalInt(map, 'reminderOffsetDays')),
+            repeatRule: Value(_optionalString(map, 'repeatRule')),
+            keywords: Value(_optionalString(map, 'keywords') ?? ''),
+            isDefault: Value(_optionalBool(map, 'isDefault') ?? false),
+            isPinned: Value(_optionalBool(map, 'isPinned') ?? false),
+            createdAt: Value(createdAt),
+            updatedAt: Value(_optionalDate(map, 'updatedAt') ?? createdAt),
+          ),
+        );
+        itemTemplatesImported++;
+      }
+
+      // Import project templates
+      final projectTemplateIdMap = <int, int>{};
+      var projectTemplatesImported = 0;
+      for (final map in projectTemplates) {
+        final oldId = _optionalInt(map, 'id');
+        final name = _requiredString(map, 'name');
+        final templateKey = _optionalString(map, 'templateKey');
+        final createdAt = _requiredDate(map, 'createdAt');
+        final existingByKey = templateKey == null
+            ? null
+            : await _db.projectTemplateDao.getByTemplateKey(templateKey);
+        final existingTemplate =
+            existingByKey ??
+            (await _db.projectTemplateDao.getAll()).where((template) {
+              return template.name == name && template.createdAt == createdAt;
+            }).firstOrNull;
+        if (existingTemplate != null) {
+          if (oldId != null) projectTemplateIdMap[oldId] = existingTemplate.id;
+          continue;
+        }
+        final inserted = await _db.projectTemplateDao.insertTemplate(
+          ProjectTemplatesCompanion.insert(
+            name: name,
+            templateKey: Value(templateKey),
+            categoryId: Value(
+              _mappedId(_optionalInt(map, 'categoryId'), categoryIdMap),
+            ),
+            note: Value(_optionalString(map, 'note')),
+            isDefault: Value(_optionalBool(map, 'isDefault') ?? false),
+            createdAt: Value(createdAt),
+            updatedAt: Value(_optionalDate(map, 'updatedAt') ?? createdAt),
+          ),
+        );
+        if (oldId != null) projectTemplateIdMap[oldId] = inserted.id;
+        projectTemplatesImported++;
+      }
+
+      // Import project template steps
+      var projectTemplateStepsImported = 0;
+      for (final map in projectTemplateSteps) {
+        final oldTemplateId = _optionalInt(map, 'templateId');
+        final mappedTemplateId = oldTemplateId == null
+            ? null
+            : projectTemplateIdMap[oldTemplateId];
+        if (mappedTemplateId == null) continue;
+        final title = _requiredString(map, 'title');
+        final sortOrder = _optionalInt(map, 'sortOrder') ?? 0;
+        final existingStep =
+            (await _db.projectTemplateDao.getSteps(mappedTemplateId))
+                .where(
+                  (step) => step.title == title && step.sortOrder == sortOrder,
+                )
+                .firstOrNull;
+        if (existingStep != null) continue;
+        await _db
+            .into(_db.projectTemplateSteps)
+            .insert(
+              ProjectTemplateStepsCompanion.insert(
+                templateId: mappedTemplateId,
+                title: title,
+                itemType: Value(_optionalString(map, 'itemType') ?? 'todo'),
+                amountType: Value(_optionalString(map, 'amountType') ?? 'none'),
+                amount: Value(_optionalInt(map, 'amount')),
+                offsetDays: Value(_optionalInt(map, 'offsetDays') ?? 0),
+                sortOrder: Value(sortOrder),
+                createdAt: Value(
+                  _optionalDate(map, 'createdAt') ?? DateTime.now(),
+                ),
+              ),
+            );
+        projectTemplateStepsImported++;
       }
 
       // Import projects
@@ -255,6 +398,9 @@ class BackupService {
         lifeItemsImported: lifeItemsImported,
         billRecordsImported: billRecordsImported,
         projectEventsImported: projectEventsImported,
+        projectTemplatesImported: projectTemplatesImported,
+        projectTemplateStepsImported: projectTemplateStepsImported,
+        itemTemplatesImported: itemTemplatesImported,
       );
     });
   }
@@ -269,22 +415,46 @@ class BackupService {
     if (decoded is! Map<String, Object?>) {
       throw const BackupFormatException('备份文件结构无效');
     }
-    final version = decoded['version'];
-    if (version != 1 && version != 2) {
+    final rawVersion = decoded['version'];
+    if (rawVersion is! int ||
+        (rawVersion != 1 &&
+            rawVersion != 2 &&
+            rawVersion != 3 &&
+            rawVersion != 4 &&
+            rawVersion != 5)) {
       throw const BackupFormatException('备份版本不受支持');
     }
+    final version = rawVersion;
     final result = <String, Object?>{
       'version': version,
       'categories': _requiredMapList(decoded, 'categories'),
       'lifeItems': _requiredMapList(decoded, 'lifeItems'),
       'billRecords': _requiredMapList(decoded, 'billRecords'),
     };
-    if (version == 2) {
+    if (version >= 2) {
       result['projects'] = _optionalMapList(decoded, 'projects');
       result['projectEvents'] = _optionalMapList(decoded, 'projectEvents');
     } else {
       result['projects'] = <Map<String, Object?>>[];
       result['projectEvents'] = <Map<String, Object?>>[];
+    }
+    if (version >= 3) {
+      result['projectTemplates'] = _optionalMapList(
+        decoded,
+        'projectTemplates',
+      );
+      result['projectTemplateSteps'] = _optionalMapList(
+        decoded,
+        'projectTemplateSteps',
+      );
+    } else {
+      result['projectTemplates'] = <Map<String, Object?>>[];
+      result['projectTemplateSteps'] = <Map<String, Object?>>[];
+    }
+    if (version >= 5) {
+      result['itemTemplates'] = _optionalMapList(decoded, 'itemTemplates');
+    } else {
+      result['itemTemplates'] = <Map<String, Object?>>[];
     }
     return result;
   }
@@ -406,6 +576,50 @@ Map<String, Object?> _categoryToMap(Category cat) => {
   'type': cat.type,
   'icon': cat.icon,
   'isDefault': cat.isDefault,
+  'isHidden': cat.isHidden,
+  'isPinned': cat.isPinned,
+  'lastUsedAt': cat.lastUsedAt?.toIso8601String(),
+};
+
+Map<String, Object?> _itemTemplateToMap(ItemTemplate template) => {
+  'id': template.id,
+  'name': template.name,
+  'templateKey': template.templateKey,
+  'categoryId': template.categoryId,
+  'itemType': template.itemType,
+  'amountType': template.amountType,
+  'amount': template.amount,
+  'dueOffsetDays': template.dueOffsetDays,
+  'reminderOffsetDays': template.reminderOffsetDays,
+  'repeatRule': template.repeatRule,
+  'keywords': template.keywords,
+  'isDefault': template.isDefault,
+  'isPinned': template.isPinned,
+  'createdAt': template.createdAt.toIso8601String(),
+  'updatedAt': template.updatedAt.toIso8601String(),
+};
+
+Map<String, Object?> _projectTemplateToMap(ProjectTemplate template) => {
+  'id': template.id,
+  'name': template.name,
+  'templateKey': template.templateKey,
+  'categoryId': template.categoryId,
+  'note': template.note,
+  'isDefault': template.isDefault,
+  'createdAt': template.createdAt.toIso8601String(),
+  'updatedAt': template.updatedAt.toIso8601String(),
+};
+
+Map<String, Object?> _projectTemplateStepToMap(ProjectTemplateStep step) => {
+  'id': step.id,
+  'templateId': step.templateId,
+  'title': step.title,
+  'itemType': step.itemType,
+  'amountType': step.amountType,
+  'amount': step.amount,
+  'offsetDays': step.offsetDays,
+  'sortOrder': step.sortOrder,
+  'createdAt': step.createdAt.toIso8601String(),
 };
 
 Map<String, Object?> _projectToMap(Project project) => {

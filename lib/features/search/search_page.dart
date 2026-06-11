@@ -67,8 +67,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       result.kind == SearchResultKind.lifeItem
                           ? Icons.event_note
                           : result.kind == SearchResultKind.project
-                              ? Icons.folder_outlined
-                              : Icons.receipt_long,
+                          ? Icons.folder_outlined
+                          : Icons.receipt_long,
                     ),
                     title: Text(result.title),
                     subtitle: Text(result.subtitle),
@@ -78,7 +78,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       } else if (result.kind == SearchResultKind.project) {
                         context.push('/projects/${result.id}');
                       } else {
-                        context.push('/bills/${result.id}/edit');
+                        context.push('/bills/${result.id}');
                       }
                     },
                   ),

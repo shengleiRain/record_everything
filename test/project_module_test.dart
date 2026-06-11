@@ -7,6 +7,7 @@ import 'package:record_everything/data/repositories/life_item_repository.dart';
 import 'package:record_everything/data/repositories/project_repository.dart';
 import 'package:record_everything/domain/enums/item_type.dart';
 import 'package:record_everything/domain/enums/project_event_type.dart';
+import 'package:record_everything/core/constants/project_template_keys.dart';
 import 'package:record_everything/features/settings/services/backup_service.dart';
 
 void main() {
@@ -22,25 +23,117 @@ void main() {
     test(
       'photography template creates typed payment and timeline items',
       () async {
-        final project = await ProjectRepository(db)
-            .createPhotographyProjectFromTemplate(
-              title: '婚礼跟拍',
-              participant: '张三',
-              shootDate: DateTime(2026, 7, 1),
-              totalAmount: 680000,
-              shootType: '婚礼',
-              depositAmount: 200000,
-              finalPaymentAmount: 480000,
-            );
+        final repo = ProjectRepository(db);
+        final template = await repo.getTemplateByKey(
+          ProjectTemplateKeys.photographyOrder,
+        );
+
+        final steps = (await repo.getTemplateSteps(template!.id))
+            .map(
+              (step) => ProjectTemplateStepInput(
+                title: step.title,
+                itemType: step.itemType,
+                amountType: step.amountType,
+                amount: step.amount,
+                offsetDays: step.offsetDays,
+              ),
+            )
+            .toList(growable: false);
+
+        final project = await repo.createProjectFromTemplate(
+          template: template,
+          steps: steps,
+          title: '婚礼跟拍',
+          startDate: DateTime(2026, 7, 1),
+          participant: '张三',
+          totalAmount: 680000,
+        );
 
         final items = await db.lifeItemDao.watchByProjectId(project.id).first;
         final types = items.map((item) => item.itemType).toSet();
 
-        expect(project.templateKey, 'photography_order');
+        expect(template.isDefault, isTrue);
+        expect(project.templateKey, ProjectTemplateKeys.photographyOrder);
         expect(types, containsAll(['payment_due', 'milestone', 'delivery']));
         expect(ItemType.fromString('payment_due'), ItemType.paymentDue);
         expect(ItemType.fromString('milestone'), ItemType.milestone);
         expect(ItemType.fromString('delivery'), ItemType.delivery);
+      },
+    );
+
+    test('photography template edits affect generated project items', () async {
+      final repo = ProjectRepository(db);
+      final template = await repo.getTemplateByKey(
+        ProjectTemplateKeys.photographyOrder,
+      );
+      expect(template == null, isFalse);
+
+      await repo.updateProjectTemplate(
+        template: template!.copyWith(name: '我的摄影流程'),
+        steps: const [
+          ProjectTemplateStepInput(
+            title: '确认档期',
+            itemType: 'milestone',
+            amountType: 'none',
+            offsetDays: -10,
+          ),
+          ProjectTemplateStepInput(
+            title: '收预约款',
+            itemType: 'payment_due',
+            amountType: 'income',
+            amount: 100000,
+            offsetDays: -7,
+          ),
+        ],
+      );
+
+      final updatedTemplate = await repo.getTemplateById(template.id);
+      final steps = (await repo.getTemplateSteps(template.id))
+          .map(
+            (step) => ProjectTemplateStepInput(
+              title: step.title,
+              itemType: step.itemType,
+              amountType: step.amountType,
+              amount: step.amount,
+              offsetDays: step.offsetDays,
+            ),
+          )
+          .toList(growable: false);
+
+      final project = await repo.createProjectFromTemplate(
+        template: updatedTemplate,
+        steps: steps,
+        title: '写真拍摄',
+        participant: '李四',
+        startDate: DateTime(2026, 9, 20),
+        totalAmount: 300000,
+      );
+      final items = await db.lifeItemDao.watchByProjectId(project.id).first;
+
+      expect(project.templateKey, ProjectTemplateKeys.photographyOrder);
+      expect(items.map((item) => item.title), ['确认档期', '收预约款']);
+      expect(items.first.dueTime, DateTime(2026, 9, 10));
+      expect(items.last.amount, 100000);
+    });
+
+    test(
+      'preset project templates can be deleted like custom templates',
+      () async {
+        final repo = ProjectRepository(db);
+        final template = await repo.getTemplateByKey(
+          ProjectTemplateKeys.photographyOrder,
+        );
+        expect(template != null, isTrue);
+
+        await repo.deleteProjectTemplate(template!.id);
+
+        final byKey = await repo.getTemplateByKey(
+          ProjectTemplateKeys.photographyOrder,
+        );
+        final templates = await db.projectTemplateDao.getAll();
+
+        expect(byKey == null, isTrue);
+        expect(templates.any((row) => row.id == template.id), isFalse);
       },
     );
 
@@ -81,6 +174,92 @@ void main() {
     );
 
     test(
+      'custom project template can be edited and used to create project items',
+      () async {
+        final repo = ProjectRepository(db);
+
+        final template = await repo.createProjectTemplate(
+          name: '轻量接单',
+          note: '默认流程',
+          steps: const [
+            ProjectTemplateStepInput(
+              title: '确认需求',
+              itemType: 'todo',
+              amountType: 'none',
+              offsetDays: 0,
+            ),
+            ProjectTemplateStepInput(
+              title: '收预付款',
+              itemType: 'payment_due',
+              amountType: 'income',
+              amount: 100000,
+              offsetDays: 1,
+            ),
+          ],
+        );
+
+        await repo.updateProjectTemplate(
+          template: template.copyWith(
+            name: '轻量项目模板',
+            note: const Value('可编辑默认节点'),
+          ),
+          steps: const [
+            ProjectTemplateStepInput(
+              title: '签约确认',
+              itemType: 'milestone',
+              amountType: 'none',
+              offsetDays: 0,
+            ),
+            ProjectTemplateStepInput(
+              title: '收尾款',
+              itemType: 'payment_due',
+              amountType: 'income',
+              amount: 200000,
+              offsetDays: 14,
+            ),
+          ],
+        );
+
+        final updatedTemplate = await repo.getTemplateById(template.id);
+        final steps = (await repo.getTemplateSteps(template.id))
+            .map(
+              (step) => ProjectTemplateStepInput(
+                title: step.title,
+                itemType: step.itemType,
+                amountType: step.amountType,
+                amount: step.amount,
+                offsetDays: step.offsetDays,
+              ),
+            )
+            .toList(growable: false);
+        final project = await repo.createProjectFromTemplate(
+          template: updatedTemplate,
+          steps: steps,
+          title: '活动拍摄',
+          participant: '客户 A',
+          startDate: DateTime(2026, 8, 1),
+          totalAmount: 300000,
+        );
+
+        final generatedItems = await db.lifeItemDao
+            .watchByProjectId(project.id)
+            .first;
+
+        expect(updatedTemplate.name, '轻量项目模板');
+        expect(steps.map((step) => step.title), ['签约确认', '收尾款']);
+        expect(project.templateKey, 'custom:${template.id}');
+        expect(project.note, '可编辑默认节点');
+        expect(generatedItems, hasLength(2));
+        expect(generatedItems.first.title, '签约确认');
+        expect(generatedItems.first.itemType, 'milestone');
+        expect(generatedItems.last.title, '收尾款');
+        expect(generatedItems.last.amountType, 'income');
+        expect(generatedItems.last.amount, 200000);
+        expect(generatedItems.last.dueTime, DateTime(2026, 8, 15));
+      },
+    );
+
+    test(
       'project backup import is idempotent for projects and events',
       () async {
         final repo = ProjectRepository(db);
@@ -111,6 +290,53 @@ void main() {
         expect(second.projectEventsImported, 0);
         expect(projects, hasLength(1));
         expect(events, hasLength(1));
+      },
+    );
+
+    test(
+      'project template backup import is idempotent for templates and steps',
+      () async {
+        final repo = ProjectRepository(db);
+        await repo.createProjectTemplate(
+          name: '客户项目',
+          note: '模板说明',
+          steps: const [
+            ProjectTemplateStepInput(
+              title: '建立沟通',
+              itemType: 'todo',
+              amountType: 'none',
+              offsetDays: 0,
+            ),
+            ProjectTemplateStepInput(
+              title: '回款',
+              itemType: 'payment_due',
+              amountType: 'income',
+              amount: 60000,
+              offsetDays: 7,
+            ),
+          ],
+        );
+
+        final jsonText = await BackupService(db).exportToJson();
+
+        await db.close();
+        db = AppDatabase.forTesting(NativeDatabase.memory());
+        final service = BackupService(db);
+
+        final first = await service.importFromJson(jsonText);
+        final second = await service.importFromJson(jsonText);
+        final templates = await db.projectTemplateDao.getAll();
+        final customTemplate = templates.singleWhere(
+          (template) => template.name == '客户项目',
+        );
+        final steps = await db.projectTemplateDao.getSteps(customTemplate.id);
+
+        expect(first.projectTemplatesImported, 1);
+        expect(first.projectTemplateStepsImported, 2);
+        expect(second.projectTemplatesImported, 0);
+        expect(second.projectTemplateStepsImported, 0);
+        expect(customTemplate.name, '客户项目');
+        expect(steps.map((step) => step.title), ['建立沟通', '回款']);
       },
     );
   });
