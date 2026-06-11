@@ -79,90 +79,89 @@ class _TemplateTile extends ConsumerWidget {
         .watch(projectTemplateStepsProvider(template.id))
         .valueOrNull;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        leading: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: AppColors.primaryLight,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.view_timeline_outlined, size: 20),
-        ),
-        title: Text(
-          template.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: [
-                if (template.isDefault) const _Badge(label: '预置'),
-                _Badge(label: '${steps?.length ?? 0} 个默认节点'),
-              ],
-            ),
-            if (template.note?.isNotEmpty == true) ...[
-              const SizedBox(height: 4),
-              Text(
-                template.note!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    return Dismissible(
+      key: ValueKey(template.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        return showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('删除模板'),
+            content: Text('确定删除”${template.name}”？已创建的项目不会受影响。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('删除'),
               ),
             ],
-          ],
+          ),
+        );
+      },
+      onDismissed: (direction) async {
+        await ref
+            .read(projectNotifierProvider.notifier)
+            .deleteTemplate(template.id);
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        decoration: BoxDecoration(
+          color: AppColors.error,
+          borderRadius: BorderRadius.circular(8),
         ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (action) => _handleAction(context, ref, action),
-          itemBuilder: (_) => [
-            const PopupMenuItem(value: 'edit', child: Text('编辑')),
-            const PopupMenuItem(value: 'delete', child: Text('删除')),
-          ],
+        child: const Icon(Icons.delete_outline, color: Colors.white),
+      ),
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        color: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          leading: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.view_timeline_outlined, size: 20),
+          ),
+          title: Text(
+            template.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  if (template.isDefault) const _Badge(label: '预置'),
+                  _Badge(label: '${steps?.length ?? 0} 个默认节点'),
+                ],
+              ),
+              if (template.note?.isNotEmpty == true) ...[
+                const SizedBox(height: 4),
+                Text(
+                  template.note!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
+          onTap: () => context.push('/projects/templates/${template.id}/edit'),
         ),
-        onTap: () => context.push('/projects/templates/${template.id}/edit'),
       ),
     );
-  }
-
-  void _handleAction(BuildContext context, WidgetRef ref, String action) {
-    if (action == 'edit') {
-      context.push('/projects/templates/${template.id}/edit');
-      return;
-    }
-    if (action == 'delete') {
-      showDialog(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('删除模板'),
-          content: Text('确定删除“${template.name}”？已创建的项目不会受影响。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                await ref
-                    .read(projectNotifierProvider.notifier)
-                    .deleteTemplate(template.id);
-                if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-              },
-              child: const Text('删除'),
-            ),
-          ],
-        ),
-      );
-    }
   }
 }
 

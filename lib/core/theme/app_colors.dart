@@ -14,4 +14,5 @@ class AppColors {
   static const textPrimary = Color(0xFF2D3436);
   static const textSecondary = Color(0xFF636E72);
   static const textHint = Color(0xFFB2BEC3);
+  static const error = Color(0xFFEF6C6C);
 }
