@@ -196,7 +196,10 @@ class _ProjectCategorySection extends StatelessWidget {
             ),
           ),
           for (final project in group.projects)
-            _ProjectCardWithIncome(project: project),
+            ProjectCard(
+              project: project,
+              onTap: () => context.push('/projects/${project.id}'),
+            ),
         ],
       ),
     );
@@ -208,22 +211,6 @@ class _ProjectGroup {
 
   final String label;
   final List<Project> projects;
-}
-
-class _ProjectCardWithIncome extends ConsumerWidget {
-  const _ProjectCardWithIncome({required this.project});
-  final Project project;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final incomeAsync = ref.watch(projectIncomeProvider(project.id));
-
-    return ProjectCard(
-      project: project,
-      incomeReceived: incomeAsync.valueOrNull ?? 0,
-      onTap: () => context.push('/projects/${project.id}'),
-    );
-  }
 }
 
 class _StatusFilterBar extends StatelessWidget {

@@ -94,7 +94,6 @@ class ProjectNotifier extends Notifier<void> {
     String projectStatus = 'planned',
     DateTime? startDate,
     DateTime? endDate,
-    int? totalAmount,
     String? templateKey,
     String? note,
   }) {
@@ -105,7 +104,6 @@ class ProjectNotifier extends Notifier<void> {
       projectStatus: projectStatus,
       startDate: startDate,
       endDate: endDate,
-      totalAmount: totalAmount,
       templateKey: templateKey,
       note: note,
     );
@@ -120,7 +118,6 @@ class ProjectNotifier extends Notifier<void> {
     String projectStatus = 'planned',
     DateTime? startDate,
     DateTime? endDate,
-    int? totalAmount,
     String? note,
   }) async {
     final template = await _repo.getTemplateById(templateId);
@@ -146,7 +143,6 @@ class ProjectNotifier extends Notifier<void> {
       projectStatus: projectStatus,
       startDate: startDate,
       endDate: endDate,
-      totalAmount: totalAmount,
       note: note,
     );
   }

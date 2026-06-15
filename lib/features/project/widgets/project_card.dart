@@ -2,18 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../data/database/app_database.dart';
 import 'project_status_chip.dart';
-import 'project_financial_bar.dart';
 
 class ProjectCard extends StatelessWidget {
-  const ProjectCard({
-    super.key,
-    required this.project,
-    this.incomeReceived = 0,
-    this.onTap,
-  });
+  const ProjectCard({super.key, required this.project, this.onTap});
 
   final Project project;
-  final int incomeReceived;
   final VoidCallback? onTap;
 
   @override
@@ -77,13 +70,6 @@ class ProjectCard extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ],
-              if (project.totalAmount != null && project.totalAmount! > 0) ...[
-                const SizedBox(height: 10),
-                ProjectFinancialBar(
-                  totalAmount: project.totalAmount,
-                  incomeReceived: incomeReceived,
                 ),
               ],
             ],

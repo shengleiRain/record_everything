@@ -33,7 +33,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _participantController = TextEditingController();
-  final _totalAmountController = TextEditingController();
   final _noteController = TextEditingController();
 
   ProjectStatus _status = ProjectStatus.planned;
@@ -147,11 +146,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
       _selectedCategoryId = project.categoryId;
       _startDate = project.startDate;
       _endDate = project.endDate;
-      if (project.totalAmount != null) {
-        _totalAmountController.text = MoneyFormatter.formatInt(
-          project.totalAmount!,
-        );
-      }
       _noteController.text = project.note ?? '';
     });
   }
@@ -162,7 +156,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
     _stepTabScrollController.dispose();
     _titleController.dispose();
     _participantController.dispose();
-    _totalAmountController.dispose();
     _noteController.dispose();
     for (final draft in _stepDrafts) {
       draft.dispose();
@@ -321,9 +314,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
     if (!_formKey.currentState!.validate()) return;
     final notifier = ref.read(projectNotifierProvider.notifier);
 
-    final totalAmount = _totalAmountController.text.isNotEmpty
-        ? MoneyFormatter.parse(_totalAmountController.text)
-        : null;
     int? createdProjectId;
 
     if (_isEdit && _editId != null) {
@@ -343,7 +333,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
           projectStatus: _status.value,
           startDate: Value(_startDate),
           endDate: Value(_endDate),
-          totalAmount: Value(totalAmount),
+          totalAmount: const Value(null),
           note: Value(
             _noteController.text.trim().isEmpty
                 ? null
@@ -364,7 +354,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
         projectStatus: _status.value,
         startDate: _startDate,
         endDate: _endDate,
-        totalAmount: totalAmount,
         note: _noteController.text.trim().isEmpty
             ? null
             : _noteController.text.trim(),
@@ -380,7 +369,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
         projectStatus: _status.value,
         startDate: _startDate,
         endDate: _endDate,
-        totalAmount: totalAmount,
         note: _noteController.text.trim().isEmpty
             ? null
             : _noteController.text.trim(),
@@ -464,7 +452,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
                   titleController: _titleController,
                   participantController: _participantController,
                   noteController: _noteController,
-                  totalAmountController: _totalAmountController,
                   status: _status,
                   selectedCategoryId: _selectedCategoryId,
                   startDate: _startDate,
@@ -592,7 +579,6 @@ class _BasicInfoSection extends ConsumerWidget {
     required this.titleController,
     required this.participantController,
     required this.noteController,
-    required this.totalAmountController,
     required this.status,
     required this.selectedCategoryId,
     required this.startDate,
@@ -610,7 +596,6 @@ class _BasicInfoSection extends ConsumerWidget {
   final TextEditingController titleController;
   final TextEditingController participantController;
   final TextEditingController noteController;
-  final TextEditingController totalAmountController;
   final ProjectStatus status;
   final int? selectedCategoryId;
   final DateTime? startDate;

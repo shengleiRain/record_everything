@@ -46,7 +46,6 @@ void main() {
           title: '婚礼跟拍',
           startDate: DateTime(2026, 7, 1),
           participant: '张三',
-          totalAmount: 680000,
         );
 
         final items = await db.lifeItemDao.watchByProjectId(project.id).first;
@@ -106,7 +105,6 @@ void main() {
         title: '写真拍摄',
         participant: '李四',
         startDate: DateTime(2026, 9, 20),
-        totalAmount: 300000,
       );
       final items = await db.lifeItemDao.watchByProjectId(project.id).first;
 
@@ -238,7 +236,6 @@ void main() {
           title: '活动拍摄',
           participant: '客户 A',
           startDate: DateTime(2026, 8, 1),
-          totalAmount: 300000,
         );
 
         final generatedItems = await db.lifeItemDao

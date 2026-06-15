@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/money_formatter.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../domain/enums/project_event_type.dart';
 import '../../../domain/enums/project_status.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../life_item/providers/life_item_providers.dart';
 import '../providers/project_providers.dart';
-import '../widgets/project_status_chip.dart';
-import '../widgets/project_financial_bar.dart';
-import '../widgets/project_timeline.dart';
 import '../widgets/project_event_sheet.dart';
 
 class ProjectDetailPage extends ConsumerWidget {
@@ -39,6 +36,7 @@ class ProjectDetailPage extends ConsumerWidget {
 
 class _ProjectDetailBody extends ConsumerWidget {
   const _ProjectDetailBody({required this.project});
+
   final Project project;
 
   @override
@@ -46,28 +44,17 @@ class _ProjectDetailBody extends ConsumerWidget {
     final incomeAsync = ref.watch(projectIncomeProvider(project.id));
     final expenseAsync = ref.watch(projectExpenseProvider(project.id));
     final itemsAsync = ref.watch(projectLifeItemsProvider(project.id));
-    final paymentDuesAsync = ref.watch(projectPaymentDuesProvider(project.id));
     final billsAsync = ref.watch(projectBillsProvider(project.id));
 
     final income = incomeAsync.valueOrNull ?? 0;
     final expense = expenseAsync.valueOrNull ?? 0;
-    final paymentDueTotal =
-        paymentDuesAsync.valueOrNull?.fold<int>(
-          0,
-          (sum, item) => sum + (item.amount ?? 0),
-        ) ??
-        0;
-    final receivable =
-        project.totalAmount ?? (paymentDueTotal > 0 ? paymentDueTotal : null);
-    final remainingReceivable = _remainingAmount(receivable, income);
-    final net = income - expense;
-    final openItems =
-        itemsAsync.valueOrNull?.where((i) => i.status == 'pending').length ?? 0;
-    final completedItems =
-        itemsAsync.valueOrNull?.where((i) => i.status == 'completed').length ??
-        0;
+    final pendingReceivable = calculateProjectPendingReceivable(
+      items: itemsAsync.valueOrNull ?? const [],
+      bills: billsAsync.valueOrNull ?? const [],
+    );
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(project.title),
         actions: [
@@ -76,351 +63,151 @@ class _ProjectDetailBody extends ConsumerWidget {
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => context.push('/projects/${project.id}/edit'),
           ),
-          PopupMenuButton<String>(
+          IconButton(
+            key: const ValueKey('project-detail-delete'),
+            tooltip: '删除项目',
+            color: Theme.of(context).colorScheme.error,
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _confirmDelete(context, ref),
+          ),
+          IconButton(
+            key: const ValueKey('project-detail-more-actions'),
             tooltip: '更多项目操作',
-            onSelected: (v) => _handleMenu(context, ref, v),
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'delete', child: Text('删除项目')),
-            ],
+            icon: const Icon(Icons.more_horiz),
+            onPressed: () => _showQuickActionsSheet(context, ref),
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 80),
-        children: [
-          // Overview
-          _SectionCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Listener(
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (event) {
+                  _SwipeRevealController.closeIfOutside(event.position);
+                },
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
                   children: [
-                    Expanded(
-                      child: Text(
-                        project.title,
-                        style: Theme.of(context).textTheme.headlineSmall,
+                    _SectionCard(
+                      title: '财务概览',
+                      child: _FinancialOverview(
+                        income: income,
+                        pendingReceivable: pendingReceivable,
+                        expense: expense,
                       ),
                     ),
-                    ProjectStatusChip(status: project.projectStatus),
+                    const SizedBox(height: 10),
+                    _ProjectSummaryCard(project: project),
+                    const SizedBox(height: 12),
+                    const _SectionHeader(title: '时间线'),
+                    const SizedBox(height: 8),
+                    _ProjectFlowPanel(
+                      itemsAsync: itemsAsync,
+                      billsAsync: billsAsync,
+                    ),
                   ],
                 ),
-                if (project.participant != null &&
-                    project.participant!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        project.participant!,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ],
-                if (project.startDate != null) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.event_outlined,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        DateFormatter.formatDate(project.startDate!),
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ],
-                if (project.note != null && project.note!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    project.note!,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          _SectionCard(
-            title: '下一步',
-            child: itemsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (e, _) => Text('加载失败: $e'),
-              data: (items) => _NextStepPanel(
-                items: _nextItems(items),
-                onOpen: (item) => context.push('/items/${item.id}'),
-                onRecordPayment: (item) => _recordPayment(context, ref, item),
-                onAddItem: () => context.push(
-                  '/items/new',
-                  extra: {'projectId': project.id},
-                ),
               ),
             ),
-          ),
-
-          // Financial summary
-          _SectionCard(
-            title: '财务概览',
-            child: Column(
-              children: [
-                _FinancialRow(label: '应收总额', value: receivable, color: null),
-                if (paymentDueTotal > 0)
-                  _FinancialRow(
-                    label: '收款节点',
-                    value: paymentDueTotal,
-                    color: Colors.orange,
-                  ),
-                _FinancialRow(label: '已收', value: income, color: Colors.green),
-                _FinancialRow(
-                  label: '待收',
-                  value: remainingReceivable,
-                  color: Colors.orange,
-                ),
-                _FinancialRow(label: '项目支出', value: expense, color: Colors.red),
-                _FinancialRow(
-                  label: '净额',
-                  value: net,
-                  color: net >= 0 ? Colors.green : Colors.red,
-                ),
-                if (receivable != null && receivable > 0) ...[
-                  const SizedBox(height: 12),
-                  ProjectFinancialBar(
-                    totalAmount: receivable,
-                    incomeReceived: income,
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          // Quick actions
-          _SectionCard(
-            title: '快捷操作',
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _ActionChip(
-                  icon: Icons.add_task,
-                  label: '添加事项',
-                  onTap: () => context.push(
-                    '/items/new',
-                    extra: {'projectId': project.id},
-                  ),
-                ),
-                _ActionChip(
-                  icon: Icons.receipt_long,
-                  label: '记一笔',
-                  onTap: () => context.push(
-                    '/bills/new',
-                    extra: {'projectId': project.id},
-                  ),
-                ),
-                _ActionChip(
-                  icon: Icons.note_add_outlined,
-                  label: '添加事件',
-                  onTap: () => showProjectEventSheet(context, ref, project.id),
-                ),
-                _ActionChip(
-                  icon: _statusAdvanceIcon(project.projectStatus),
-                  label: _statusAdvanceLabel(project.projectStatus),
-                  onTap: () => _advanceStatus(ref),
-                ),
-              ],
-            ),
-          ),
-
-          // Items section
-          _SectionCard(
-            title: '事项 ($openItems 待办 / $completedItems 已完成)',
-            child: itemsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (e, _) => Text('加载失败: $e'),
-              data: (items) {
-                if (items.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Center(
-                      child: Text(
-                        '暂无事项',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                      ),
-                    ),
-                  );
-                }
-                return Column(
-                  children: items
-                      .map(
-                        (item) => ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            item.status == 'completed'
-                                ? Icons.check_circle
-                                : Icons.radio_button_unchecked,
-                            color: item.status == 'completed'
-                                ? Colors.green
-                                : Theme.of(context).colorScheme.outline,
-                            size: 20,
-                          ),
-                          title: Text(
-                            item.title,
-                            style: TextStyle(
-                              decoration: item.status == 'completed'
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                          ),
-                          subtitle: item.amount != null
-                              ? Text(
-                                  '${item.amountType == 'income' ? '+' : '-'}${MoneyFormatter.formatInt(item.amount!)}',
-                                  style: TextStyle(
-                                    color: item.amountType == 'income'
-                                        ? Colors.green
-                                        : Colors.red,
-                                    fontSize: 12,
-                                  ),
-                                )
-                              : null,
-                          trailing:
-                              item.itemType == 'payment_due' &&
-                                  item.status == 'pending'
-                              ? TextButton(
-                                  onPressed: () =>
-                                      _recordPayment(context, ref, item),
-                                  child: const Text('记录收款'),
-                                )
-                              : null,
-                          onTap: () => context.push('/items/${item.id}'),
-                        ),
-                      )
-                      .toList(),
-                );
-              },
-            ),
-          ),
-
-          // Bills section
-          _SectionCard(
-            title: '账单',
-            child: billsAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (e, _) => Text('加载失败: $e'),
-              data: (bills) {
-                if (bills.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Center(
-                      child: Text(
-                        '暂无账单',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                      ),
-                    ),
-                  );
-                }
-                return Column(
-                  children: bills
-                      .map(
-                        (bill) => ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            bill.amountType == 'income'
-                                ? Icons.arrow_downward
-                                : Icons.arrow_upward,
-                            color: bill.amountType == 'income'
-                                ? Colors.green
-                                : Colors.red,
-                            size: 20,
-                          ),
-                          title: Text(bill.title),
-                          subtitle: Text(
-                            DateFormatter.formatDate(bill.billTime),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          trailing: Text(
-                            '${bill.amountType == 'income' ? '+' : '-'}${MoneyFormatter.formatInt(bill.amount)}',
-                            style: TextStyle(
-                              color: bill.amountType == 'income'
-                                  ? Colors.green
-                                  : Colors.red,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onTap: () => context.push('/bills/${bill.id}'),
-                        ),
-                      )
-                      .toList(),
-                );
-              },
-            ),
-          ),
-
-          // Timeline
-          _SectionCard(
-            title: '时间线',
-            child: ProjectTimeline(projectId: project.id),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 
-  void _handleMenu(BuildContext context, WidgetRef ref, String action) {
-    if (action == 'delete') {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('删除项目'),
-          content: const Text('确定删除此项目？关联的事项和账单将保留。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(ctx).pop();
-                await ref
-                    .read(projectNotifierProvider.notifier)
-                    .delete(project.id);
-                if (!context.mounted) return;
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  context.go('/home');
-                }
-              },
-              child: const Text('删除'),
-            ),
-          ],
-        ),
-      );
-    }
+  void _showQuickActionsSheet(BuildContext context, WidgetRef ref) {
+    final nextStatus = _nextStatus(project.projectStatus);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            children: [
+              Text(
+                '快捷操作',
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              _ActionTile(
+                key: const ValueKey('project-detail-action-add-item'),
+                icon: Icons.add_task,
+                label: '添加项目事项',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push('/items/new', extra: {'projectId': project.id});
+                },
+              ),
+              _ActionTile(
+                key: const ValueKey('project-detail-action-add-bill'),
+                icon: Icons.receipt_long,
+                label: '记一笔独立账单',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push('/bills/new', extra: {'projectId': project.id});
+                },
+              ),
+              _ActionTile(
+                icon: Icons.note_add_outlined,
+                label: '添加项目事件',
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  showProjectEventSheet(context, ref, project.id);
+                },
+              ),
+              if (nextStatus != null)
+                _ActionTile(
+                  icon: _statusAdvanceIcon(project.projectStatus),
+                  label: _statusAdvanceLabel(project.projectStatus),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _advanceStatus(ref);
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除项目'),
+        content: const Text('确定删除此项目？关联的事项和账单将保留。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref
+                  .read(projectNotifierProvider.notifier)
+                  .delete(project.id);
+              if (!context.mounted) return;
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/home');
+              }
+            },
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _advanceStatus(WidgetRef ref) async {
@@ -466,135 +253,1341 @@ class _ProjectDetailBody extends ConsumerWidget {
     'completed' => '归档',
     _ => '推进状态',
   };
-
-  int? _remainingAmount(int? total, int received) {
-    if (total == null) return null;
-    final remaining = total - received;
-    return remaining > 0 ? remaining : 0;
-  }
-
-  List<LifeItem> _nextItems(List<LifeItem> items) {
-    final pending = items
-        .where((item) => item.status == 'pending')
-        .toList(growable: false);
-    final sorted = [...pending]
-      ..sort((a, b) {
-        final paymentCompare = _paymentPriority(
-          a,
-        ).compareTo(_paymentPriority(b));
-        if (paymentCompare != 0) return paymentCompare;
-        return a.dueTime.compareTo(b.dueTime);
-      });
-    return sorted.take(3).toList(growable: false);
-  }
-
-  int _paymentPriority(LifeItem item) => item.itemType == 'payment_due' ? 0 : 1;
-
-  Future<void> _recordPayment(
-    BuildContext context,
-    WidgetRef ref,
-    LifeItem item,
-  ) async {
-    await ref.read(lifeItemNotifierProvider.notifier).complete(item.id);
-    await ref
-        .read(billNotifierProvider.notifier)
-        .createFromLifeItem(item, item.amount, item.categoryId, '项目收款');
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已记录收款')));
-    }
-  }
 }
 
-class _NextStepPanel extends StatelessWidget {
-  const _NextStepPanel({
-    required this.items,
-    required this.onOpen,
-    required this.onRecordPayment,
-    required this.onAddItem,
+@visibleForTesting
+int calculateProjectPendingReceivable({
+  required List<LifeItem> items,
+  required List<BillRecord> bills,
+}) {
+  final settledItemIds = bills
+      .where((bill) => bill.lifeItemId != null && bill.amountType == 'income')
+      .map((bill) => bill.lifeItemId!)
+      .toSet();
+  return items
+      .where(
+        (item) =>
+            item.amountType == 'income' &&
+            item.status == 'pending' &&
+            item.amount != null &&
+            !settledItemIds.contains(item.id),
+      )
+      .fold<int>(0, (sum, item) => sum + item.amount!);
+}
+
+@visibleForTesting
+String? buildProjectFlowMetaText({
+  required LifeItem? item,
+  required BillRecord? bill,
+  required BillRecord? linkedBill,
+  required bool isBill,
+}) {
+  if (isBill) {
+    final record = bill;
+    if (record == null) return null;
+    final action = record.amountType == 'income' ? '已收款' : '已付款';
+    return '$action${_flowTimeSuffix(record.billTime)}';
+  }
+
+  final lifeItem = item;
+  if (lifeItem == null) return null;
+  if (lifeItem.amountType == 'income' || lifeItem.amountType == 'expense') {
+    final action = lifeItem.amountType == 'income' ? '收款' : '付款';
+    if (linkedBill != null) {
+      return '已$action${_flowTimeSuffix(linkedBill.billTime)}';
+    }
+    if (lifeItem.status == 'completed') {
+      return '已$action';
+    }
+    return '预计$action${_flowTimeSuffix(lifeItem.dueTime)}';
+  }
+
+  return null;
+}
+
+String _flowTimeSuffix(DateTime time) {
+  if (time.hour == 0 && time.minute == 0) return '';
+  return ' ${_flowTwo(time.hour)}:${_flowTwo(time.minute)}';
+}
+
+String _flowTwo(int value) => value.toString().padLeft(2, '0');
+
+class _FinancialOverview extends StatelessWidget {
+  const _FinancialOverview({
+    required this.income,
+    required this.pendingReceivable,
+    required this.expense,
   });
 
-  final List<LifeItem> items;
-  final ValueChanged<LifeItem> onOpen;
-  final ValueChanged<LifeItem> onRecordPayment;
-  final VoidCallback onAddItem;
+  final int income;
+  final int pendingReceivable;
+  final int expense;
 
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '暂无待处理节点',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed: onAddItem,
-            icon: const Icon(Icons.add_task),
-            label: const Text('添加下一步'),
-          ),
-        ],
-      );
-    }
-    return Column(
+    return Row(
       children: [
-        for (final item in items)
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              item.itemType == 'payment_due'
-                  ? Icons.payments_outlined
-                  : Icons.radio_button_unchecked,
-              color: item.itemType == 'payment_due'
-                  ? Colors.orange
-                  : Theme.of(context).colorScheme.outline,
-            ),
-            title: Text(item.title),
-            subtitle: Text(
-              '${DateFormatter.formatDate(item.dueTime)}${item.amount != null ? ' · ${MoneyFormatter.formatInt(item.amount!)}' : ''}',
-            ),
-            trailing: item.itemType == 'payment_due'
-                ? FilledButton.tonal(
-                    onPressed: () => onRecordPayment(item),
-                    child: const Text('记录收款'),
-                  )
-                : const Icon(Icons.chevron_right),
-            onTap: () => onOpen(item),
+        Expanded(
+          child: _MetricCard(
+            label: '已收',
+            value: MoneyFormatter.formatInt(income),
+            color: Colors.green,
+            backgroundColor: const Color(0xFFE5F5EC),
           ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _MetricCard(
+            label: '待收',
+            value: MoneyFormatter.formatInt(pendingReceivable),
+            color: Colors.orange.shade800,
+            backgroundColor: const Color(0xFFFFF0DC),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _MetricCard(
+            label: '支出',
+            value: MoneyFormatter.formatInt(expense),
+            color: Colors.red.shade700,
+            backgroundColor: const Color(0xFFFEE8E5),
+          ),
+        ),
       ],
     );
   }
 }
 
-class _FinancialRow extends StatelessWidget {
-  const _FinancialRow({
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
     required this.label,
     required this.value,
     required this.color,
+    required this.backgroundColor,
   });
 
   final String label;
-  final int? value;
-  final Color? color;
+  final String value;
+  final Color color;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 7),
+            _ScaledMoneyText(
+              value: value,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScaledMoneyText extends StatelessWidget {
+  const _ScaledMoneyText({required this.value, this.style});
+
+  final String value;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(value, maxLines: 1, style: style),
+      ),
+    );
+  }
+}
+
+class _ProjectSummaryCard extends StatelessWidget {
+  const _ProjectSummaryCard({required this.project});
+
+  final Project project;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _SummaryItem(
+                  label: '客户/参与人',
+                  value: project.participant,
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: _SummaryItem(
+                  label: '关键日期',
+                  value: project.startDate == null
+                      ? null
+                      : DateFormatter.formatDate(project.startDate!),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Divider(height: 1, color: Colors.black.withValues(alpha: 0.08)),
+          const SizedBox(height: 12),
+          _SummaryItem(label: '备注', value: project.note, maxLines: 3),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryItem extends StatelessWidget {
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    this.maxLines = 2,
+  });
+
+  final String label;
+  final String? value;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = value == null || value!.trim().isEmpty ? '—' : value!.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          text,
+          maxLines: maxLines,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProjectFlowPanel extends StatelessWidget {
+  const _ProjectFlowPanel({required this.itemsAsync, required this.billsAsync});
+
+  final AsyncValue<List<LifeItem>> itemsAsync;
+  final AsyncValue<List<BillRecord>> billsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return itemsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Text('加载失败: $e'),
+      data: (items) => billsAsync.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.all(16),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        error: (e, _) => Text('加载失败: $e'),
+        data: (bills) {
+          final entries = buildProjectFlowEntries(items: items, bills: bills);
+          if (entries.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  '暂无项目事项或独立账单',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            );
+          }
+          return Stack(
+            children: [
+              Positioned(
+                left: 35,
+                top: 6,
+                bottom: 6,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const SizedBox(width: 2),
+                ),
+              ),
+              Column(
+                children: [
+                  for (var index = 0; index < entries.length; index++) ...[
+                    _ProjectFlowCard(entry: entries[index]),
+                    if (index != entries.length - 1) const SizedBox(height: 8),
+                  ],
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+@visibleForTesting
+List<ProjectFlowEntry> buildProjectFlowEntries({
+  required List<LifeItem> items,
+  required List<BillRecord> bills,
+}) {
+  final linkedBills = <int, BillRecord>{};
+  final sortedLinkedBills =
+      bills.where((bill) => bill.lifeItemId != null).toList(growable: false)
+        ..sort((a, b) => a.billTime.compareTo(b.billTime));
+  for (final bill in sortedLinkedBills) {
+    linkedBills[bill.lifeItemId!] = bill;
+  }
+
+  final entries = <ProjectFlowEntry>[
+    for (final item in items)
+      ProjectFlowEntry.item(item, linkedBill: linkedBills[item.id]),
+    for (final bill in bills.where((bill) => bill.lifeItemId == null))
+      ProjectFlowEntry.bill(bill),
+  ];
+
+  entries.sort((a, b) {
+    final byTime = a.sortTime.compareTo(b.sortTime);
+    if (byTime != 0) return byTime;
+    return a.title.compareTo(b.title);
+  });
+  return entries;
+}
+
+enum ProjectFlowEntryKind { item, bill }
+
+class ProjectFlowEntry {
+  const ProjectFlowEntry._({
+    required this.kind,
+    this.item,
+    this.bill,
+    this.linkedBill,
+  });
+
+  factory ProjectFlowEntry.item(LifeItem item, {BillRecord? linkedBill}) =>
+      ProjectFlowEntry._(
+        kind: ProjectFlowEntryKind.item,
+        item: item,
+        linkedBill: linkedBill,
+      );
+
+  factory ProjectFlowEntry.bill(BillRecord bill) =>
+      ProjectFlowEntry._(kind: ProjectFlowEntryKind.bill, bill: bill);
+
+  final ProjectFlowEntryKind kind;
+  final LifeItem? item;
+  final BillRecord? bill;
+  final BillRecord? linkedBill;
+
+  DateTime get sortTime => switch (kind) {
+    ProjectFlowEntryKind.item => linkedBill?.billTime ?? item!.dueTime,
+    ProjectFlowEntryKind.bill => bill!.billTime,
+  };
+
+  String get title => switch (kind) {
+    ProjectFlowEntryKind.item => item!.title,
+    ProjectFlowEntryKind.bill => bill!.title,
+  };
+
+  int? get displayAmount => switch (kind) {
+    ProjectFlowEntryKind.item => linkedBill?.amount ?? item!.amount,
+    ProjectFlowEntryKind.bill => bill!.amount,
+  };
+
+  String get displayAmountType => switch (kind) {
+    ProjectFlowEntryKind.item => linkedBill?.amountType ?? item!.amountType,
+    ProjectFlowEntryKind.bill => bill!.amountType,
+  };
+}
+
+class _ProjectFlowCard extends ConsumerWidget {
+  const _ProjectFlowCard({required this.entry});
+
+  final ProjectFlowEntry entry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = _buildData(context);
+    final actions = _quickActions(context, ref, data);
+    final isBill = entry.kind == ProjectFlowEntryKind.bill;
+
+    return _SwipeActionReveal(
+      actions: actions,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _DatePill(date: data.date),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Material(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                key: ValueKey(
+                  isBill
+                      ? 'project-flow-card-bill-${entry.bill!.id}'
+                      : 'project-flow-card-item-${entry.item!.id}',
+                ),
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _showDetailSheet(context, ref, data),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: data.visual.color,
+                          borderRadius: const BorderRadius.horizontal(
+                            left: Radius.circular(8),
+                          ),
+                        ),
+                        child: const SizedBox(width: 3),
+                      ),
+                    ),
+                    if (isBill)
+                      const Positioned(
+                        right: 0,
+                        top: 0,
+                        child: _BillFoldCorner(),
+                      ),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: data.borderColor),
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 66),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                _EntryIcon(
+                                  icon: data.visual.icon,
+                                  color: data.visual.color,
+                                ),
+                                const SizedBox(width: 9),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        entry.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
+                                      if (data.metaText != null) ...[
+                                        const SizedBox(height: 5),
+                                        Text(
+                                          data.metaText!,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: AppColors.textSecondary,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                if (data.trailingText != null) ...[
+                                  const SizedBox(width: 8),
+                                  _TrailingValue(
+                                    text: data.trailingText!,
+                                    color: data.trailingColor,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (data.statusLabel != null)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: _StatusCornerBadge(
+                          label: data.statusLabel!,
+                          color: data.statusColor,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _FlowCardData _buildData(BuildContext context) {
+    final isBill = entry.kind == ProjectFlowEntryKind.bill;
+    final item = entry.item;
+    final bill = entry.bill;
+    final linkedBill = entry.linkedBill;
+    final amountType = entry.displayAmountType;
+    final amount = entry.displayAmount;
+    final isCompleted = item?.status == 'completed';
+    final isOverdue =
+        item?.status == 'pending' && DateFormatter.isOverdue(item!.dueTime);
+    final isSettled = isBill || linkedBill != null || isCompleted;
+    final visual = _entryVisual(
+      context,
+      amountType: amountType,
+      itemType: item?.itemType,
+      isBill: isBill,
+      isSettled: isSettled,
+      isOverdue: isOverdue,
+    );
+    final hasAmount = amount != null && amountType != 'none';
+
+    return _FlowCardData(
+      entry: entry,
+      date: entry.sortTime,
+      visual: visual,
+      trailingText: _trailingText(amount: amount, amountType: amountType),
+      trailingColor: _trailingColor(
+        amountType: amountType,
+        isSettled: isSettled,
+        hasAmount: hasAmount,
+      ),
+      metaText: _metaText(
+        item: item,
+        bill: bill,
+        linkedBill: linkedBill,
+        isBill: isBill,
+      ),
+      statusLabel: _statusLabel(item),
+      statusColor: _statusColor(item),
+      borderColor: isOverdue
+          ? AppColors.overdue.withValues(alpha: 0.28)
+          : isCompleted
+          ? AppColors.completed.withValues(alpha: 0.24)
+          : Colors.black.withValues(alpha: 0.08),
+    );
+  }
+
+  _FlowVisual _entryVisual(
+    BuildContext context, {
+    required String amountType,
+    required String? itemType,
+    required bool isBill,
+    required bool isSettled,
+    required bool isOverdue,
+  }) {
+    if (isOverdue) {
+      return const _FlowVisual(
+        icon: Icons.error_outline,
+        color: AppColors.overdue,
+      );
+    }
+    if (isBill) {
+      final color = amountType == 'income' ? Colors.green : Colors.red.shade700;
+      return _FlowVisual(icon: Icons.receipt_long_outlined, color: color);
+    }
+
+    if ((amountType == 'income' || amountType == 'expense') && !isSettled) {
+      return _FlowVisual(
+        icon: Icons.schedule_outlined,
+        color: Colors.orange.shade800,
+      );
+    }
+    if (amountType == 'income') {
+      return const _FlowVisual(
+        icon: Icons.payments_outlined,
+        color: Colors.green,
+      );
+    }
+    if (amountType == 'expense') {
+      return _FlowVisual(
+        icon: Icons.outbox_outlined,
+        color: Colors.red.shade700,
+      );
+    }
+    return switch (itemType) {
+      'delivery' => const _FlowVisual(
+        icon: Icons.local_shipping_outlined,
+        color: Colors.teal,
+      ),
+      'milestone' => _FlowVisual(
+        icon: Icons.flag_outlined,
+        color: Colors.amber.shade800,
+      ),
+      _ => _FlowVisual(
+        icon: Icons.event_note_outlined,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    };
+  }
+
+  String? _trailingText({required int? amount, required String amountType}) {
+    if (amount == null || amountType == 'none') return null;
+    if (amountType == 'income') return '+${MoneyFormatter.formatInt(amount)}';
+    return '-${MoneyFormatter.formatInt(amount.abs())}';
+  }
+
+  Color _trailingColor({
+    required String amountType,
+    required bool isSettled,
+    required bool hasAmount,
+  }) {
+    if (!hasAmount) return AppColors.textSecondary;
+    if (!isSettled) return Colors.orange.shade800;
+    if (amountType == 'income') return Colors.green;
+    return Colors.red.shade700;
+  }
+
+  String? _metaText({
+    required LifeItem? item,
+    required BillRecord? bill,
+    required BillRecord? linkedBill,
+    required bool isBill,
+  }) => buildProjectFlowMetaText(
+    item: item,
+    bill: bill,
+    linkedBill: linkedBill,
+    isBill: isBill,
+  );
+
+  String? _statusLabel(LifeItem? item) {
+    if (item == null) return null;
+    if (item.status == 'completed') return '已完成';
+    if (item.status == 'pending' && DateFormatter.isOverdue(item.dueTime)) {
+      return '逾期 ${_formatMonthDay(item.dueTime)}';
+    }
+    return null;
+  }
+
+  Color _statusColor(LifeItem? item) {
+    if (item?.status == 'completed') return AppColors.primary;
+    return AppColors.overdue;
+  }
+
+  String _formatMonthDay(DateTime time) =>
+      '${_two(time.month)}/${_two(time.day)}';
+
+  String _two(int value) => value.toString().padLeft(2, '0');
+
+  List<_FlowQuickAction> _quickActions(
+    BuildContext context,
+    WidgetRef ref,
+    _FlowCardData data,
+  ) {
+    final item = data.entry.item;
+    final bill = data.entry.bill;
+    if (item != null) {
+      final linkedBill = data.entry.linkedBill;
+      final isFinancial =
+          item.amountType == 'income' || item.amountType == 'expense';
+      if (linkedBill != null) {
+        return [
+          _FlowQuickAction(
+            label: '删账单',
+            icon: Icons.delete_outline,
+            color: AppColors.overdue,
+            onTap: () => _confirmDeleteBill(context, ref, linkedBill),
+          ),
+        ];
+      }
+      if (item.status == 'completed') {
+        return [
+          if (isFinancial)
+            _FlowQuickAction(
+              label: '补账',
+              icon: Icons.receipt_long,
+              color: item.amountType == 'income'
+                  ? AppColors.income
+                  : AppColors.expense,
+              onTap: () => _openBillForItem(context, item),
+            ),
+          _FlowQuickAction(
+            label: '删除',
+            icon: Icons.delete_outline,
+            color: AppColors.overdue,
+            onTap: () => _confirmDeleteItem(context, ref, item),
+          ),
+        ];
+      }
+      if (isFinancial) {
+        final label = item.amountType == 'income' ? '收款' : '付款';
+        return [
+          _FlowQuickAction(
+            label: label,
+            icon: item.amountType == 'income'
+                ? Icons.payments_outlined
+                : Icons.outbox_outlined,
+            color: item.amountType == 'income'
+                ? AppColors.income
+                : AppColors.expense,
+            onTap: () => _openBillForItem(context, item),
+          ),
+          _FlowQuickAction(
+            label: '延期',
+            icon: Icons.event_repeat,
+            color: Colors.orange.shade800,
+            onTap: () => _deferItem(context, ref, item),
+          ),
+        ];
+      }
+      return [
+        _FlowQuickAction(
+          label: '完成',
+          icon: Icons.check,
+          color: AppColors.completed,
+          onTap: () => _completeItem(context, ref, item),
+        ),
+        _FlowQuickAction(
+          label: '延期',
+          icon: Icons.event_repeat,
+          color: Colors.orange.shade800,
+          onTap: () => _deferItem(context, ref, item),
+        ),
+      ];
+    }
+
+    return [
+      _FlowQuickAction(
+        label: '删除',
+        icon: Icons.delete_outline,
+        color: AppColors.overdue,
+        onTap: () => _confirmDeleteBill(context, ref, bill!),
+      ),
+    ];
+  }
+
+  Future<void> _completeItem(
+    BuildContext context,
+    WidgetRef ref,
+    LifeItem item,
+  ) async {
+    await ref.read(lifeItemNotifierProvider.notifier).complete(item.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已完成事项')));
+  }
+
+  Future<void> _deferItem(
+    BuildContext context,
+    WidgetRef ref,
+    LifeItem item,
+  ) async {
+    final now = DateTime.now();
+    final initial = item.dueTime.isAfter(now)
+        ? item.dueTime.add(const Duration(days: 1))
+        : now.add(const Duration(days: 1));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(initial.year, initial.month, initial.day),
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked == null) return;
+    await ref.read(lifeItemNotifierProvider.notifier).defer(item.id, picked);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已延期事项')));
+  }
+
+  void _confirmDeleteItem(BuildContext context, WidgetRef ref, LifeItem item) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('删除事项'),
+        content: Text('确定删除“${item.title}”？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref.read(lifeItemNotifierProvider.notifier).delete(item.id);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openBillForItem(BuildContext context, LifeItem item) {
+    context.push(
+      '/bills/new',
+      extra: {
+        'projectId': item.projectId,
+        'lifeItemId': item.id,
+        'title': item.title,
+        'amount': item.amount,
+        'amountType': item.amountType,
+      },
+    );
+  }
+
+  void _confirmDeleteBill(
+    BuildContext context,
+    WidgetRef ref,
+    BillRecord bill,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('删除账单'),
+        content: Text('确定删除“${bill.title}”？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref.read(billNotifierProvider.notifier).delete(bill.id);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDetailSheet(
+    BuildContext context,
+    WidgetRef ref,
+    _FlowCardData data,
+  ) {
+    final item = data.entry.item;
+    final bill = data.entry.bill;
+    final linkedBill = data.entry.linkedBill;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _DetailSheetHeader(data: data),
+                  const SizedBox(height: 12),
+                  if (item != null) ...[
+                    _DetailInfoRow(
+                      label: '预期时间',
+                      value: DateFormatter.formatDateTime(item.dueTime),
+                    ),
+                    _DetailInfoRow(
+                      label: '状态',
+                      value: data.statusLabel ?? '待处理',
+                    ),
+                    if (linkedBill != null)
+                      _DetailInfoRow(
+                        label: '实际时间',
+                        value: DateFormatter.formatDateTime(
+                          linkedBill.billTime,
+                        ),
+                      ),
+                    if (item.description?.trim().isNotEmpty == true)
+                      _DetailInfoRow(
+                        label: '说明',
+                        value: item.description!.trim(),
+                      ),
+                    const SizedBox(height: 12),
+                    if (item.status == 'pending' && linkedBill == null)
+                      _DetailActionRow(
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(sheetContext).pop();
+                              context.push('/items/${item.id}/edit');
+                            },
+                            icon: const Icon(Icons.edit_outlined),
+                            label: const Text('编辑'),
+                          ),
+                          if (item.amountType == 'income' ||
+                              item.amountType == 'expense')
+                            FilledButton.icon(
+                              onPressed: () {
+                                Navigator.of(sheetContext).pop();
+                                _openBillForItem(context, item);
+                              },
+                              icon: Icon(
+                                item.amountType == 'income'
+                                    ? Icons.payments_outlined
+                                    : Icons.outbox_outlined,
+                              ),
+                              label: Text(
+                                item.amountType == 'income' ? '收款' : '付款',
+                              ),
+                            )
+                          else
+                            FilledButton.icon(
+                              onPressed: () {
+                                Navigator.of(sheetContext).pop();
+                                _completeItem(context, ref, item);
+                              },
+                              icon: const Icon(Icons.check),
+                              label: const Text('完成'),
+                            ),
+                        ],
+                      )
+                    else if (linkedBill != null)
+                      _DetailActionRow(
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () {
+                              Navigator.of(sheetContext).pop();
+                              _confirmDeleteBill(context, ref, linkedBill);
+                            },
+                            icon: const Icon(Icons.delete_outline),
+                            label: const Text('删除账单'),
+                          ),
+                        ],
+                      )
+                    else
+                      _DetailActionRow(
+                        children: [
+                          if (item.amountType == 'income' ||
+                              item.amountType == 'expense')
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.of(sheetContext).pop();
+                                _openBillForItem(context, item);
+                              },
+                              icon: const Icon(Icons.receipt_long),
+                              label: const Text('补账'),
+                            ),
+                          FilledButton.icon(
+                            onPressed: () {
+                              Navigator.of(sheetContext).pop();
+                              _confirmDeleteItem(context, ref, item);
+                            },
+                            icon: const Icon(Icons.delete_outline),
+                            label: const Text('删除事项'),
+                          ),
+                        ],
+                      ),
+                  ] else if (bill != null) ...[
+                    _DetailInfoRow(
+                      label: '记账时间',
+                      value: DateFormatter.formatDateTime(bill.billTime),
+                    ),
+                    _DetailInfoRow(
+                      label: '类型',
+                      value: bill.amountType == 'income' ? '收入' : '支出',
+                    ),
+                    if (bill.note?.trim().isNotEmpty == true)
+                      _DetailInfoRow(label: '备注', value: bill.note!.trim()),
+                    const SizedBox(height: 12),
+                    _DetailActionRow(
+                      children: [
+                        FilledButton.icon(
+                          onPressed: () {
+                            Navigator.of(sheetContext).pop();
+                            _confirmDeleteBill(context, ref, bill);
+                          },
+                          icon: const Icon(Icons.delete_outline),
+                          label: const Text('删除'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FlowCardData {
+  const _FlowCardData({
+    required this.entry,
+    required this.date,
+    required this.visual,
+    required this.trailingText,
+    required this.trailingColor,
+    required this.metaText,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.borderColor,
+  });
+
+  final ProjectFlowEntry entry;
+  final DateTime date;
+  final _FlowVisual visual;
+  final String? trailingText;
+  final Color trailingColor;
+  final String? metaText;
+  final String? statusLabel;
+  final Color statusColor;
+  final Color borderColor;
+}
+
+class _FlowQuickAction {
+  const _FlowQuickAction({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+}
+
+class _SwipeActionReveal extends StatefulWidget {
+  const _SwipeActionReveal({required this.actions, required this.child});
+
+  final List<_FlowQuickAction> actions;
+  final Widget child;
+
+  @override
+  State<_SwipeActionReveal> createState() => _SwipeActionRevealState();
+}
+
+class _SwipeActionRevealState extends State<_SwipeActionReveal> {
+  static const double _maxOffset = 148;
+  final _rootKey = GlobalKey();
+  double _offset = 0;
+
+  @override
+  void dispose() {
+    _SwipeRevealController.unregister(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.actions.isEmpty) return widget.child;
+    return ClipRect(
+      child: KeyedSubtree(
+        key: _rootKey,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: _maxOffset,
+                  child: Row(
+                    children: [
+                      for (
+                        var index = 0;
+                        index < widget.actions.length;
+                        index++
+                      )
+                        Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              left: index == 0 ? 6 : 0,
+                              right: 6,
+                            ),
+                            child: _RevealActionButton(
+                              action: widget.actions[index],
+                              onClose: _close,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOut,
+              transform: Matrix4.translationValues(-_offset, 0, 0),
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragUpdate: (details) {
+                  setState(() {
+                    _offset = (_offset - details.delta.dx).clamp(0, _maxOffset);
+                  });
+                },
+                onHorizontalDragEnd: (details) {
+                  final velocity = details.primaryVelocity ?? 0;
+                  if (_offset > _maxOffset / 2 || velocity < -280) {
+                    _open();
+                  } else {
+                    _close();
+                  }
+                },
+                child: widget.child,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool containsGlobalPosition(Offset position) {
+    final context = _rootKey.currentContext;
+    if (context == null) return false;
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return false;
+    final local = renderObject.globalToLocal(position);
+    return (Offset.zero & renderObject.size).contains(local);
+  }
+
+  void _open() {
+    _SwipeRevealController.open(this);
+    if (!mounted) return;
+    setState(() => _offset = _maxOffset);
+  }
+
+  void _close() {
+    _SwipeRevealController.unregister(this);
+    if (!mounted) return;
+    setState(() => _offset = 0);
+  }
+}
+
+class _SwipeRevealController {
+  static _SwipeActionRevealState? _openState;
+
+  static void open(_SwipeActionRevealState state) {
+    if (_openState != state) {
+      _openState?._close();
+    }
+    _openState = state;
+  }
+
+  static void unregister(_SwipeActionRevealState state) {
+    if (_openState == state) {
+      _openState = null;
+    }
+  }
+
+  static void closeIfOutside(Offset position) {
+    final state = _openState;
+    if (state == null) return;
+    if (state.containsGlobalPosition(position)) return;
+    state._close();
+  }
+}
+
+class _RevealActionButton extends StatelessWidget {
+  const _RevealActionButton({required this.action, required this.onClose});
+
+  final _FlowQuickAction action;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton(
+      style: FilledButton.styleFrom(
+        backgroundColor: action.color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      onPressed: () {
+        onClose();
+        action.onTap();
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(action.icon, size: 18),
+          const SizedBox(height: 3),
+          Text(
+            action.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlowVisual {
+  const _FlowVisual({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+}
+
+class _StatusCornerBadge extends StatelessWidget {
+  const _StatusCornerBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(8),
+          bottomRight: Radius.circular(8),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        child: Text(
+          label,
+          maxLines: 1,
+          textHeightBehavior: const TextHeightBehavior(
+            applyHeightToFirstAscent: false,
+            applyHeightToLastDescent: false,
+          ),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            height: 1,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailSheetHeader extends StatelessWidget {
+  const _DetailSheetHeader({required this.data});
+
+  final _FlowCardData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = data.entry.title;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _EntryIcon(icon: data.visual.icon, color: data.visual.color),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                data.entry.kind == ProjectFlowEntryKind.bill ? '账单' : '事项',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        if (data.trailingText != null)
+          _TrailingValue(text: data.trailingText!, color: data.trailingColor),
+      ],
+    );
+  }
+}
+
+class _DetailInfoRow extends StatelessWidget {
+  const _DetailInfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          Text(
-            value != null ? MoneyFormatter.formatInt(value!) : '—',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: color,
+          SizedBox(
+            width: 72,
+            child: Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -603,8 +1596,159 @@ class _FinancialRow extends StatelessWidget {
   }
 }
 
-class _ActionChip extends StatelessWidget {
-  const _ActionChip({
+class _DetailActionRow extends StatelessWidget {
+  const _DetailActionRow({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (var index = 0; index < children.length; index++) ...[
+          Expanded(child: children[index]),
+          if (index != children.length - 1) const SizedBox(width: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _TrailingValue extends StatelessWidget {
+  const _TrailingValue({required this.text, required this.color});
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 52, maxWidth: 96),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerRight,
+          child: Text(
+            text,
+            maxLines: 1,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BillFoldCorner extends StatelessWidget {
+  const _BillFoldCorner();
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipPath(
+      clipper: _BillFoldClipper(),
+      child: ColoredBox(
+        color: Colors.black.withValues(alpha: 0.08),
+        child: const SizedBox.square(dimension: 14),
+      ),
+    );
+  }
+}
+
+class _BillFoldClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..moveTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, 0)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class _DatePill extends StatelessWidget {
+  const _DatePill({required this.date});
+
+  final DateTime date;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+      ),
+      child: SizedBox(
+        width: 72,
+        height: 56,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _weekdayLabel(date),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _weekdayLabel(DateTime date) => switch (date.weekday) {
+    DateTime.monday => '周一',
+    DateTime.tuesday => '周二',
+    DateTime.wednesday => '周三',
+    DateTime.thursday => '周四',
+    DateTime.friday => '周五',
+    DateTime.saturday => '周六',
+    _ => '周日',
+  };
+}
+
+class _EntryIcon extends StatelessWidget {
+  const _EntryIcon({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: SizedBox.square(
+        dimension: 28,
+        child: Icon(icon, size: 17, color: color),
+      ),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    super.key,
     required this.icon,
     required this.label,
     required this.onTap,
@@ -616,10 +1760,31 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ActionChip(
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-      onPressed: onTap,
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon),
+      title: Text(label),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Text(
+        title,
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+      ),
     );
   }
 }
@@ -633,12 +1798,12 @@ class _SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: EdgeInsets.zero,
       elevation: 0,
       color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -647,7 +1812,7 @@ class _SectionCard extends StatelessWidget {
                 title!,
                 style: Theme.of(
                   context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
             ],

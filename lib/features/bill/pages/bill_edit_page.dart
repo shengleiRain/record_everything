@@ -11,6 +11,7 @@ import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../project/widgets/project_picker_field.dart';
 import '../providers/bill_providers.dart';
 import '../../../data/database/database_provider.dart';
+import '../../life_item/providers/life_item_providers.dart';
 
 class BillEditPage extends ConsumerStatefulWidget {
   const BillEditPage({super.key});
@@ -43,6 +44,22 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
     if (extra is Map) {
       _projectId = extra['projectId'] as int?;
       _lifeItemId = extra['lifeItemId'] as int?;
+      final title = extra['title'];
+      if (title is String && title.trim().isNotEmpty) {
+        _titleController.text = title.trim();
+      }
+      final amount = extra['amount'];
+      if (amount is int) {
+        _amountController.text = (amount / 100).toStringAsFixed(2);
+      }
+      final amountType = extra['amountType'];
+      if (amountType == 'income' || amountType == 'expense') {
+        _amountType = BillAmountType.fromString(amountType as String);
+      }
+      final billTime = extra['billTime'];
+      if (billTime is DateTime) {
+        _billTime = billTime;
+      }
     }
     final idStr = state.pathParameters['id'];
     if (idStr != null && idStr != 'new') {
@@ -265,6 +282,13 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
                 ? null
                 : _noteController.text.trim(),
           )
+          .then((_) async {
+            final lifeItemId = _lifeItemId;
+            if (lifeItemId == null) return;
+            await ref
+                .read(lifeItemNotifierProvider.notifier)
+                .complete(lifeItemId);
+          })
           .then((_) {
             if (mounted) context.pop();
           });
