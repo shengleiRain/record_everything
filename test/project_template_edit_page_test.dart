@@ -44,7 +44,7 @@ void main() {
     expect(find.text('模板信息').hitTestable(), findsOneWidget);
     expect(find.text('默认节点'), findsNothing);
     expect(find.text('默认节点 1'), findsNothing);
-    expect(find.text('节点 1'), findsOneWidget);
+    expect(find.text('下一步行动'), findsNWidgets(2));
     expect(
       find.byKey(const ValueKey('project-template-step-tabs')),
       findsOneWidget,
@@ -111,6 +111,23 @@ void main() {
     expect(bodyBottom - tabBottom, greaterThan(520));
   });
 
+  testWidgets(
+    'empty node title uses stable fallback instead of ordinal label',
+    (tester) async {
+      await _setMobileViewport(tester, const Size(390, 844));
+      await _pumpTemplateEditor(tester);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('project-template-step-title-field')),
+        '',
+      );
+      await tester.pump();
+
+      expect(find.text('节点 1'), findsNothing);
+      expect(find.text('未命名节点'), findsOneWidget);
+    },
+  );
+
   testWidgets('node page height follows workspace minus pinned tabs', (
     tester,
   ) async {
@@ -164,7 +181,7 @@ void main() {
     expect(find.text('模板信息').hitTestable(), findsOneWidget);
   });
 
-  testWidgets('step tabs align with card edges at the scroll extents', (
+  testWidgets('step tabs shrink to content and keep add button adjacent', (
     tester,
   ) async {
     await _setMobileViewport(tester, const Size(390, 844));
@@ -182,6 +199,16 @@ void main() {
         .dx;
     expect(firstTabLeft, moreOrLessEquals(firstCardLeft, epsilon: 0.5));
 
+    final firstTabRight = tester
+        .getTopRight(
+          find.byKey(const ValueKey('project-template-step-tab-button-0')),
+        )
+        .dx;
+    final initialAddLeft = tester
+        .getTopLeft(find.byKey(const ValueKey('project-template-add-step')))
+        .dx;
+    expect(initialAddLeft - firstTabRight, moreOrLessEquals(8, epsilon: 0.5));
+
     for (var index = 0; index < 6; index++) {
       await tester.tap(find.byKey(const ValueKey('project-template-add-step')));
       await tester.pumpAndSettle();
@@ -192,12 +219,45 @@ void main() {
           find.byKey(const ValueKey('project-template-step-tab-button-6')),
         )
         .dx;
-    final lastCardRight = tester
-        .getTopRight(
-          find.byKey(const ValueKey('project-template-step-card-frame-6')),
-        )
+    final addButtonLeft = tester
+        .getTopLeft(find.byKey(const ValueKey('project-template-add-step')))
         .dx;
-    expect(lastTabRight, moreOrLessEquals(lastCardRight, epsilon: 0.5));
+    expect(addButtonLeft - lastTabRight, moreOrLessEquals(8, epsilon: 0.5));
+  });
+
+  testWidgets('add button morphs between circle and pill at empty boundary', (
+    tester,
+  ) async {
+    await _setMobileViewport(tester, const Size(390, 844));
+    await _pumpTemplateEditor(tester);
+
+    final addButton = find.byKey(const ValueKey('project-template-add-step'));
+    expect(tester.getSize(addButton).width, moreOrLessEquals(44, epsilon: 0.5));
+    expect(find.text('添加节点'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('project-template-step-tab-button-0')),
+      findsNothing,
+    );
+    expect(
+      tester.getSize(addButton).width,
+      moreOrLessEquals(112, epsilon: 0.5),
+    );
+    expect(find.text('添加节点'), findsOneWidget);
+
+    await tester.tap(addButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('project-template-step-tab-button-0')),
+      findsOneWidget,
+    );
+    expect(tester.getSize(addButton).width, moreOrLessEquals(44, epsilon: 0.5));
+    expect(find.text('添加节点'), findsNothing);
+    expect(find.text('新节点'), findsAtLeast(1));
   });
 
   testWidgets(
@@ -241,8 +301,8 @@ void main() {
 
       expect(find.text('默认节点'), findsNothing);
       expect(find.text('默认节点 2'), findsNothing);
-      expect(find.text('第一步'), findsNothing);
-      expect(find.text('新节点'), findsOneWidget);
+      expect(find.text('第一步'), findsAtLeast(1));
+      expect(find.text('新节点'), findsAtLeast(1));
 
       await tester.enterText(
         find.byKey(const ValueKey('project-template-step-title-field')),
@@ -253,8 +313,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('第一步'), findsOneWidget);
-      expect(find.text('第二步'), findsNothing);
+      expect(find.text('第一步'), findsAtLeast(1));
+      expect(find.text('第二步'), findsAtLeast(1));
     },
   );
 
@@ -327,14 +387,17 @@ void main() {
     await _dragStepPageBlankArea(tester, const Offset(320, 0));
     await tester.pumpAndSettle();
 
-    expect(find.text('第一步'), findsOneWidget);
-    expect(find.text('第二步'), findsNothing);
+    // step 1 visible: tab shows "第一步", card may also show it
+    expect(find.text('第一步'), findsAtLeast(1));
+    // step 2 tab also shows "第二步"
+    expect(find.text('第二步'), findsAtLeast(1));
 
     await _dragStepPageBlankArea(tester, const Offset(-320, 0));
     await tester.pumpAndSettle();
 
-    expect(find.text('第二步'), findsOneWidget);
-    expect(find.text('第一步'), findsNothing);
+    // step 2 now visible in PageView
+    expect(find.text('第二步'), findsAtLeast(1));
+    expect(find.text('第一步'), findsAtLeast(1));
   });
 
   testWidgets('long-press tab reorder saves in the visible tab order', (

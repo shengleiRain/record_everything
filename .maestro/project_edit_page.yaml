@@ -1,0 +1,71 @@
+appId: com.lifeitems.record_everything
+---
+# Test the new project edit page: add-node button animation, auto-title.
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Dismiss any system permission dialogs
+- runFlow:
+    when:
+      visible: '.*While using.*'
+    commands:
+      - tapOn: '.*While using.*'
+- waitForAnimationToEnd
+
+# Navigate to new project page
+- tapOn:
+    text: '.*新增.*'
+- waitForAnimationToEnd
+- tapOn:
+    text: '.*建项目.*'
+- waitForAnimationToEnd
+- assertVisible:
+    text: '.*新建项目.*'
+
+# ===== 1. Verify basic info fields =====
+- assertVisible:
+    text: '.*基本信息.*'
+- assertVisible:
+    text: '.*项目标题.*'
+- assertVisible:
+    text: '.*项目类型.*'
+- assertVisible:
+    text: '.*客户/参与人.*'
+
+# ===== 2. Verify "添加节点" pill button is visible (empty state) =====
+- scrollUntilVisible:
+    element:
+      text: '.*添加节点.*'
+    direction: DOWN
+- assertVisible:
+    text: '.*添加节点.*'
+
+# ===== 3. Fill in project title =====
+- scrollUntilVisible:
+    element:
+      text: '.*项目标题.*'
+    direction: UP
+- tapOn:
+    text: '.*项目标题.*'
+- inputText: 'TestProject'
+- hideKeyboard
+
+# ===== 4. Tap "添加节点" — button animates to circle +, tab appears =====
+- scrollUntilVisible:
+    element:
+      text: '.*添加节点.*'
+    direction: DOWN
+- tapOn:
+    text: '.*添加节点.*'
+- waitForAnimationToEnd
+- waitForAnimationToEnd
+
+# ===== 5. Save the project =====
+- tapOn:
+    text: '.*保存.*'
+- waitForAnimationToEnd
+
+# ===== 6. Verify project created (detail page) =====
+- assertVisible:
+    text: '.*TestProject.*'
