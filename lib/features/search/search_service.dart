@@ -9,6 +9,7 @@ class SearchResult {
     required this.title,
     required this.subtitle,
     required this.date,
+    this.projectId,
   });
 
   final SearchResultKind kind;
@@ -16,6 +17,7 @@ class SearchResult {
   final String title;
   final String subtitle;
   final DateTime date;
+  final int? projectId;
 }
 
 class SearchService {
@@ -41,6 +43,7 @@ class SearchService {
                 ? item.description!
                 : '事项',
             date: item.dueTime,
+            projectId: item.projectId,
           ),
       for (final bill in billRecords)
         if (_matches([bill.title, bill.note, bill.amountType], normalized))
@@ -50,10 +53,14 @@ class SearchService {
             title: bill.title,
             subtitle: bill.note?.isNotEmpty == true ? bill.note! : '账单',
             date: bill.billTime,
+            projectId: bill.projectId,
           ),
       for (final project in projects)
-        if (_matches(
-            [project.title, project.participant, project.note], normalized))
+        if (_matches([
+          project.title,
+          project.participant,
+          project.note,
+        ], normalized))
           SearchResult(
             kind: SearchResultKind.project,
             id: project.id,

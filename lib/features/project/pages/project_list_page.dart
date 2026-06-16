@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../../domain/enums/project_status.dart';
@@ -52,32 +53,37 @@ class ProjectListPage extends ConsumerWidget {
                     ref.read(projectCategoryFilterProvider.notifier).state = v,
               ),
               Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.folder_outlined,
-                              size: 64,
-                              color: Theme.of(context).colorScheme.outline,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              statusFilter == null && categoryFilter == null
-                                  ? '还没有项目'
-                                  : '没有符合条件的项目',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '点击右下角按钮创建第一个项目',
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      )
-                    : _GroupedProjectList(projects: filtered),
+                child: Listener(
+                  behavior: HitTestBehavior.translucent,
+                  onPointerDown: (event) =>
+                      SwipeRevealController.closeIfOutside(event.position),
+                  child: filtered.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.folder_outlined,
+                                size: 64,
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                statusFilter == null && categoryFilter == null
+                                    ? '还没有项目'
+                                    : '没有符合条件的项目',
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '点击右下角按钮创建第一个项目',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
+                        )
+                      : _GroupedProjectList(projects: filtered),
+                ),
               ),
             ],
           );
@@ -153,13 +159,13 @@ class _GroupedProjectList extends ConsumerWidget {
   }
 }
 
-class _ProjectCategorySection extends StatelessWidget {
+class _ProjectCategorySection extends ConsumerWidget {
   const _ProjectCategorySection({required this.group});
 
   final _ProjectGroup group;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 4),
       child: Column(
@@ -199,7 +205,43 @@ class _ProjectCategorySection extends StatelessWidget {
             ProjectCard(
               project: project,
               onTap: () => context.push('/projects/${project.id}'),
+              onEdit: () => context.push('/projects/${project.id}/edit'),
+              onArchive: () => _archiveProject(context, ref, project),
+              onDelete: () => _confirmDelete(context, ref, project),
             ),
+        ],
+      ),
+    );
+  }
+
+  void _archiveProject(BuildContext context, WidgetRef ref, Project project) {
+    final archived = project.copyWith(
+      projectStatus: ProjectStatus.archived.value,
+    );
+    ref.read(projectNotifierProvider.notifier).update(archived);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已归档项目')));
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref, Project project) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('删除后可在回收站恢复，确认要删除这个项目吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref.read(projectNotifierProvider.notifier).delete(project.id);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('删除'),
+          ),
         ],
       ),
     );

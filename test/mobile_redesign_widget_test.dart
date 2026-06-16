@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/features/bill/widgets/bill_day_group.dart';
@@ -86,10 +87,8 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('selected-day-agenda')), findsOneWidget);
-    expect(find.text('选中日期'), findsOneWidget);
     expect(find.text('选中日事项'), findsOneWidget);
     expect(find.text('选中日账单'), findsOneWidget);
-    expect(find.textContaining('2项'), findsOneWidget);
   });
 
   testWidgets('quick create sheet exposes mobile creation actions', (
@@ -139,13 +138,14 @@ void main() {
     expect(find.textContaining('重复'), findsOneWidget);
     expect(find.text('¥19.99'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('life-item-action-menu')));
+    // Reveal swipe actions by dragging the card leftward.
+    await tester.drag(find.text('会员续费'), const Offset(-160, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('延期'));
     await tester.pumpAndSettle();
     expect(deferred, isTrue);
 
-    await tester.tap(find.byKey(const ValueKey('life-item-action-menu')));
+    await tester.drag(find.text('会员续费'), const Offset(-160, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('完成'));
     await tester.pumpAndSettle();
@@ -199,7 +199,9 @@ class _Harness extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: Scaffold(body: child));
+    return ProviderScope(
+      child: MaterialApp(home: Scaffold(body: child)),
+    );
   }
 }
 

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/money_formatter.dart';
+import '../../../core/widgets/swipe_action_reveal.dart';
+import '../../bill/providers/bill_providers.dart';
+import '../../bill/widgets/bill_detail_sheet.dart';
+import '../../life_item/providers/life_item_providers.dart';
+import '../../life_item/widgets/complete_action_sheet.dart';
 import '../models/agenda_item_view_model.dart';
 import 'agenda_row.dart';
 
-class SelectedDayAgenda extends StatelessWidget {
+class SelectedDayAgenda extends ConsumerWidget {
   const SelectedDayAgenda({
     super.key,
     required this.selectedDate,
@@ -17,97 +21,160 @@ class SelectedDayAgenda extends StatelessWidget {
   final List<AgendaItemViewModel> items;
 
   @override
-  Widget build(BuildContext context) {
-    final expense = items.fold<int>(0, (sum, item) {
-      if (item.amountType != 'expense') return sum;
-      return sum + (item.amount ?? 0);
-    });
-    final overdueCount = items.where((item) => item.isOverdue).length;
-
-    return Container(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Listener(
       key: const ValueKey('selected-day-agenda'),
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                '选中日期',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const Spacer(),
-              Text(
-                '只显示${selectedDate.month}月${selectedDate.day}日',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '${selectedDate.month}月${selectedDate.day}日 ${_weekdayLabel(selectedDate)}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              '支出${MoneyFormatter.format(expense)} · ${items.length}项 · $overdueCount逾期',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-            ),
-          ),
-          const SizedBox(height: 10),
-          if (items.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 18),
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) =>
+          SwipeRevealController.closeIfOutside(event.position),
+      child: items.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
               child: Center(
                 child: Text(
                   '这天没有事项或账单',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppColors.textHint),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                 ),
               ),
             )
-          else
-            for (final item in items) ...[
-              AgendaRow(item: item, onTap: () => _openItem(context, item)),
-              if (item != items.last)
-                Divider(height: 1, color: Colors.black.withValues(alpha: 0.06)),
-            ],
+          : Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    AgendaRow(
+                      item: items[i],
+                      onTap: () => _openItem(context, ref, items[i]),
+                      onComplete: items[i].kind == AgendaItemKind.lifeItem
+                          ? () => _showCompleteAction(context, ref, items[i])
+                          : null,
+                      onDefer: items[i].kind == AgendaItemKind.lifeItem
+                          ? () => _showDeferPicker(context, ref, items[i])
+                          : null,
+                      onEdit: items[i].kind == AgendaItemKind.billRecord
+                          ? () => context.push('/bills/${items[i].id}')
+                          : items[i].kind == AgendaItemKind.project
+                          ? () => context.push('/projects/${items[i].id}/edit')
+                          : null,
+                      onDelete: items[i].kind == AgendaItemKind.billRecord
+                          ? () => _confirmDeleteBill(context, ref, items[i])
+                          : null,
+                    ),
+                    if (i != items.length - 1) const SizedBox(height: 8),
+                  ],
+                ],
+              ),
+            ),
+    );
+  }
+
+  void _openItem(
+    BuildContext context,
+    WidgetRef ref,
+    AgendaItemViewModel item,
+  ) {
+    switch (item.kind) {
+      case AgendaItemKind.lifeItem:
+        context.push('/items/${item.id}');
+      case AgendaItemKind.billRecord:
+        final bill = item.billRecord;
+        if (bill != null) {
+          showBillDetailSheet(context, ref, bill);
+        } else {
+          context.push('/bills/${item.id}');
+        }
+      case AgendaItemKind.project:
+        context.push('/projects/${item.id}');
+    }
+  }
+
+  void _showCompleteAction(
+    BuildContext context,
+    WidgetRef ref,
+    AgendaItemViewModel item,
+  ) {
+    final lifeItem = item.lifeItem;
+    if (lifeItem == null) {
+      context.push('/items/${item.id}');
+      return;
+    }
+    showCompleteActionSheet(
+      context: context,
+      item: lifeItem,
+      onComplete: () async {
+        await ref.read(lifeItemNotifierProvider.notifier).complete(lifeItem.id);
+      },
+      onCompleteAndBill: (amount, categoryId, note) async {
+        await ref.read(lifeItemNotifierProvider.notifier).complete(lifeItem.id);
+        await ref
+            .read(billNotifierProvider.notifier)
+            .createFromLifeItem(lifeItem, amount, categoryId, note);
+      },
+      onCompleteAndBillAndNext: (amount, categoryId, note) async {
+        await ref
+            .read(billNotifierProvider.notifier)
+            .createFromLifeItem(lifeItem, amount, categoryId, note);
+        await ref
+            .read(lifeItemNotifierProvider.notifier)
+            .completeAndGenerateNext(lifeItem.id);
+      },
+      onCompleteAndNext: () async {
+        await ref
+            .read(lifeItemNotifierProvider.notifier)
+            .completeAndGenerateNext(lifeItem.id);
+      },
+      onDefer: () {
+        _showDeferPicker(context, ref, item);
+      },
+    );
+  }
+
+  void _showDeferPicker(
+    BuildContext context,
+    WidgetRef ref,
+    AgendaItemViewModel item,
+  ) {
+    final lifeItem = item.lifeItem;
+    if (lifeItem == null) return;
+    showDatePicker(
+      context: context,
+      initialDate: lifeItem.dueTime.add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    ).then((date) {
+      if (date != null) {
+        ref.read(lifeItemNotifierProvider.notifier).defer(lifeItem.id, date);
+      }
+    });
+  }
+
+  void _confirmDeleteBill(
+    BuildContext context,
+    WidgetRef ref,
+    AgendaItemViewModel item,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('删除后可在回收站恢复，确认要删除这条账单吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref.read(billNotifierProvider.notifier).delete(item.id);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('删除'),
+          ),
         ],
       ),
     );
-  }
-}
-
-String _weekdayLabel(DateTime date) {
-  return const ['周一', '周二', '周三', '周四', '周五', '周六', '周日'][date.weekday - 1];
-}
-
-void _openItem(BuildContext context, AgendaItemViewModel item) {
-  switch (item.kind) {
-    case AgendaItemKind.lifeItem:
-      context.push('/items/${item.id}');
-    case AgendaItemKind.billRecord:
-      context.push('/bills/${item.id}');
-    case AgendaItemKind.project:
-      context.push('/projects/${item.id}');
   }
 }

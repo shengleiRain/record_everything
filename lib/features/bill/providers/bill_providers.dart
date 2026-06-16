@@ -92,7 +92,7 @@ class BillNotifier extends Notifier<void> {
       accountId: accountId,
       projectId: item.projectId,
       billTime: DateTime.now(),
-      note: note,
+      note: (note == null || note.trim().isEmpty) ? item.title : note,
       lifeItemId: item.id,
     );
   }

@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
 import '../providers/bill_providers.dart';
 import '../widgets/bill_day_group.dart';
+import '../widgets/bill_detail_sheet.dart';
 import '../widgets/month_summary_card.dart';
 
 enum _BillFilter { all, expense, income, subscription }
@@ -133,13 +135,21 @@ class _BillListPageState extends ConsumerState<BillListPage> {
                   );
                 }
                 final groups = _groupBillsByDay(filtered);
-                return ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 80),
-                  itemCount: groups.length,
-                  itemBuilder: (context, index) => BillDayGroup(
-                    date: groups[index].date,
-                    bills: groups[index].bills,
-                    onBillTap: (bill) => context.push('/bills/${bill.id}'),
+                return Listener(
+                  behavior: HitTestBehavior.translucent,
+                  onPointerDown: (event) =>
+                      SwipeRevealController.closeIfOutside(event.position),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 80),
+                    itemCount: groups.length,
+                    itemBuilder: (context, index) => BillDayGroup(
+                      date: groups[index].date,
+                      bills: groups[index].bills,
+                      onBillTap: (bill) =>
+                          showBillDetailSheet(context, ref, bill),
+                      onBillEdit: (bill) => context.push('/bills/${bill.id}'),
+                      onBillDelete: (bill) => _confirmDelete(bill),
+                    ),
                   ),
                 );
               },
@@ -206,6 +216,29 @@ class _BillListPageState extends ConsumerState<BillListPage> {
     return text.contains('订阅') ||
         text.contains('会员') ||
         text.contains('subscription');
+  }
+
+  void _confirmDelete(BillRecord bill) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('删除后可在回收站恢复，确认要删除这条账单吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref.read(billNotifierProvider.notifier).delete(bill.id);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

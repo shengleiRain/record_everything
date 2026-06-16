@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/database/app_database.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/widgets/card_parts.dart';
+import '../../core/widgets/swipe_action_reveal.dart';
 import '../bill/providers/bill_providers.dart';
+import '../bill/widgets/bill_detail_sheet.dart';
 import '../life_item/providers/life_item_providers.dart';
 import '../project/providers/project_providers.dart';
+import '../project/widgets/project_name_chip.dart';
 import 'search_service.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
@@ -33,7 +37,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('搜索')),
-      body: StreamBuilder<List<BillRecord>>(
+      body: StreamBuilder(
         stream: bills,
         builder: (context, snapshot) {
           final results = SearchService.search(
@@ -42,49 +46,215 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             billRecords: snapshot.data ?? const [],
             projects: projects,
           );
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            children: [
-              TextField(
-                controller: _controller,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: '搜索事项、账单和项目',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) => setState(() => _query = value),
-              ),
-              const SizedBox(height: 12),
-              if (_query.trim().isEmpty)
-                const Center(child: Text('输入关键词开始搜索'))
-              else if (results.isEmpty)
-                const Center(child: Text('没有匹配结果'))
-              else
-                for (final result in results)
-                  ListTile(
-                    leading: Icon(
-                      result.kind == SearchResultKind.lifeItem
-                          ? Icons.event_note
-                          : result.kind == SearchResultKind.project
-                          ? Icons.folder_outlined
-                          : Icons.receipt_long,
-                    ),
-                    title: Text(result.title),
-                    subtitle: Text(result.subtitle),
-                    onTap: () {
-                      if (result.kind == SearchResultKind.lifeItem) {
-                        context.push('/items/${result.id}');
-                      } else if (result.kind == SearchResultKind.project) {
-                        context.push('/projects/${result.id}');
-                      } else {
-                        context.push('/bills/${result.id}');
-                      }
-                    },
+          return Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (event) =>
+                SwipeRevealController.closeIfOutside(event.position),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                TextField(
+                  controller: _controller,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: '搜索事项、账单和项目',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
                   ),
-            ],
+                  onChanged: (value) => setState(() => _query = value),
+                ),
+                const SizedBox(height: 12),
+                if (_query.trim().isEmpty)
+                  const Center(child: Text('输入关键词开始搜索'))
+                else if (results.isEmpty)
+                  const Center(child: Text('没有匹配结果'))
+                else
+                  for (final result in results)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _SearchResultRow(result: result),
+                    ),
+              ],
+            ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _SearchResultRow extends ConsumerWidget {
+  const _SearchResultRow({required this.result});
+
+  final SearchResult result;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (icon, color) = switch (result.kind) {
+      SearchResultKind.lifeItem => (Icons.event_note, AppColors.upcoming),
+      SearchResultKind.billRecord => (Icons.receipt_long, AppColors.expense),
+      SearchResultKind.project => (Icons.folder_outlined, Colors.blue),
+    };
+
+    final row = Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => _open(context, ref),
+        child: Stack(
+          children: [
+            CardLeftStripe(color: color),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.textHint.withValues(alpha: 0.4),
+                ),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 66),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                  child: Row(
+                    children: [
+                      CardEntryIcon(icon: icon, color: color),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              result.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                ProjectNameChip(projectId: result.projectId),
+                                Flexible(
+                                  child: Text(
+                                    result.subtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final actions = <SwipeAction>[
+      if (result.kind == SearchResultKind.lifeItem) ...[
+        SwipeAction(
+          label: '完成',
+          icon: Icons.check,
+          color: AppColors.completed,
+          onTap: () async {
+            await ref
+                .read(lifeItemNotifierProvider.notifier)
+                .complete(result.id);
+          },
+        ),
+        SwipeAction(
+          label: '延期',
+          icon: Icons.event_repeat,
+          color: Colors.orange.shade800,
+          onTap: () => _defer(context, ref),
+        ),
+      ],
+      if (result.kind == SearchResultKind.billRecord) ...[
+        SwipeAction(
+          label: '编辑',
+          icon: Icons.edit_outlined,
+          color: AppColors.primary,
+          onTap: () => context.push('/bills/${result.id}'),
+        ),
+        SwipeAction(
+          label: '删除',
+          icon: Icons.delete_outline,
+          color: AppColors.overdue,
+          onTap: () => _confirmDeleteBill(context, ref),
+        ),
+      ],
+      if (result.kind == SearchResultKind.project)
+        SwipeAction(
+          label: '编辑',
+          icon: Icons.edit_outlined,
+          color: AppColors.primary,
+          onTap: () => context.push('/projects/${result.id}/edit'),
+        ),
+    ];
+
+    return SwipeActionReveal(actions: actions, child: row);
+  }
+
+  void _open(BuildContext context, WidgetRef ref) {
+    switch (result.kind) {
+      case SearchResultKind.lifeItem:
+        context.push('/items/${result.id}');
+      case SearchResultKind.billRecord:
+        _openBill(context, ref);
+      case SearchResultKind.project:
+        context.push('/projects/${result.id}');
+    }
+  }
+
+  Future<void> _openBill(BuildContext context, WidgetRef ref) async {
+    final bill = await ref.read(billRepoProvider).watchById(result.id).first;
+    if (!context.mounted) return;
+    showBillDetailSheet(context, ref, bill);
+  }
+
+  Future<void> _defer(BuildContext context, WidgetRef ref) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      ref.read(lifeItemNotifierProvider.notifier).defer(result.id, picked);
+    }
+  }
+
+  void _confirmDeleteBill(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('删除后可在回收站恢复，确认要删除这条账单吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              ref.read(billNotifierProvider.notifier).delete(result.id);
+              Navigator.of(dialogContext).pop();
+            },
+            child: const Text('删除'),
+          ),
+        ],
       ),
     );
   }

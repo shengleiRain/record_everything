@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../life_item/providers/life_item_providers.dart';
-import '../../project/providers/project_providers.dart';
 import '../models/agenda_item_view_model.dart';
 import '../models/calendar_window.dart';
 import '../models/day_bucket_view_model.dart';
@@ -117,23 +116,33 @@ Stream<List<AgendaItemViewModel>> _watchAgendaItems({
   final controller = StreamController<List<AgendaItemViewModel>>();
   List<AgendaItemViewModel>? lifeItems;
   List<AgendaItemViewModel>? billRecords;
-  List<AgendaItemViewModel>? projects;
+  // Global set of life-item ids that already have a bill, regardless of date.
+  // Lets us hide a life item on its dueTime once its completion has been
+  // recorded as a bill (which then shows up on its own billTime), matching the
+  // project detail page. Window-scoped bill data alone can't see a bill whose
+  // billTime falls on a different day than the item's dueTime.
+  Set<int> billedItemIds = const {};
 
   void emitIfReady() {
     final currentLifeItems = lifeItems;
     final currentBillRecords = billRecords;
-    final currentProjects = projects;
-    if (currentLifeItems == null ||
-        currentBillRecords == null ||
-        currentProjects == null) {
+    if (currentLifeItems == null || currentBillRecords == null) {
       return;
     }
     if (controller.isClosed) return;
 
+    // Deduplicate life items against their linked bills, mirroring the project
+    // detail page: when a life item already has a bill (created on completion),
+    // it is shown via that bill record (which carries the real settlement date
+    // as billTime) and the life-item row is dropped to avoid showing the same
+    // business twice. A life item without a bill still appears on its dueTime.
+    //
+    // Projects are intentionally excluded from the home agenda (they have a
+    // dedicated list page); the home agenda focuses on a day's items and bills.
     final combined = <AgendaItemViewModel>[
-      ...currentLifeItems,
+      for (final item in currentLifeItems)
+        if (!billedItemIds.contains(item.id)) item,
       ...currentBillRecords,
-      ...currentProjects,
     ];
     if (sortItems) combined.sort(_compareAgendaItems);
     controller.add(combined);
@@ -161,21 +170,18 @@ Stream<List<AgendaItemViewModel>> _watchAgendaItems({
         emitIfReady();
       }, onError: controller.addError);
 
-  final projectSubscription = ref
-      .watch(projectRepoProvider)
-      .watchBetweenKeyDate(start, end)
-      .listen((projectList) {
-        projects = [
-          for (final p in projectList)
-            AgendaItemViewModel.fromProject(p),
-        ];
+  final billedSubscription = ref
+      .watch(billRepoProvider)
+      .watchLifeItemIdsWithBills()
+      .listen((ids) {
+        billedItemIds = ids;
         emitIfReady();
       }, onError: controller.addError);
 
   ref.onDispose(() {
     unawaited(lifeSubscription.cancel());
     unawaited(billSubscription.cancel());
-    unawaited(projectSubscription.cancel());
+    unawaited(billedSubscription.cancel());
     unawaited(controller.close());
   });
 

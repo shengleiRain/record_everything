@@ -125,13 +125,23 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
     for (final draft in _stepDrafts) {
       draft.dispose();
     }
-    setState(() {
-      _stepDrafts
-        ..clear()
-        ..addAll(drafts);
-      _selectedStepIndex = 0;
+    // Defer the setState to the next frame. This method is reached after an
+    // async gap (_loadTemplateDrafts awaits getTemplateSteps), so by the time
+    // it runs the widget tree may already be mid-build (e.g. a category
+    // FutureBuilder rebuilding on the same frame). Calling setState
+    // synchronously then throws "setState/markNeedsBuild called during build"
+    // because the new draft's TextFormFields get marked dirty inside that
+    // in-flight build. Scheduling after the frame keeps it safe.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _stepDrafts
+          ..clear()
+          ..addAll(drafts);
+        _selectedStepIndex = 0;
+      });
+      _syncStepPage(animate: false);
     });
-    _syncStepPage(animate: false);
   }
 
   Future<void> _loadFromDatabase() async {
@@ -574,7 +584,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
 
 // ==================== 基本信息部分 ====================
 
-class _BasicInfoSection extends ConsumerWidget {
+class _BasicInfoSection extends ConsumerStatefulWidget {
   const _BasicInfoSection({
     required this.titleController,
     required this.participantController,
@@ -610,16 +620,39 @@ class _BasicInfoSection extends ConsumerWidget {
   final ValueChanged<Map<int, String>> onCategoriesLoaded;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_BasicInfoSection> createState() => _BasicInfoSectionState();
+}
+
+class _BasicInfoSectionState extends ConsumerState<_BasicInfoSection> {
+  String? _lastCategoriesSignature;
+
+  void _publishCategoriesLoaded(List<Category> categories) {
+    final signature = categories
+        .map((category) => '${category.id}:${category.name}')
+        .join('|');
+    if (_lastCategoriesSignature == signature) return;
+    _lastCategoriesSignature = signature;
+
+    final names = {
+      for (final category in categories) category.id: category.name,
+    };
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onCategoriesLoaded(names);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return _SectionCard(
       title: '基本信息',
       child: Column(
         children: [
           TextFormField(
-            controller: titleController,
+            controller: widget.titleController,
             decoration: const InputDecoration(labelText: '项目标题 *'),
             validator: (v) => (v == null || v.trim().isEmpty) ? '请输入标题' : null,
-            onChanged: (_) => onTitleManuallyEdited(),
+            onChanged: (_) => widget.onTitleManuallyEdited(),
           ),
           const SizedBox(height: 16),
           FutureBuilder(
@@ -627,10 +660,10 @@ class _BasicInfoSection extends ConsumerWidget {
             builder: (context, snapshot) {
               if (!snapshot.hasData) return const SizedBox.shrink();
               final cats = snapshot.data!;
-              final names = {for (final c in cats) c.id: c.name};
-              onCategoriesLoaded(names);
-              final validValue = cats.any((c) => c.id == selectedCategoryId)
-                  ? selectedCategoryId
+              _publishCategoriesLoaded(cats);
+              final validValue =
+                  cats.any((c) => c.id == widget.selectedCategoryId)
+                  ? widget.selectedCategoryId
                   : null;
               return AppDropdownField<int>(
                 label: '项目类型',
@@ -638,46 +671,46 @@ class _BasicInfoSection extends ConsumerWidget {
                 options: cats
                     .map((c) => AppDropdownOption(value: c.id, label: c.name))
                     .toList(),
-                onSelected: onCategoryChanged,
+                onSelected: widget.onCategoryChanged,
               );
             },
           ),
           const SizedBox(height: 16),
           TextFormField(
-            controller: participantController,
+            controller: widget.participantController,
             decoration: const InputDecoration(labelText: '客户/参与人'),
-            onChanged: (_) => onParticipantChanged(),
+            onChanged: (_) => widget.onParticipantChanged(),
           ),
           const SizedBox(height: 16),
           _DateField(
             label: '关键日期',
-            value: startDate != null
-                ? DateFormatter.formatDate(startDate!)
+            value: widget.startDate != null
+                ? DateFormatter.formatDate(widget.startDate!)
                 : '未设置',
             onTap: () async {
               final picked = await showDatePicker(
                 context: context,
-                initialDate: startDate ?? DateTime.now(),
+                initialDate: widget.startDate ?? DateTime.now(),
                 firstDate: DateTime(2020),
                 lastDate: DateTime(2035),
               );
               if (picked != null) {
-                onStartDateChanged(picked);
+                widget.onStartDateChanged(picked);
               }
             },
           ),
           const SizedBox(height: 16),
           AppDropdownField<ProjectStatus>(
             label: '项目状态',
-            value: status,
+            value: widget.status,
             options: ProjectStatus.values
                 .map((s) => AppDropdownOption(value: s, label: s.label))
                 .toList(),
-            onSelected: onStatusChanged,
+            onSelected: widget.onStatusChanged,
           ),
           const SizedBox(height: 16),
           TextFormField(
-            controller: noteController,
+            controller: widget.noteController,
             decoration: const InputDecoration(labelText: '备注'),
             maxLines: 3,
           ),
@@ -980,9 +1013,7 @@ class _StepTabHeader extends SliverPersistentHeaderDelegate {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final hasSteps = steps.isNotEmpty;
-              final buttonWidth = hasSteps
-                  ? _AnimatedAddButton.collapsedExtent
-                  : _AnimatedAddButton.expandedWidth;
+              final buttonWidth = _AnimatedAddButton.expandedWidth;
               final tabLimit =
                   constraints.maxWidth -
                   buttonWidth -

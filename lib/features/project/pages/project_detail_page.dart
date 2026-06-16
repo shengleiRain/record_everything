@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/money_formatter.dart';
+import '../../../core/widgets/card_parts.dart';
+import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
 import '../../../domain/enums/project_event_type.dart';
 import '../../../domain/enums/project_status.dart';
@@ -87,7 +89,7 @@ class _ProjectDetailBody extends ConsumerWidget {
               child: Listener(
                 behavior: HitTestBehavior.translucent,
                 onPointerDown: (event) {
-                  _SwipeRevealController.closeIfOutside(event.position);
+                  SwipeRevealController.closeIfOutside(event.position);
                 },
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
@@ -655,7 +657,7 @@ class _ProjectFlowCard extends ConsumerWidget {
     final actions = _quickActions(context, ref, data);
     final isBill = entry.kind == ProjectFlowEntryKind.bill;
 
-    return _SwipeActionReveal(
+    return SwipeActionReveal(
       actions: actions,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -676,26 +678,8 @@ class _ProjectFlowCard extends ConsumerWidget {
                 onTap: () => _showDetailSheet(context, ref, data),
                 child: Stack(
                   children: [
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: data.visual.color,
-                          borderRadius: const BorderRadius.horizontal(
-                            left: Radius.circular(8),
-                          ),
-                        ),
-                        child: const SizedBox(width: 3),
-                      ),
-                    ),
-                    if (isBill)
-                      const Positioned(
-                        right: 0,
-                        top: 0,
-                        child: _BillFoldCorner(),
-                      ),
+                    CardLeftStripe(color: data.visual.color),
+                    if (isBill) const BillFoldCorner(),
                     DecoratedBox(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
@@ -710,7 +694,7 @@ class _ProjectFlowCard extends ConsumerWidget {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                _EntryIcon(
+                                CardEntryIcon(
                                   icon: data.visual.icon,
                                   color: data.visual.color,
                                 ),
@@ -752,7 +736,7 @@ class _ProjectFlowCard extends ConsumerWidget {
                                 ),
                                 if (data.trailingText != null) ...[
                                   const SizedBox(width: 8),
-                                  _TrailingValue(
+                                  CardTrailingValue(
                                     text: data.trailingText!,
                                     color: data.trailingColor,
                                   ),
@@ -764,13 +748,9 @@ class _ProjectFlowCard extends ConsumerWidget {
                       ),
                     ),
                     if (data.statusLabel != null)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: _StatusCornerBadge(
-                          label: data.statusLabel!,
-                          color: data.statusColor,
-                        ),
+                      StatusCornerBadge(
+                        label: data.statusLabel!,
+                        color: data.statusColor,
                       ),
                   ],
                 ),
@@ -930,7 +910,7 @@ class _ProjectFlowCard extends ConsumerWidget {
 
   String _two(int value) => value.toString().padLeft(2, '0');
 
-  List<_FlowQuickAction> _quickActions(
+  List<SwipeAction> _quickActions(
     BuildContext context,
     WidgetRef ref,
     _FlowCardData data,
@@ -943,7 +923,7 @@ class _ProjectFlowCard extends ConsumerWidget {
           item.amountType == 'income' || item.amountType == 'expense';
       if (linkedBill != null) {
         return [
-          _FlowQuickAction(
+          SwipeAction(
             label: '删账单',
             icon: Icons.delete_outline,
             color: AppColors.overdue,
@@ -954,7 +934,7 @@ class _ProjectFlowCard extends ConsumerWidget {
       if (item.status == 'completed') {
         return [
           if (isFinancial)
-            _FlowQuickAction(
+            SwipeAction(
               label: '补账',
               icon: Icons.receipt_long,
               color: item.amountType == 'income'
@@ -962,7 +942,7 @@ class _ProjectFlowCard extends ConsumerWidget {
                   : AppColors.expense,
               onTap: () => _openBillForItem(context, item),
             ),
-          _FlowQuickAction(
+          SwipeAction(
             label: '删除',
             icon: Icons.delete_outline,
             color: AppColors.overdue,
@@ -973,7 +953,7 @@ class _ProjectFlowCard extends ConsumerWidget {
       if (isFinancial) {
         final label = item.amountType == 'income' ? '收款' : '付款';
         return [
-          _FlowQuickAction(
+          SwipeAction(
             label: label,
             icon: item.amountType == 'income'
                 ? Icons.payments_outlined
@@ -983,7 +963,7 @@ class _ProjectFlowCard extends ConsumerWidget {
                 : AppColors.expense,
             onTap: () => _openBillForItem(context, item),
           ),
-          _FlowQuickAction(
+          SwipeAction(
             label: '延期',
             icon: Icons.event_repeat,
             color: Colors.orange.shade800,
@@ -992,13 +972,13 @@ class _ProjectFlowCard extends ConsumerWidget {
         ];
       }
       return [
-        _FlowQuickAction(
+        SwipeAction(
           label: '完成',
           icon: Icons.check,
           color: AppColors.completed,
           onTap: () => _completeItem(context, ref, item),
         ),
-        _FlowQuickAction(
+        SwipeAction(
           label: '延期',
           icon: Icons.event_repeat,
           color: Colors.orange.shade800,
@@ -1008,7 +988,7 @@ class _ProjectFlowCard extends ConsumerWidget {
     }
 
     return [
-      _FlowQuickAction(
+      SwipeAction(
         label: '删除',
         icon: Icons.delete_outline,
         color: AppColors.overdue,
@@ -1293,231 +1273,11 @@ class _FlowCardData {
   final Color borderColor;
 }
 
-class _FlowQuickAction {
-  const _FlowQuickAction({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-}
-
-class _SwipeActionReveal extends StatefulWidget {
-  const _SwipeActionReveal({required this.actions, required this.child});
-
-  final List<_FlowQuickAction> actions;
-  final Widget child;
-
-  @override
-  State<_SwipeActionReveal> createState() => _SwipeActionRevealState();
-}
-
-class _SwipeActionRevealState extends State<_SwipeActionReveal> {
-  static const double _maxOffset = 148;
-  final _rootKey = GlobalKey();
-  double _offset = 0;
-
-  @override
-  void dispose() {
-    _SwipeRevealController.unregister(this);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.actions.isEmpty) return widget.child;
-    return ClipRect(
-      child: KeyedSubtree(
-        key: _rootKey,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: _maxOffset,
-                  child: Row(
-                    children: [
-                      for (
-                        var index = 0;
-                        index < widget.actions.length;
-                        index++
-                      )
-                        Expanded(
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              left: index == 0 ? 6 : 0,
-                              right: 6,
-                            ),
-                            child: _RevealActionButton(
-                              action: widget.actions[index],
-                              onClose: _close,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              curve: Curves.easeOut,
-              transform: Matrix4.translationValues(-_offset, 0, 0),
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onHorizontalDragUpdate: (details) {
-                  setState(() {
-                    _offset = (_offset - details.delta.dx).clamp(0, _maxOffset);
-                  });
-                },
-                onHorizontalDragEnd: (details) {
-                  final velocity = details.primaryVelocity ?? 0;
-                  if (_offset > _maxOffset / 2 || velocity < -280) {
-                    _open();
-                  } else {
-                    _close();
-                  }
-                },
-                child: widget.child,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool containsGlobalPosition(Offset position) {
-    final context = _rootKey.currentContext;
-    if (context == null) return false;
-    final renderObject = context.findRenderObject();
-    if (renderObject is! RenderBox || !renderObject.hasSize) return false;
-    final local = renderObject.globalToLocal(position);
-    return (Offset.zero & renderObject.size).contains(local);
-  }
-
-  void _open() {
-    _SwipeRevealController.open(this);
-    if (!mounted) return;
-    setState(() => _offset = _maxOffset);
-  }
-
-  void _close() {
-    _SwipeRevealController.unregister(this);
-    if (!mounted) return;
-    setState(() => _offset = 0);
-  }
-}
-
-class _SwipeRevealController {
-  static _SwipeActionRevealState? _openState;
-
-  static void open(_SwipeActionRevealState state) {
-    if (_openState != state) {
-      _openState?._close();
-    }
-    _openState = state;
-  }
-
-  static void unregister(_SwipeActionRevealState state) {
-    if (_openState == state) {
-      _openState = null;
-    }
-  }
-
-  static void closeIfOutside(Offset position) {
-    final state = _openState;
-    if (state == null) return;
-    if (state.containsGlobalPosition(position)) return;
-    state._close();
-  }
-}
-
-class _RevealActionButton extends StatelessWidget {
-  const _RevealActionButton({required this.action, required this.onClose});
-
-  final _FlowQuickAction action;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      style: FilledButton.styleFrom(
-        backgroundColor: action.color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      onPressed: () {
-        onClose();
-        action.onTap();
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(action.icon, size: 18),
-          const SizedBox(height: 3),
-          Text(
-            action.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _FlowVisual {
   const _FlowVisual({required this.icon, required this.color});
 
   final IconData icon;
   final Color color;
-}
-
-class _StatusCornerBadge extends StatelessWidget {
-  const _StatusCornerBadge({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(8),
-          bottomRight: Radius.circular(8),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-        child: Text(
-          label,
-          maxLines: 1,
-          textHeightBehavior: const TextHeightBehavior(
-            applyHeightToFirstAscent: false,
-            applyHeightToLastDescent: false,
-          ),
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            height: 1,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _DetailSheetHeader extends StatelessWidget {
@@ -1531,7 +1291,7 @@ class _DetailSheetHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _EntryIcon(icon: data.visual.icon, color: data.visual.color),
+        CardEntryIcon(icon: data.visual.icon, color: data.visual.color),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -1554,7 +1314,10 @@ class _DetailSheetHeader extends StatelessWidget {
           ),
         ),
         if (data.trailingText != null)
-          _TrailingValue(text: data.trailingText!, color: data.trailingColor),
+          CardTrailingValue(
+            text: data.trailingText!,
+            color: data.trailingColor,
+          ),
       ],
     );
   }
@@ -1614,64 +1377,6 @@ class _DetailActionRow extends StatelessWidget {
   }
 }
 
-class _TrailingValue extends StatelessWidget {
-  const _TrailingValue({required this.text, required this.color});
-
-  final String text;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 52, maxWidth: 96),
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerRight,
-          child: Text(
-            text,
-            maxLines: 1,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BillFoldCorner extends StatelessWidget {
-  const _BillFoldCorner();
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: _BillFoldClipper(),
-      child: ColoredBox(
-        color: Colors.black.withValues(alpha: 0.08),
-        child: const SizedBox.square(dimension: 14),
-      ),
-    );
-  }
-}
-
-class _BillFoldClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..moveTo(size.width, 0)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, 0)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}
-
 class _DatePill extends StatelessWidget {
   const _DatePill({required this.date});
 
@@ -1723,27 +1428,6 @@ class _DatePill extends StatelessWidget {
     DateTime.saturday => '周六',
     _ => '周日',
   };
-}
-
-class _EntryIcon extends StatelessWidget {
-  const _EntryIcon({required this.icon, required this.color});
-
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: SizedBox.square(
-        dimension: 28,
-        child: Icon(icon, size: 17, color: color),
-      ),
-    );
-  }
 }
 
 class _ActionTile extends StatelessWidget {

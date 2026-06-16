@@ -9,12 +9,16 @@ class BillDayGroup extends StatelessWidget {
   final DateTime date;
   final List<BillRecord> bills;
   final ValueChanged<BillRecord>? onBillTap;
+  final ValueChanged<BillRecord>? onBillEdit;
+  final ValueChanged<BillRecord>? onBillDelete;
 
   const BillDayGroup({
     super.key,
     required this.date,
     required this.bills,
     this.onBillTap,
+    this.onBillEdit,
+    this.onBillDelete,
   });
 
   @override
@@ -46,25 +50,24 @@ class BillDayGroup extends StatelessWidget {
               ],
             ),
           ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              children: [
-                for (var index = 0; index < bills.length; index++) ...[
-                  BillCard(
-                    bill: bills[index],
-                    onTap: onBillTap == null
-                        ? null
-                        : () => onBillTap!(bills[index]),
-                  ),
-                  if (index != bills.length - 1)
-                    const Divider(height: 1, indent: 68),
-                ],
+          Column(
+            children: [
+              for (var index = 0; index < bills.length; index++) ...[
+                BillCard(
+                  bill: bills[index],
+                  onTap: onBillTap == null
+                      ? null
+                      : () => onBillTap!(bills[index]),
+                  onEdit: onBillEdit == null
+                      ? null
+                      : () => onBillEdit!(bills[index]),
+                  onDelete: onBillDelete == null
+                      ? null
+                      : () => onBillDelete!(bills[index]),
+                ),
+                if (index != bills.length - 1) const SizedBox(height: 8),
               ],
-            ),
+            ],
           ),
         ],
       ),

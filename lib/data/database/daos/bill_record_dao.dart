@@ -138,6 +138,26 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(t) => OrderingTerm.desc(t.billTime)]))
           .watch();
 
+  /// Streams the set of life-item ids that already have a (non-deleted) bill.
+  ///
+  /// Used by the home agenda to hide life items whose completion has been
+  /// recorded as a bill (mirroring the project detail page): those items are
+  /// represented by their bill row instead, dated by billTime.
+  Stream<Set<int>> watchLifeItemIdsWithBills() {
+    final expr = billRecords.lifeItemId;
+    final query = selectOnly(billRecords)
+      ..addColumns([expr])
+      ..where(
+        billRecords.lifeItemId.isNotNull() & billRecords.deletedAt.isNull(),
+      );
+    return query.watch().map(
+      (rows) => {
+        for (final row in rows)
+          if (row.read(expr) case final int id) id,
+      },
+    );
+  }
+
   Stream<int> watchSumByProjectId(int projectId, String amountType) {
     final sumExpr = billRecords.amount.sum();
     final query = selectOnly(billRecords)

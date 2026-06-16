@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
 import '../providers/life_item_providers.dart';
 import '../widgets/life_item_card.dart';
@@ -61,6 +62,10 @@ class LifeItemListPage extends ConsumerWidget {
 
           final sorted = List<LifeItem>.from(items)
             ..sort((a, b) {
+              final aPending = a.status == 'pending';
+              final bPending = b.status == 'pending';
+              if (aPending && !bPending) return -1;
+              if (!aPending && bPending) return 1;
               final aOverdue =
                   a.status == 'pending' && DateFormatter.isOverdue(a.dueTime);
               final bOverdue =
@@ -73,36 +78,41 @@ class LifeItemListPage extends ConsumerWidget {
           final filtered = _filterItems(sorted, selectedFilter);
           final counts = _LifeItemFilterCounts.from(sorted);
 
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 80),
-            children: [
-              _LifeItemFilterChips(
-                selectedFilter: selectedFilter,
-                counts: counts,
-                onChanged: (filter) {
-                  ref.read(lifeItemFilterProvider.notifier).state = filter;
-                },
-              ),
-              if (filtered.isEmpty)
-                SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.45,
-                  child: Center(
-                    child: Text(
-                      '没有符合条件的事项',
-                      style: Theme.of(context).textTheme.bodyMedium,
+          return Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (event) =>
+                SwipeRevealController.closeIfOutside(event.position),
+            child: ListView(
+              padding: const EdgeInsets.only(bottom: 80),
+              children: [
+                _LifeItemFilterChips(
+                  selectedFilter: selectedFilter,
+                  counts: counts,
+                  onChanged: (filter) {
+                    ref.read(lifeItemFilterProvider.notifier).state = filter;
+                  },
+                ),
+                if (filtered.isEmpty)
+                  SizedBox(
+                    height: MediaQuery.sizeOf(context).height * 0.45,
+                    child: Center(
+                      child: Text(
+                        '没有符合条件的事项',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                  )
+                else
+                  ...filtered.map(
+                    (item) => LifeItemCard(
+                      item: item,
+                      onTap: () => context.push('/items/${item.id}'),
+                      onComplete: () => _showCompleteAction(context, ref, item),
+                      onDefer: () => _showDeferPicker(context, ref, item),
                     ),
                   ),
-                )
-              else
-                ...filtered.map(
-                  (item) => LifeItemCard(
-                    item: item,
-                    onTap: () => context.push('/items/${item.id}'),
-                    onComplete: () => _showCompleteAction(context, ref, item),
-                    onDefer: () => _showDeferPicker(context, ref, item),
-                  ),
-                ),
-            ],
+              ],
+            ),
           );
         },
       ),
