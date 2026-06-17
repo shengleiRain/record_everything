@@ -94,56 +94,94 @@ Future<void> _showBillDialog(
   BuildContext context,
   LifeItem item,
   void Function(int amount, int? categoryId, String? note) onSubmit,
-) async {
-  final amountController = TextEditingController(
-    text: ((item.amount ?? 0) / 100).toStringAsFixed(2),
-  );
-  final noteController = TextEditingController();
-  int amount = item.amount ?? 0;
-
-  await showDialog(
+) {
+  return showDialog<void>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
+    builder: (dialogContext) => _CompleteBillDialog(
+      item: item,
+      onSubmit: onSubmit,
+    ),
+  );
+}
+
+/// 记账详情弹窗。
+///
+/// 控制器由 [State] 管理，其生命周期与弹窗 widget 完全一致。这样控制器只会在
+/// 弹窗的关闭动画结束、widget 真正从树中移除时才被 dispose，避免在退出动画
+/// 期间 TextField 仍访问已 dispose 的 TextEditingController 而抛出
+/// "A TextEditingController was used after being disposed"。
+class _CompleteBillDialog extends StatefulWidget {
+  const _CompleteBillDialog({required this.item, required this.onSubmit});
+
+  final LifeItem item;
+  final void Function(int amount, int? categoryId, String? note) onSubmit;
+
+  @override
+  State<_CompleteBillDialog> createState() => _CompleteBillDialogState();
+}
+
+class _CompleteBillDialogState extends State<_CompleteBillDialog> {
+  late final TextEditingController _amountController;
+  late final TextEditingController _noteController;
+  int _amount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = widget.item.amount ?? 0;
+    _amountController = TextEditingController(
+      text: ((widget.item.amount ?? 0) / 100).toStringAsFixed(2),
+    );
+    _noteController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
       title: const Text('记账详情'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
-            controller: amountController,
+            controller: _amountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(
               labelText: '金额',
               prefixText: '¥',
-              hintText: MoneyFormatter.format(item.amount),
+              hintText: MoneyFormatter.format(widget.item.amount),
             ),
             onChanged: (v) {
               final parsed = MoneyFormatter.parse(v);
-              if (parsed != null) amount = parsed;
+              if (parsed != null) _amount = parsed;
             },
           ),
           const SizedBox(height: 12),
           TextField(
-            controller: noteController,
+            controller: _noteController,
             decoration: const InputDecoration(labelText: '备注'),
           ),
         ],
       ),
       actions: [
         TextButton(
-          onPressed: () => dialogContext.safePop(),
+          onPressed: () => Navigator.of(context).maybePop(),
           child: const Text('取消'),
         ),
         FilledButton(
           onPressed: () {
-            onSubmit(amount, item.categoryId, noteController.text);
-            dialogContext.safePop();
+            widget.onSubmit(_amount, widget.item.categoryId, _noteController.text);
+            Navigator.of(context).maybePop();
           },
           child: const Text('确认'),
         ),
       ],
-    ),
-  );
-
-  amountController.dispose();
-  noteController.dispose();
+    );
+  }
 }

@@ -77,70 +77,12 @@ class _CategoryManagementPageState
   Future<void> _showCategoryDialog(
     BuildContext context, {
     Category? category,
-  }) async {
-    final nameController = TextEditingController(text: category?.name ?? '');
-    final iconController = TextEditingController(
-      text: category?.icon ?? 'category',
-    );
-    final isEditing = category != null;
-
-    await showDialog<void>(
+  }) {
+    return showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(isEditing ? '编辑分类' : '新增分类'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: '名称',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: iconController,
-              decoration: const InputDecoration(
-                labelText: '图标标识',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
-              FocusScope.of(dialogContext).unfocus();
-              final notifier = ref.read(categoryNotifierProvider.notifier);
-              if (category == null) {
-                await notifier.create(
-                  name: name,
-                  type: _selectedType,
-                  icon: iconController.text,
-                );
-              } else {
-                await notifier.update(
-                  category.copyWith(
-                    name: name,
-                    icon: iconController.text.trim().isEmpty
-                        ? 'category'
-                        : iconController.text.trim(),
-                  ),
-                );
-              }
-              if (dialogContext.mounted) Navigator.pop(dialogContext);
-            },
-            child: Text(isEditing ? '保存' : '新增'),
-          ),
-        ],
+      builder: (dialogContext) => _CategoryEditDialog(
+        category: category,
+        type: _selectedType,
       ),
     );
   }
@@ -421,6 +363,114 @@ class _EmptyState extends StatelessWidget {
           context,
         ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
       ),
+    );
+  }
+}
+
+/// 分类新增/编辑弹窗。
+///
+/// 控制器由 [State] 管理，生命周期与弹窗 widget 一致：只在弹窗关闭动画结束、
+/// widget 真正被移除时才 dispose，避免退出动画期间 TextField 访问已 dispose
+/// 的控制器（"A TextEditingController was used after being disposed"），
+/// 同时修复了原先本地控制器从不被 dispose 的内存泄漏。
+class _CategoryEditDialog extends ConsumerStatefulWidget {
+  const _CategoryEditDialog({this.category, required this.type});
+
+  final Category? category;
+  final String type;
+
+  @override
+  ConsumerState<_CategoryEditDialog> createState() => _CategoryEditDialogState();
+}
+
+class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _iconController;
+  late final bool _isEditing;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isEditing = widget.category != null;
+    _nameController = TextEditingController(text: widget.category?.name ?? '');
+    _iconController = TextEditingController(
+      text: widget.category?.icon ?? 'category',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _iconController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _saving = true);
+    final notifier = ref.read(categoryNotifierProvider.notifier);
+    final category = widget.category;
+    try {
+      if (category == null) {
+        await notifier.create(
+          name: name,
+          type: widget.type,
+          icon: _iconController.text,
+        );
+      } else {
+        await notifier.update(
+          category.copyWith(
+            name: name,
+            icon: _iconController.text.trim().isEmpty
+                ? 'category'
+                : _iconController.text.trim(),
+          ),
+        );
+      }
+      if (mounted) Navigator.of(context).maybePop();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(_isEditing ? '编辑分类' : '新增分类'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: '名称',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _iconController,
+            decoration: const InputDecoration(
+              labelText: '图标标识',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).maybePop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_isEditing ? '保存' : '新增'),
+        ),
+      ],
     );
   }
 }

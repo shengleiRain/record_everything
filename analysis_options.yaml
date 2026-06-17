@@ -9,6 +9,18 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+# Enable custom_lint (required for custom_lint plugins such as riverpod_lint
+# and our project-local disposable_resource_lint to run). Run with:
+#   dart run custom_lint
+analyzer:
+  plugins:
+    - custom_lint
+
+# Register the custom_lint plugins enabled for this project.
+custom_lint:
+  rules:
+    - avoid_local_disposable_in_function
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

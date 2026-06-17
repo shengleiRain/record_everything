@@ -43,6 +43,11 @@ dev_dependencies:
   riverpod_generator: ^2.6.3
   custom_lint: ^0.7.0
   riverpod_lint: ^2.6.3
+  # Project-local custom lint that prevents disposable Flutter resources
+  # (TextEditingController, ScrollController, FocusNode, ...) from being
+  # created as locals inside functions/methods.
+  disposable_resource_lint:
+    path: tools/disposable_resource_lint
   integration_test:
     sdk: flutter
 

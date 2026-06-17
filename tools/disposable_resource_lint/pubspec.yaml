@@ -1,0 +1,22 @@
+name: disposable_resource_lint
+description: Project-local custom_lint rules that prevent disposable Flutter
+  resources (TextEditingController, ScrollController, FocusNode, ...) from being
+  created as locals inside functions or methods, which is the root cause of
+  "A TextEditingController was used after being disposed" crashes.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.11.0 <4.0.0'
+
+# IMPORTANT: custom_lint detects a package as a plugin by checking for a direct
+# dependency on `custom_lint_builder`. Keep it under `dependencies` (not dev).
+# Constraints mirror custom_lint_builder's own to stay version-compatible.
+dependencies:
+  analyzer: ^7.0.0
+  analyzer_plugin: ^0.13.0
+  custom_lint: ^0.7.0
+  custom_lint_builder: ^0.7.0
+
+dev_dependencies:
+  test: ^1.25.0

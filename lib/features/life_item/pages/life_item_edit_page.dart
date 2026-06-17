@@ -208,6 +208,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
 
   @override
   void dispose() {
+    _titleController.removeListener(_onTitleChanged);
     _titleController.dispose();
     _descController.dispose();
     _amountController.dispose();
