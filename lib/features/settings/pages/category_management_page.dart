@@ -5,6 +5,8 @@ import '../../../core/constants/category_icon_options.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../../shared/widgets/form_save_mixin.dart';
+import '../../../shared/widgets/saving_button.dart';
 import '../providers/settings_providers.dart';
 
 class CategoryManagementPage extends ConsumerStatefulWidget {
@@ -378,12 +380,12 @@ class _CategoryEditDialog extends ConsumerStatefulWidget {
       _CategoryEditDialogState();
 }
 
-class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog> {
+class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog>
+    with FormSaveMixin<_CategoryEditDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late String _iconKey;
   late final bool _isEditing;
-  bool _saving = false;
 
   @override
   void initState() {
@@ -403,25 +405,19 @@ class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog> {
     if (!_formKey.currentState!.validate()) return;
     final name = _nameController.text.trim();
     FocusScope.of(context).unfocus();
-    setState(() => _saving = true);
     final notifier = ref.read(categoryNotifierProvider.notifier);
     final category = widget.category;
-    try {
+    final ok = await runSave(() async {
       if (category == null) {
         await notifier.create(name: name, type: widget.type, icon: _iconKey);
       } else {
         await notifier.update(category.copyWith(name: name, icon: _iconKey));
       }
       if (mounted) Navigator.of(context).maybePop();
-    } on Object catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('保存失败：$error')));
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    });
+    // runSave already shows a SnackBar on failure; nothing more to do here.
+    // The bool is intentionally unused beyond this point.
+    if (!ok) return;
   }
 
   @override
@@ -465,7 +461,7 @@ class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog> {
                     return null;
                   },
                   onChanged: (_) => setState(() {}),
-                  onFieldSubmitted: (_) => _saving ? null : _save(),
+                  onFieldSubmitted: (_) => isSaving ? null : _save(),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -486,17 +482,13 @@ class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).maybePop(),
+          onPressed: isSaving ? null : () => Navigator.of(context).maybePop(),
           child: const Text('取消'),
         ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(_isEditing ? '保存' : '新增'),
+        SavingButton(
+          onPressed: _save,
+          isSaving: isSaving,
+          label: _isEditing ? '保存' : '新增',
         ),
       ],
     );

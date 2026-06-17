@@ -10,6 +10,7 @@ import '../../../data/database/database_provider.dart';
 import '../../../data/repositories/project_repository.dart';
 import '../../../domain/enums/amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../../shared/widgets/form_save_mixin.dart';
 import '../providers/project_providers.dart';
 
 const double _stepContentHorizontalInset = 16;
@@ -28,7 +29,8 @@ class ProjectTemplateEditPage extends ConsumerStatefulWidget {
 }
 
 class _ProjectTemplateEditPageState
-    extends ConsumerState<ProjectTemplateEditPage> {
+    extends ConsumerState<ProjectTemplateEditPage>
+    with FormSaveMixin<ProjectTemplateEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _noteController = TextEditingController();
@@ -119,32 +121,33 @@ class _ProjectTemplateEditPageState
     }
 
     final notifier = ref.read(projectNotifierProvider.notifier);
-    if (_isEdit && _template != null) {
-      await notifier.updateTemplate(
-        template: _template!.copyWith(
-          name: _nameController.text.trim(),
-          categoryId: Value(_categoryId),
-          note: Value(
-            _noteController.text.trim().isEmpty
-                ? null
-                : _noteController.text.trim(),
+    await runSave(() async {
+      if (_isEdit && _template != null) {
+        await notifier.updateTemplate(
+          template: _template!.copyWith(
+            name: _nameController.text.trim(),
+            categoryId: Value(_categoryId),
+            note: Value(
+              _noteController.text.trim().isEmpty
+                  ? null
+                  : _noteController.text.trim(),
+            ),
+            updatedAt: DateTime.now(),
           ),
-          updatedAt: DateTime.now(),
-        ),
-        steps: steps,
-      );
-    } else {
-      await notifier.createTemplate(
-        name: _nameController.text.trim(),
-        categoryId: _categoryId,
-        note: _noteController.text.trim().isEmpty
-            ? null
-            : _noteController.text.trim(),
-        steps: steps,
-      );
-    }
-
-    if (mounted) context.pop();
+          steps: steps,
+        );
+      } else {
+        await notifier.createTemplate(
+          name: _nameController.text.trim(),
+          categoryId: _categoryId,
+          note: _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim(),
+          steps: steps,
+        );
+      }
+      if (mounted) context.pop();
+    });
   }
 
   int get _currentStepIndex {
@@ -271,8 +274,13 @@ class _ProjectTemplateEditPageState
         actions: [
           IconButton(
             tooltip: '保存',
-            icon: const Icon(Icons.check),
-            onPressed: _canSave ? _save : null,
+            icon: isSaving
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check),
+            onPressed: (_canSave && !isSaving) ? _save : null,
           ),
         ],
       ),

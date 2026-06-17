@@ -14,6 +14,7 @@ import '../../../data/repositories/project_repository.dart';
 import '../../../domain/enums/amount_type.dart';
 import '../../../domain/enums/project_status.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../../shared/widgets/form_save_mixin.dart';
 import '../providers/project_providers.dart';
 
 const double _stepContentHorizontalInset = 16;
@@ -30,7 +31,8 @@ class ProjectEditPage extends ConsumerStatefulWidget {
   ConsumerState<ProjectEditPage> createState() => _ProjectEditPageState();
 }
 
-class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
+class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
+    with FormSaveMixin<ProjectEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _participantController = TextEditingController();
@@ -348,66 +350,67 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
     }
     final notifier = ref.read(projectNotifierProvider.notifier);
 
-    if (_isEdit && _editId != null) {
-      final project = await ref
-          .read(databaseProvider)
-          .projectDao
-          .getById(_editId!);
-      await notifier.update(
-        project.copyWith(
+    await runSave(() async {
+      if (_isEdit && _editId != null) {
+        final project = await ref
+            .read(databaseProvider)
+            .projectDao
+            .getById(_editId!);
+        await notifier.update(
+          project.copyWith(
+            title: _titleController.text.trim(),
+            categoryId: Value(_selectedCategoryId),
+            participant: Value(
+              _participantController.text.trim().isEmpty
+                  ? null
+                  : _participantController.text.trim(),
+            ),
+            projectStatus: _status.value,
+            startDate: Value(_startDate),
+            endDate: Value(_endDate),
+            totalAmount: const Value(null),
+            note: Value(
+              _noteController.text.trim().isEmpty
+                  ? null
+                  : _noteController.text.trim(),
+            ),
+            updatedAt: DateTime.now(),
+          ),
+        );
+      } else if (_selectedTemplateId != null) {
+        await notifier.createFromTemplate(
+          templateId: _selectedTemplateId!,
           title: _titleController.text.trim(),
-          categoryId: Value(_selectedCategoryId),
-          participant: Value(
-            _participantController.text.trim().isEmpty
-                ? null
-                : _participantController.text.trim(),
-          ),
+          steps: _enabledStepInputs(),
+          categoryId: _selectedCategoryId,
+          participant: _participantController.text.trim().isEmpty
+              ? null
+              : _participantController.text.trim(),
           projectStatus: _status.value,
-          startDate: Value(_startDate),
-          endDate: Value(_endDate),
-          totalAmount: const Value(null),
-          note: Value(
-            _noteController.text.trim().isEmpty
-                ? null
-                : _noteController.text.trim(),
-          ),
-          updatedAt: DateTime.now(),
-        ),
-      );
-    } else if (_selectedTemplateId != null) {
-      await notifier.createFromTemplate(
-        templateId: _selectedTemplateId!,
-        title: _titleController.text.trim(),
-        steps: _enabledStepInputs(),
-        categoryId: _selectedCategoryId,
-        participant: _participantController.text.trim().isEmpty
-            ? null
-            : _participantController.text.trim(),
-        projectStatus: _status.value,
-        startDate: _startDate,
-        endDate: _endDate,
-        note: _noteController.text.trim().isEmpty
-            ? null
-            : _noteController.text.trim(),
-      );
-    } else {
-      await notifier.create(
-        title: _titleController.text.trim(),
-        categoryId: _selectedCategoryId,
-        participant: _participantController.text.trim().isEmpty
-            ? null
-            : _participantController.text.trim(),
-        projectStatus: _status.value,
-        startDate: _startDate,
-        endDate: _endDate,
-        note: _noteController.text.trim().isEmpty
-            ? null
-            : _noteController.text.trim(),
-      );
-    }
-
-    if (!mounted) return;
-    context.pop();
+          startDate: _startDate,
+          endDate: _endDate,
+          note: _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim(),
+        );
+      } else {
+        await notifier.create(
+          title: _titleController.text.trim(),
+          categoryId: _selectedCategoryId,
+          participant: _participantController.text.trim().isEmpty
+              ? null
+              : _participantController.text.trim(),
+          projectStatus: _status.value,
+          startDate: _startDate,
+          endDate: _endDate,
+          note: _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim(),
+        );
+      }
+      if (!mounted) return;
+      context.pop();
+    });
   }
 
   void _openTemplatePicker() {
@@ -469,7 +472,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
         actions: [
           if (!_isEdit && !_isReadonly)
             TextButton(
-              onPressed: _openTemplatePicker,
+              onPressed: isSaving ? null : _openTemplatePicker,
               child: Text(
                 selectedTemplate?.name ?? '模板',
                 style: TextStyle(
@@ -483,8 +486,13 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
             IconButton(
               key: const ValueKey('project-edit-save'),
               tooltip: '保存',
-              icon: const Icon(Icons.check),
-              onPressed: _save,
+              icon: isSaving
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check),
+              onPressed: isSaving ? null : _save,
             ),
         ],
       ),

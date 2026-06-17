@@ -10,6 +10,8 @@ import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../domain/enums/bill_amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../../shared/widgets/form_save_mixin.dart';
+import '../../../shared/widgets/saving_button.dart';
 import '../../project/widgets/project_picker_field.dart';
 import '../providers/bill_providers.dart';
 import '../../../data/database/app_database.dart';
@@ -23,7 +25,8 @@ class BillEditPage extends ConsumerStatefulWidget {
   ConsumerState<BillEditPage> createState() => _BillEditPageState();
 }
 
-class _BillEditPageState extends ConsumerState<BillEditPage> {
+class _BillEditPageState extends ConsumerState<BillEditPage>
+    with FormSaveMixin<BillEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
@@ -134,14 +137,19 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
         actions: [
           IconButton(
             tooltip: '保存',
-            icon: const Icon(Icons.check),
-            onPressed: _save,
+            icon: isSaving
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check),
+            onPressed: isSaving ? null : _save,
           ),
           if (_isEdit)
             IconButton(
               tooltip: '删除',
               icon: const Icon(Icons.delete),
-              onPressed: () => _confirmDelete(context),
+              onPressed: isSaving ? null : () => _confirmDelete(context),
             ),
         ],
       ),
@@ -248,9 +256,10 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
               ),
             ),
             const SizedBox(height: 32),
-            FilledButton(
+            SavingButton(
               onPressed: _save,
-              child: Text(_isEdit ? '保存修改' : '创建账单'),
+              isSaving: isSaving,
+              label: _isEdit ? '保存修改' : '创建账单',
             ),
           ],
         ),
@@ -258,7 +267,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (_isReadonly) {
       ScaffoldMessenger.of(
         context,
@@ -269,53 +278,46 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
     final notifier = ref.read(billNotifierProvider.notifier);
 
     if (_isEdit && _editId != null) {
-      ref
-          .read(databaseProvider)
-          .billRecordDao
-          .getById(_editId!)
-          .then((bill) {
-            return ref
-                .read(billRepoProvider)
-                .updateRecord(
-                  bill.copyWith(
-                    title: _titleController.text.trim(),
-                    amount: MoneyFormatter.parse(_amountController.text) ?? 0,
-                    amountType: _amountType.value,
-                    categoryId: Value(_selectedCategoryId),
-                    projectId: Value(_projectId),
-                    billTime: _billTime,
-                    note: Value(_noteController.text.trim()),
-                    updatedAt: DateTime.now(),
-                  ),
-                );
-          })
-          .then((_) {
-            if (mounted) context.pop();
-          });
+      final bill = await ref.read(databaseProvider).billRecordDao.getById(
+        _editId!,
+      );
+      await runSave(() async {
+        await ref.read(billRepoProvider).updateRecord(
+              bill.copyWith(
+                title: _titleController.text.trim(),
+                amount: MoneyFormatter.parse(_amountController.text) ?? 0,
+                amountType: _amountType.value,
+                categoryId: Value(_selectedCategoryId),
+                projectId: Value(_projectId),
+                billTime: _billTime,
+                note: Value(_noteController.text.trim()),
+                updatedAt: DateTime.now(),
+              ),
+            );
+        if (mounted) context.pop();
+      });
     } else {
-      notifier
-          .create(
-            title: _titleController.text.trim(),
-            amount: MoneyFormatter.parse(_amountController.text) ?? 0,
-            amountType: _amountType.value,
-            categoryId: _selectedCategoryId,
-            projectId: _projectId,
-            lifeItemId: _lifeItemId,
-            billTime: _billTime,
-            note: _noteController.text.trim().isEmpty
-                ? null
-                : _noteController.text.trim(),
-          )
-          .then((_) async {
-            final lifeItemId = _lifeItemId;
-            if (lifeItemId == null) return;
-            await ref
-                .read(lifeItemNotifierProvider.notifier)
-                .complete(lifeItemId);
-          })
-          .then((_) {
-            if (mounted) context.pop();
-          });
+      final ok = await runSave(() async {
+        await notifier.create(
+          title: _titleController.text.trim(),
+          amount: MoneyFormatter.parse(_amountController.text) ?? 0,
+          amountType: _amountType.value,
+          categoryId: _selectedCategoryId,
+          projectId: _projectId,
+          lifeItemId: _lifeItemId,
+          billTime: _billTime,
+          note: _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim(),
+        );
+        final lifeItemId = _lifeItemId;
+        if (lifeItemId != null) {
+          await ref.read(lifeItemNotifierProvider.notifier).complete(lifeItemId);
+        }
+        if (mounted) context.pop();
+      });
+      // runSave surfaced any error via SnackBar; nothing more to do.
+      if (!ok) return;
     }
   }
 

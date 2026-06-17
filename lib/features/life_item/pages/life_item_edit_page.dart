@@ -14,6 +14,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../models/reminder_preset.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../../shared/widgets/form_save_mixin.dart';
 import '../../project/widgets/project_picker_field.dart';
 import '../providers/life_item_providers.dart';
 
@@ -24,7 +25,8 @@ class LifeItemEditPage extends ConsumerStatefulWidget {
   ConsumerState<LifeItemEditPage> createState() => _LifeItemEditPageState();
 }
 
-class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
+class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
+    with FormSaveMixin<LifeItemEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
@@ -225,7 +227,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     return _repeatPeriod.value;
   }
 
-  void _save() {
+  Future<void> _save() async {
     // 守卫：终态/已删除事项整页只读，禁止任何写入（防绕过 UI）。
     if (_isReadonly) {
       ScaffoldMessenger.of(
@@ -237,57 +239,53 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     final notifier = ref.read(lifeItemNotifierProvider.notifier);
 
     if (_isEdit && _editId != null) {
-      ref
-          .read(databaseProvider)
-          .lifeItemDao
-          .getById(_editId!)
-          .then((item) {
-            return notifier.update(
-              item.copyWith(
-                title: _titleController.text.trim(),
-                description: Value(
-                  _descController.text.trim().isEmpty
-                      ? null
-                      : _descController.text.trim(),
-                ),
-                categoryId: Value(_selectedCategoryId),
-                projectId: Value(_projectId),
-                amount: Value(
-                  _amountType != AmountType.none
-                      ? MoneyFormatter.parse(_amountController.text)
-                      : null,
-                ),
-                amountType: _amountType.value,
-                dueTime: _dueDate,
-                remindTime: Value(_resolvedReminderTime()),
-                repeatRule: Value(_buildRepeatRule()),
-                updatedAt: DateTime.now(),
-              ),
-            );
-          })
-          .then((_) {
-            if (mounted) context.pop();
-          });
+      final item = await ref.read(databaseProvider).lifeItemDao.getById(
+        _editId!,
+      );
+      await runSave(() async {
+        await notifier.update(
+          item.copyWith(
+            title: _titleController.text.trim(),
+            description: Value(
+              _descController.text.trim().isEmpty
+                  ? null
+                  : _descController.text.trim(),
+            ),
+            categoryId: Value(_selectedCategoryId),
+            projectId: Value(_projectId),
+            amount: Value(
+              _amountType != AmountType.none
+                  ? MoneyFormatter.parse(_amountController.text)
+                  : null,
+            ),
+            amountType: _amountType.value,
+            dueTime: _dueDate,
+            remindTime: Value(_resolvedReminderTime()),
+            repeatRule: Value(_buildRepeatRule()),
+            updatedAt: DateTime.now(),
+          ),
+        );
+        if (mounted) context.pop();
+      });
     } else {
-      notifier
-          .create({
-            'title': _titleController.text.trim(),
-            'description': _descController.text.trim().isEmpty
-                ? null
-                : _descController.text.trim(),
-            'categoryId': _selectedCategoryId,
-            'projectId': _projectId,
-            'amount': _amountType != AmountType.none
-                ? MoneyFormatter.parse(_amountController.text)
-                : null,
-            'amountType': _amountType.value,
-            'dueTime': _dueDate,
-            'remindTime': _resolvedReminderTime(),
-            'repeatRule': _buildRepeatRule(),
-          })
-          .then((_) {
-            if (mounted) context.pop();
-          });
+      await runSave(() async {
+        await notifier.create({
+          'title': _titleController.text.trim(),
+          'description': _descController.text.trim().isEmpty
+              ? null
+              : _descController.text.trim(),
+          'categoryId': _selectedCategoryId,
+          'projectId': _projectId,
+          'amount': _amountType != AmountType.none
+              ? MoneyFormatter.parse(_amountController.text)
+              : null,
+          'amountType': _amountType.value,
+          'dueTime': _dueDate,
+          'remindTime': _resolvedReminderTime(),
+          'repeatRule': _buildRepeatRule(),
+        });
+        if (mounted) context.pop();
+      });
     }
   }
 
@@ -315,13 +313,18 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
           if (!_isEdit)
             IconButton(
               tooltip: '选择模板',
-              onPressed: _openTemplatePicker,
+              onPressed: isSaving ? null : _openTemplatePicker,
               icon: const Icon(Icons.auto_awesome_motion_outlined),
             ),
           IconButton(
             tooltip: _isEdit ? '保存修改' : '创建事项',
-            onPressed: _save,
-            icon: const Icon(Icons.check_rounded),
+            onPressed: isSaving ? null : _save,
+            icon: isSaving
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.check_rounded),
           ),
         ],
       ),
