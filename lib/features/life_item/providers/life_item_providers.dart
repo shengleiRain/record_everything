@@ -97,6 +97,19 @@ class LifeItemNotifier extends Notifier<void> {
     return updated;
   }
 
+  Future<LifeItem> cancel(int id) async {
+    final updated = await _repo.cancel(id);
+    await _scheduler.cancel(id);
+    return updated;
+  }
+
+  Future<LifeItem> reopen(int id) async {
+    final updated = await _repo.reopen(id);
+    // 重新打开后，若仍有未来的提醒时间，需要重新排提醒。
+    await _rebuildReminder(updated);
+    return updated;
+  }
+
   Future<LifeItem> defer(int id, DateTime newDate) async {
     final updated = await _repo.defer(id, newDate);
     await _rebuildReminder(updated);

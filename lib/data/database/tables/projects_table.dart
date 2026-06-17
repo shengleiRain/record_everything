@@ -6,7 +6,7 @@ class Projects extends Table {
   IntColumn get categoryId => integer().nullable()();
   TextColumn get participant => text().nullable()();
   TextColumn get projectStatus =>
-      text().withDefault(const Constant('planned'))();
+      text().withDefault(const Constant('active'))();
   DateTimeColumn get startDate => dateTime().nullable()();
   DateTimeColumn get endDate => dateTime().nullable()();
   IntColumn get totalAmount => integer().nullable()();

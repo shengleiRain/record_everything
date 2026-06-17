@@ -132,6 +132,14 @@ class LifeItemDetailPage extends ConsumerWidget {
                         onDefer: () => _defer(context, ref, item),
                       ),
                     ],
+                    if (!isDeleted &&
+                        (item.status == 'completed' ||
+                            item.status == 'cancelled')) ...[
+                      const SizedBox(height: 16),
+                      _ReopenPanel(
+                        onReopen: () => _reopen(context, ref, item),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -190,6 +198,14 @@ class LifeItemDetailPage extends ConsumerWidget {
       onDefer: () {
         _defer(context, ref, item);
       },
+      onCancel: () async {
+        await ref.read(lifeItemNotifierProvider.notifier).cancel(item.id);
+        if (!context.mounted) return;
+        Navigator.pop(context);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已取消事项')));
+      },
     );
   }
 
@@ -227,6 +243,14 @@ class LifeItemDetailPage extends ConsumerWidget {
         ref.read(lifeItemNotifierProvider.notifier).defer(item.id, date);
       }
     });
+  }
+
+  Future<void> _reopen(BuildContext context, WidgetRef ref, LifeItem item) async {
+    await ref.read(lifeItemNotifierProvider.notifier).reopen(item.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已重新打开事项')));
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, int id) {
@@ -419,6 +443,27 @@ class _ActionPanel extends StatelessWidget {
             onPressed: onDefer,
             icon: const Icon(Icons.schedule),
             label: const Text('延期'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReopenPanel extends StatelessWidget {
+  const _ReopenPanel({required this.onReopen});
+
+  final VoidCallback onReopen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onReopen,
+            icon: const Icon(Icons.restart_alt),
+            label: const Text('重新打开'),
           ),
         ),
       ],

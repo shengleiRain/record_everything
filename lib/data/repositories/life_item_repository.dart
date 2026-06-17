@@ -131,6 +131,64 @@ class LifeItemRepository {
     return updated;
   }
 
+  /// 取消事项：写入 cancelled 状态。
+  Future<LifeItem> cancel(int id) async {
+    final item = await _db.lifeItemDao.getById(id);
+    final updated = item.copyWith(
+      status: 'cancelled',
+      updatedAt: DateTime.now(),
+    );
+    await _db.lifeItemDao.updateOne(
+      LifeItemsCompanion(
+        id: Value(updated.id),
+        title: Value(updated.title),
+        description: Value(updated.description),
+        categoryId: Value(updated.categoryId),
+        projectId: Value(updated.projectId),
+        itemType: Value(updated.itemType),
+        amount: Value(updated.amount),
+        amountType: Value(updated.amountType),
+        dueTime: Value(updated.dueTime),
+        remindTime: Value(updated.remindTime),
+        repeatRule: Value(updated.repeatRule),
+        status: Value(updated.status),
+        createdAt: Value(updated.createdAt),
+        updatedAt: Value(updated.updatedAt),
+      ),
+    );
+    await _markCategoryUsed(updated.categoryId);
+    return updated;
+  }
+
+  /// 重新打开事项：从终态（completed/cancelled）回退到 pending。
+  Future<LifeItem> reopen(int id) async {
+    final item = await _db.lifeItemDao.getById(id);
+    final updated = item.copyWith(
+      status: 'pending',
+      updatedAt: DateTime.now(),
+    );
+    await _db.lifeItemDao.updateOne(
+      LifeItemsCompanion(
+        id: Value(updated.id),
+        title: Value(updated.title),
+        description: Value(updated.description),
+        categoryId: Value(updated.categoryId),
+        projectId: Value(updated.projectId),
+        itemType: Value(updated.itemType),
+        amount: Value(updated.amount),
+        amountType: Value(updated.amountType),
+        dueTime: Value(updated.dueTime),
+        remindTime: Value(updated.remindTime),
+        repeatRule: Value(updated.repeatRule),
+        status: Value(updated.status),
+        createdAt: Value(updated.createdAt),
+        updatedAt: Value(updated.updatedAt),
+      ),
+    );
+    await _markCategoryUsed(updated.categoryId);
+    return updated;
+  }
+
   Future<LifeItem> defer(int id, DateTime newDueTime) async {
     final item = await _db.lifeItemDao.getById(id);
     final updated = item.copyWith(

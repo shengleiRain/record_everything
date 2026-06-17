@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   static QueryExecutor openConnection() {
     return driftDatabase(name: 'life_items.db');
@@ -107,6 +107,15 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(itemTemplates);
         await _createItemTemplateIndexes();
         await _ensureDefaultItemTemplates();
+      }
+      if (from < 7) {
+        // 项目状态精简：移除「计划中(planned)/等待中(waiting)」，
+        // 已废弃的旧值统一归并到「进行中(active)」。schema 本身不变
+        //（project_status 仍是 TEXT），只迁移存量行。
+        await customStatement(
+          "UPDATE projects SET project_status = 'active' "
+          "WHERE project_status IN ('planned', 'waiting')",
+        );
       }
     },
   );

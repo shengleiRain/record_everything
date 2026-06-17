@@ -14,6 +14,7 @@ void showCompleteActionSheet({
       onCompleteAndBillAndNext,
   required VoidCallback onCompleteAndNext,
   required VoidCallback onDefer,
+  VoidCallback? onCancel,
 }) {
   final hasAmount = item.amount != null && item.amountType != 'none';
   final isRecurring = item.repeatRule != null;
@@ -82,7 +83,10 @@ void showCompleteActionSheet({
               color: AppColors.textHint,
             ),
             title: const Text('取消事项'),
-            onTap: () => sheetContext.safePop(),
+            onTap: () {
+              sheetContext.safePop();
+              onCancel?.call();
+            },
           ),
         ],
       ),

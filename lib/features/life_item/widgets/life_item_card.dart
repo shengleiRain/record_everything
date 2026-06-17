@@ -12,6 +12,7 @@ class LifeItemCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onComplete;
   final VoidCallback? onDefer;
+  final VoidCallback? onReopen;
 
   const LifeItemCard({
     super.key,
@@ -19,6 +20,7 @@ class LifeItemCard extends StatelessWidget {
     this.onTap,
     this.onComplete,
     this.onDefer,
+    this.onReopen,
   });
 
   @override
@@ -140,20 +142,29 @@ class LifeItemCard extends StatelessWidget {
       ),
     );
 
+    final isFinal = isCompleted || item.status == 'cancelled';
+
     final actions = <SwipeAction>[
-      if (!isCompleted && onComplete != null)
+      if (!isFinal && onComplete != null)
         SwipeAction(
           label: '完成',
           icon: Icons.check,
           color: AppColors.completed,
           onTap: onComplete!,
         ),
-      if (!isCompleted && onDefer != null)
+      if (!isFinal && onDefer != null)
         SwipeAction(
           label: '延期',
           icon: Icons.event_repeat,
           color: Colors.orange.shade800,
           onTap: onDefer!,
+        ),
+      if (isFinal && onReopen != null)
+        SwipeAction(
+          label: '重新打开',
+          icon: Icons.restart_alt,
+          color: Colors.blue,
+          onTap: onReopen!,
         ),
     ];
 

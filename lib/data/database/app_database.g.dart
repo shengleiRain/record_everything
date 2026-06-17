@@ -2859,7 +2859,7 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant('planned'),
+    defaultValue: const Constant('active'),
   );
   static const VerificationMeta _startDateMeta = const VerificationMeta(
     'startDate',

@@ -5,6 +5,7 @@ import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../../domain/enums/project_status.dart';
+import '../../../domain/enums/project_event_type.dart';
 import '../providers/project_providers.dart';
 import '../widgets/project_card.dart';
 
@@ -215,10 +216,22 @@ class _ProjectCategorySection extends ConsumerWidget {
   }
 
   void _archiveProject(BuildContext context, WidgetRef ref, Project project) {
+    final previous = ProjectStatus.fromString(project.projectStatus);
     final archived = project.copyWith(
       projectStatus: ProjectStatus.archived.value,
     );
     ref.read(projectNotifierProvider.notifier).update(archived);
+    // 归档同样写一条状态变更事件，保证审计一致。
+    ref
+        .read(projectNotifierProvider.notifier)
+        .addEvent(
+          projectId: project.id,
+          eventType: ProjectEventType.statusChange.value,
+          title: '状态变更: ${previous.label} -> 已归档',
+          description: '项目状态从 ${previous.label} 变为 已归档',
+          eventTime: DateTime.now(),
+          isSystem: true,
+        );
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('已归档项目')));

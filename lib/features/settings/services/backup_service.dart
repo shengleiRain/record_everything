@@ -265,7 +265,7 @@ class BackupService {
             ),
             participant: Value(_optionalString(map, 'participant')),
             projectStatus: Value(
-              _optionalString(map, 'projectStatus') ?? 'planned',
+              _optionalString(map, 'projectStatus') ?? 'active',
             ),
             startDate: Value(_optionalDate(map, 'startDate')),
             endDate: Value(_optionalDate(map, 'endDate')),

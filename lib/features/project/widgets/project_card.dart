@@ -152,9 +152,7 @@ class ProjectCard extends StatelessWidget {
   }
 
   Color _colorFor(ProjectStatus ps) => switch (ps) {
-    ProjectStatus.planned => Colors.blue,
     ProjectStatus.active => Colors.green,
-    ProjectStatus.waiting => Colors.orange,
     ProjectStatus.completed => Colors.teal,
     ProjectStatus.cancelled => Colors.grey,
     ProjectStatus.archived => Colors.brown,

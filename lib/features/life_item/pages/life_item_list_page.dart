@@ -115,6 +115,7 @@ class LifeItemListPage extends ConsumerWidget {
                         onComplete: () =>
                             _showCompleteAction(context, ref, item),
                         onDefer: () => _showDeferPicker(context, ref, item),
+                        onReopen: () => _reopenItem(context, ref, item),
                       ),
                     ),
                   ),
@@ -195,6 +196,13 @@ class LifeItemListPage extends ConsumerWidget {
       onDefer: () {
         _showDeferPicker(context, ref, item);
       },
+      onCancel: () async {
+        await ref.read(lifeItemNotifierProvider.notifier).cancel(item.id);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已取消事项')));
+      },
     );
   }
 
@@ -209,6 +217,18 @@ class LifeItemListPage extends ConsumerWidget {
         ref.read(lifeItemNotifierProvider.notifier).defer(item.id, date);
       }
     });
+  }
+
+  Future<void> _reopenItem(
+    BuildContext context,
+    WidgetRef ref,
+    LifeItem item,
+  ) async {
+    await ref.read(lifeItemNotifierProvider.notifier).reopen(item.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已重新打开事项')));
   }
 }
 

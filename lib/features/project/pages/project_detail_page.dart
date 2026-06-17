@@ -140,7 +140,10 @@ class _ProjectDetailBody extends ConsumerWidget {
   }
 
   void _showQuickActionsSheet(BuildContext context, WidgetRef ref) {
-    final nextStatus = _nextStatus(project.projectStatus);
+    final current = ProjectStatus.fromString(project.projectStatus);
+    final nextStatus = current.nextStatus;
+    final isDeleted = project.deletedAt != null;
+    final canManage = !isDeleted;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -157,41 +160,76 @@ class _ProjectDetailBody extends ConsumerWidget {
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-              _ActionTile(
-                key: const ValueKey('project-detail-action-add-item'),
-                icon: Icons.add_task,
-                label: '添加项目事项',
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  context.push('/items/new', extra: {'projectId': project.id});
-                },
-              ),
-              _ActionTile(
-                key: const ValueKey('project-detail-action-add-bill'),
-                icon: Icons.receipt_long,
-                label: '记一笔独立账单',
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  context.push('/bills/new', extra: {'projectId': project.id});
-                },
-              ),
-              _ActionTile(
-                icon: Icons.note_add_outlined,
-                label: '添加项目事件',
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  showProjectEventSheet(context, ref, project.id);
-                },
-              ),
-              if (nextStatus != null)
+              if (canManage) ...[
                 _ActionTile(
-                  icon: _statusAdvanceIcon(project.projectStatus),
-                  label: _statusAdvanceLabel(project.projectStatus),
+                  key: const ValueKey('project-detail-action-add-item'),
+                  icon: Icons.add_task,
+                  label: '添加项目事项',
                   onTap: () {
                     Navigator.of(sheetContext).pop();
-                    _advanceStatus(ref);
+                    context.push('/items/new', extra: {'projectId': project.id});
                   },
                 ),
+                _ActionTile(
+                  key: const ValueKey('project-detail-action-add-bill'),
+                  icon: Icons.receipt_long,
+                  label: '记一笔独立账单',
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    context.push('/bills/new', extra: {'projectId': project.id});
+                  },
+                ),
+                _ActionTile(
+                  icon: Icons.note_add_outlined,
+                  label: '添加项目事件',
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    showProjectEventSheet(context, ref, project.id);
+                  },
+                ),
+                // 推进状态（如 进行中 → 已完成）
+                if (nextStatus != null)
+                  _ActionTile(
+                    icon: current == ProjectStatus.active
+                        ? Icons.check
+                        : Icons.swap_horiz,
+                    label: current.advanceLabel,
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _changeStatus(ref, nextStatus);
+                    },
+                  ),
+                // 归档（仅已完成可归档）
+                if (current == ProjectStatus.completed)
+                  _ActionTile(
+                    icon: Icons.archive_outlined,
+                    label: '归档项目',
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _changeStatus(ref, ProjectStatus.archived);
+                    },
+                  ),
+                // 取消项目（非终态可取消）
+                if (!current.isFinal)
+                  _ActionTile(
+                    icon: Icons.cancel_outlined,
+                    label: '取消项目',
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _changeStatus(ref, ProjectStatus.cancelled);
+                    },
+                  ),
+                // 重新激活（终态可重开为进行中）
+                if (current.isFinal)
+                  _ActionTile(
+                    icon: Icons.restart_alt,
+                    label: '重新激活',
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      _changeStatus(ref, ProjectStatus.active);
+                    },
+                  ),
+              ],
             ],
           ),
         );
@@ -233,10 +271,12 @@ class _ProjectDetailBody extends ConsumerWidget {
     );
   }
 
-  Future<void> _advanceStatus(WidgetRef ref) async {
-    final next = _nextStatus(project.projectStatus);
-    if (next == null) return;
+  /// 统一的项目状态变更入口：更新状态并写一条 status_change 事件日志，
+  /// 保证状态流转与审计记录始终一致。所有状态变更（推进/取消/重开/归档）
+  /// 都走这里，禁止在编辑页直接改状态。
+  Future<void> _changeStatus(WidgetRef ref, ProjectStatus next) async {
     final previous = ProjectStatus.fromString(project.projectStatus);
+    if (previous == next) return;
     final now = DateTime.now();
     await ref
         .read(projectNotifierProvider.notifier)
@@ -252,30 +292,6 @@ class _ProjectDetailBody extends ConsumerWidget {
           isSystem: true,
         );
   }
-
-  ProjectStatus? _nextStatus(String current) => switch (current) {
-    'planned' => ProjectStatus.active,
-    'active' => ProjectStatus.completed,
-    'waiting' => ProjectStatus.completed,
-    'completed' => ProjectStatus.archived,
-    _ => null,
-  };
-
-  IconData _statusAdvanceIcon(String current) => switch (current) {
-    'planned' => Icons.play_arrow,
-    'active' => Icons.check,
-    'waiting' => Icons.check,
-    'completed' => Icons.archive_outlined,
-    _ => Icons.swap_horiz,
-  };
-
-  String _statusAdvanceLabel(String current) => switch (current) {
-    'planned' => '开始执行',
-    'active' => '标记完成',
-    'waiting' => '标记完成',
-    'completed' => '归档',
-    _ => '推进状态',
-  };
 }
 
 @visibleForTesting
@@ -952,9 +968,9 @@ class _ProjectFlowCard extends ConsumerWidget {
           ),
         ];
       }
-      if (item.status == 'completed') {
+      if (item.status == 'completed' || item.status == 'cancelled') {
         return [
-          if (isFinancial)
+          if (isFinancial && item.status == 'completed')
             SwipeAction(
               label: '补账',
               icon: Icons.receipt_long,
@@ -963,6 +979,12 @@ class _ProjectFlowCard extends ConsumerWidget {
                   : AppColors.expense,
               onTap: () => _openBillForItem(context, item),
             ),
+          SwipeAction(
+            label: '重新打开',
+            icon: Icons.restart_alt,
+            color: Colors.blue,
+            onTap: () => _reopenItem(context, ref, item),
+          ),
           SwipeAction(
             label: '删除',
             icon: Icons.delete_outline,
@@ -1028,6 +1050,18 @@ class _ProjectFlowCard extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('已完成事项')));
+  }
+
+  Future<void> _reopenItem(
+    BuildContext context,
+    WidgetRef ref,
+    LifeItem item,
+  ) async {
+    await ref.read(lifeItemNotifierProvider.notifier).reopen(item.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已重新打开事项')));
   }
 
   Future<void> _deferItem(

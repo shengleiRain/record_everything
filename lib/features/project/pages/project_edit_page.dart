@@ -37,7 +37,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
   final _participantController = TextEditingController();
   final _noteController = TextEditingController();
 
-  ProjectStatus _status = ProjectStatus.planned;
+  ProjectStatus _status = ProjectStatus.defaultStatus;
   int? _selectedCategoryId;
   DateTime? _startDate;
   DateTime? _endDate;
@@ -52,6 +52,9 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
   bool _loaded = false;
   bool _isTitleManuallyEdited = false;
   Map<int, String> _categoryNames = {};
+  /// 终态（已完成/已取消/已归档）或已软删除的项目，编辑页整页只读，
+  /// 状态只能通过详情页的「推进/取消/重开/归档」按钮变更。
+  bool _isReadonly = false;
 
   @override
   void initState() {
@@ -156,14 +159,16 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
     if (id == null) return;
     final project = await ref.read(databaseProvider).projectDao.getById(id);
     if (!mounted) return;
+    final status = ProjectStatus.fromString(project.projectStatus);
     setState(() {
       _titleController.text = project.title;
       _participantController.text = project.participant ?? '';
-      _status = ProjectStatus.fromString(project.projectStatus);
+      _status = status;
       _selectedCategoryId = project.categoryId;
       _startDate = project.startDate;
       _endDate = project.endDate;
       _noteController.text = project.note ?? '';
+      _isReadonly = status.isFinal || project.deletedAt != null;
     });
   }
 
@@ -327,6 +332,13 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
   }
 
   Future<void> _save() async {
+    // 守卫：终态/已删除项目整页只读，禁止任何写入（防绕过 UI）。
+    if (_isReadonly) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('项目已完结，不可编辑')),
+      );
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     if (_startDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -431,9 +443,13 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(_isEdit ? '编辑项目' : '新建项目'),
+        title: Text(
+          _isReadonly
+              ? '${_isEdit ? '项目' : '新建项目'}（只读）'
+              : (_isEdit ? '编辑项目' : '新建项目'),
+        ),
         actions: [
-          if (!_isEdit)
+          if (!_isEdit && !_isReadonly)
             TextButton(
               onPressed: _openTemplatePicker,
               child: Text(
@@ -445,15 +461,19 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
                 ),
               ),
             ),
-          IconButton(
-            key: const ValueKey('project-edit-save'),
-            tooltip: '保存',
-            icon: const Icon(Icons.check),
-            onPressed: _save,
-          ),
+          if (!_isReadonly)
+            IconButton(
+              key: const ValueKey('project-edit-save'),
+              tooltip: '保存',
+              icon: const Icon(Icons.check),
+              onPressed: _save,
+            ),
         ],
       ),
-      body: Form(
+      body: AbsorbPointer(
+        // 终态/已删除时禁用整页交互，使所有字段只读。
+        absorbing: _isReadonly,
+        child: Form(
         key: _formKey,
         child: CustomScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -580,6 +600,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
                 ),
             ],
           ],
+        ),
         ),
       ),
     );

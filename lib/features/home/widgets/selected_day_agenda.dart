@@ -129,6 +129,13 @@ class SelectedDayAgenda extends ConsumerWidget {
       onDefer: () {
         _showDeferPicker(context, ref, item);
       },
+      onCancel: () async {
+        await ref.read(lifeItemNotifierProvider.notifier).cancel(lifeItem.id);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已取消事项')));
+      },
     );
   }
 
