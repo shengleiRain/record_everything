@@ -16,13 +16,15 @@ import '../../../domain/enums/project_status.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
 import '../providers/project_providers.dart';
+import '../widgets/step_editor/step_draft.dart';
+import '../widgets/step_editor/step_draft_card.dart';
+import '../widgets/step_editor/step_editor_controller.dart';
+import '../widgets/step_editor/step_tab_strip.dart';
 
-const double _stepContentHorizontalInset = 16;
 const double _stepPageTopInset = 16;
 const double _stepPageBottomInset = 16;
 const double _stepPageBottomDragExtent = 56;
 const double _stepCardContentMinExtent = 430;
-const double _stepTabAddButtonGap = 8;
 
 class ProjectEditPage extends ConsumerStatefulWidget {
   const ProjectEditPage({super.key});
@@ -37,6 +39,8 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   final _titleController = TextEditingController();
   final _participantController = TextEditingController();
   final _noteController = TextEditingController();
+  final StepEditorController<_ProjectStepDraft> _stepEditor =
+      StepEditorController();
 
   ProjectStatus _status = ProjectStatus.defaultStatus;
   int? _selectedCategoryId;
@@ -44,10 +48,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   DateTime? _endDate;
   int? _selectedTemplateId;
   String? _pendingTemplateKey;
-  final List<_ProjectStepDraft> _stepDrafts = [];
-  late final PageController _stepPageController;
-  late final ScrollController _stepTabScrollController;
-  int _selectedStepIndex = 0;
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
@@ -57,13 +57,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   /// 终态（已完成/已取消/已归档）或已软删除的项目，编辑页整页只读，
   /// 状态只能通过详情页的「推进/取消/重开/归档」按钮变更。
   bool _isReadonly = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _stepPageController = PageController();
-    _stepTabScrollController = ScrollController();
-  }
 
   @override
   void didChangeDependencies() {
@@ -134,7 +127,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   }
 
   void _replaceStepDrafts(List<_ProjectStepDraft> drafts) {
-    for (final draft in _stepDrafts) {
+    for (final draft in _stepEditor.steps) {
       draft.dispose();
     }
     // Defer the setState to the next frame. This method is reached after an
@@ -147,12 +140,15 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       setState(() {
-        _stepDrafts
+        _stepEditor.steps
           ..clear()
           ..addAll(drafts);
-        _selectedStepIndex = 0;
+        _stepEditor.selectedIndex = 0;
       });
-      _syncStepPage(animate: false);
+      _stepEditor.syncStepPage(
+        notifyListeners: () => setState(() {}),
+        animate: false,
+      );
     });
   }
 
@@ -176,138 +172,26 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
 
   @override
   void dispose() {
-    _stepPageController.dispose();
-    _stepTabScrollController.dispose();
+    _stepEditor.dispose();
     _titleController.dispose();
     _participantController.dispose();
     _noteController.dispose();
-    for (final draft in _stepDrafts) {
+    for (final draft in _stepEditor.steps) {
       draft.dispose();
     }
     super.dispose();
   }
 
   List<ProjectTemplateStepInput> _enabledStepInputs() {
-    return _stepDrafts
+    return _stepEditor.steps
         .where((draft) => draft.titleController.text.trim().isNotEmpty)
         .map((draft) => draft.toInput())
         .toList(growable: false);
   }
 
-  int get _currentStepIndex {
-    if (_stepDrafts.isEmpty) return 0;
-    return _selectedStepIndex.clamp(0, _stepDrafts.length - 1).toInt();
-  }
-
-  void _addStep() {
-    setState(() {
-      final baseDate = _startDate ?? DateTime.now();
-      _stepDrafts.add(
-        _ProjectStepDraft(title: '新节点', baseDate: baseDate, dueDate: baseDate),
-      );
-      _selectedStepIndex = _stepDrafts.length - 1;
-    });
-    _syncStepPage();
-  }
-
-  void _deleteCurrentStep() {
-    if (_stepDrafts.isEmpty) return;
-    setState(() {
-      final removed = _stepDrafts.removeAt(_currentStepIndex);
-      removed.dispose();
-      _selectedStepIndex = _stepDrafts.isEmpty
-          ? 0
-          : _selectedStepIndex.clamp(0, _stepDrafts.length - 1).toInt();
-    });
-    _syncStepPage(animate: false);
-  }
-
-  void _selectStep(int index) {
-    if (_stepDrafts.isEmpty) return;
-    final next = index.clamp(0, _stepDrafts.length - 1).toInt();
-    if (next == _selectedStepIndex) return;
-    setState(() => _selectedStepIndex = next);
-    _syncStepPage();
-  }
-
-  void _reorderStep(int oldIndex, int newIndex) {
-    if (oldIndex == newIndex) return;
-    final selectedStep = _stepDrafts[_currentStepIndex];
-    setState(() {
-      if (oldIndex < newIndex) newIndex -= 1;
-      final moved = _stepDrafts.removeAt(oldIndex);
-      _stepDrafts.insert(newIndex, moved);
-      _selectedStepIndex = _stepDrafts.indexOf(selectedStep);
-    });
-    _syncStepPage(animate: false);
-  }
-
-  void _syncStepPage({bool animate = true}) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _stepDrafts.isEmpty) return;
-      final index = _currentStepIndex;
-      if (_stepPageController.hasClients) {
-        if (animate) {
-          _stepPageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 260),
-            curve: Curves.easeOutCubic,
-          );
-        } else {
-          _stepPageController.jumpToPage(index);
-        }
-      }
-      _syncStepTabScroll(index: index, animate: animate);
-    });
-  }
-
-  void _syncStepTabScroll({required int index, required bool animate}) {
-    if (!_stepTabScrollController.hasClients) return;
-    final position = _stepTabScrollController.position;
-    const itemExtent = _StepTabStrip.itemExtent;
-    const leadingPadding = 0.0;
-    final itemStart = leadingPadding + index * itemExtent;
-    final itemEnd = itemStart + itemExtent;
-    final visibleStart = position.pixels;
-    final visibleEnd = visibleStart + position.viewportDimension;
-
-    double? targetOffset;
-    if (itemStart < visibleStart) {
-      targetOffset = itemStart;
-    } else if (itemEnd > visibleEnd) {
-      targetOffset = itemEnd - position.viewportDimension;
-    }
-    if (targetOffset == null) return;
-
-    final clampedOffset = targetOffset.clamp(
-      position.minScrollExtent,
-      position.maxScrollExtent,
-    );
-    if ((clampedOffset - position.pixels).abs() < 0.5) return;
-
-    if (animate) {
-      _stepTabScrollController.animateTo(
-        clampedOffset,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-      );
-    } else {
-      _stepTabScrollController.jumpTo(clampedOffset);
-    }
-  }
-
-  void _handlePageChanged(int index) {
-    if (index == _selectedStepIndex) return;
-    setState(() => _selectedStepIndex = index);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _syncStepTabScroll(index: _currentStepIndex, animate: true);
-    });
-  }
-
   void _updateStepDates() {
     final baseDate = _startDate ?? DateTime.now();
-    for (final draft in _stepDrafts) {
+    for (final draft in _stepEditor.steps) {
       draft.updateDueDate(baseDate);
     }
   }
@@ -429,6 +313,21 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
     );
   }
 
+  void _addStep() {
+    final baseDate = _startDate ?? DateTime.now();
+    _stepEditor.addStep(
+      _ProjectStepDraft(title: '新节点', baseDate: baseDate, dueDate: baseDate),
+      notifyListeners: () => setState(() {}),
+    );
+  }
+
+  void _deleteCurrentStep() {
+    _stepEditor.deleteCurrent(
+      notifyListeners: () => setState(() {}),
+      disposeRemoved: (removed) => removed.dispose(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isReadonly) {
@@ -452,7 +351,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
     final templates = ref.watch(projectTemplatesProvider).valueOrNull;
     _applyPendingTemplateSelection(templates);
 
-    final currentStepIndex = _currentStepIndex;
+    final currentStepIndex = _stepEditor.currentIndex;
     final mediaQuery = MediaQuery.of(context);
     final bottomPadding = mediaQuery.viewPadding.bottom + _stepPageBottomInset;
     final keyboardInset = mediaQuery.viewInsets.bottom;
@@ -541,21 +440,31 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
               if (!_isEdit) ...[
                 SliverPersistentHeader(
                   pinned: true,
-                  delegate: _StepTabHeader(
-                    scrollController: _stepTabScrollController,
-                    steps: _stepDrafts,
+                  delegate: StepTabHeader<_ProjectStepDraft>(
+                    scrollController: _stepEditor.tabScrollController,
+                    steps: _stepEditor.steps,
                     selectedIndex: currentStepIndex,
-                    onReorder: _reorderStep,
-                    onSelected: _selectStep,
+                    onReorder: (oldIndex, newIndex) =>
+                        _stepEditor.reorderStep(
+                          oldIndex,
+                          newIndex,
+                          notifyListeners: () => setState(() {}),
+                        ),
+                    onSelected: (index) => _stepEditor.selectStep(
+                      index,
+                      notifyListeners: () => setState(() {}),
+                    ),
                     onAdd: _addStep,
+                    keyPrefix: 'project-edit',
                   ),
                 ),
-                if (_stepDrafts.isNotEmpty)
+                if (_stepEditor.steps.isNotEmpty)
                   SliverLayoutBuilder(
                     builder: (context, constraints) {
                       final workspaceHeight =
                           constraints.viewportMainAxisExtent + keyboardInset;
-                      final minHeight = workspaceHeight - _StepTabHeader.extent;
+                      final minHeight =
+                          workspaceHeight - StepTabHeader.extent;
                       final contentHeight =
                           _stepPageTopInset +
                           _stepCardContentMinExtent +
@@ -568,9 +477,14 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                         child: SizedBox(
                           height: pageHeight < 0 ? 0 : pageHeight,
                           child: PageView.builder(
-                            controller: _stepPageController,
-                            itemCount: _stepDrafts.length,
-                            onPageChanged: _handlePageChanged,
+                            key: const ValueKey('project-edit-step-page-view'),
+                            controller: _stepEditor.pageController,
+                            itemCount: _stepEditor.steps.length,
+                            onPageChanged: (index) =>
+                                _stepEditor.handlePageChanged(
+                                  index,
+                                  notifyListeners: () => setState(() {}),
+                                ),
                             itemBuilder: (context, index) {
                               return ColoredBox(
                                 color: Colors.transparent,
@@ -583,9 +497,9 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                                         bottomPadding;
                                     return Padding(
                                       padding: EdgeInsets.fromLTRB(
-                                        _stepContentHorizontalInset,
+                                        16,
                                         _stepPageTopInset,
-                                        _stepContentHorizontalInset,
+                                        16,
                                         bottomPadding,
                                       ),
                                       child: Column(
@@ -593,17 +507,54 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                                           Align(
                                             alignment: Alignment.topCenter,
                                             child: ConstrainedBox(
+                                              key: ValueKey(
+                                                'project-edit-step-card-frame-$index',
+                                              ),
                                               constraints: BoxConstraints(
                                                 maxWidth: 560,
                                                 minHeight: cardMinHeight < 0
                                                     ? 0
                                                     : cardMinHeight,
                                               ),
-                                              child: _ProjectStepDraftCard(
-                                                draft: _stepDrafts[index],
+                                              child: StepDraftCard<
+                                                _ProjectStepDraft
+                                              >(
+                                                key: ValueKey(
+                                                  'project-edit-step-card-${_stepEditor.steps[index].localId}',
+                                                ),
+                                                draft: _stepEditor.steps[index],
+                                                amountLabel: '金额',
+                                                titleFieldKey: const ValueKey(
+                                                  'project-edit-step-title-field',
+                                                ),
+                                                amountFieldKey: const ValueKey(
+                                                  'project-edit-step-amount-field',
+                                                ),
                                                 onChanged: () =>
                                                     setState(() {}),
                                                 onDelete: _deleteCurrentStep,
+                                                extraSlot: (draft) => DateField(
+                                                  label: '到期日期',
+                                                  value: DateFormatter.formatDate(
+                                                    draft.dueDate,
+                                                  ),
+                                                  onTap: () async {
+                                                    final picked =
+                                                        await showDatePicker(
+                                                          context: context,
+                                                          initialDate:
+                                                              draft.dueDate,
+                                                          firstDate:
+                                                              DateTime(2020),
+                                                          lastDate:
+                                                              DateTime(2035),
+                                                        );
+                                                    if (picked != null) {
+                                                      draft.setDueDate(picked);
+                                                      setState(() {});
+                                                    }
+                                                  },
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -979,23 +930,24 @@ class _ReadonlyMessage extends StatelessWidget {
 
 // ==================== 节点部分 ====================
 
-class _ProjectStepDraft {
+/// Project-page-specific draft: adds an absolute due date instead of a
+/// relative offset.
+base class _ProjectStepDraft extends StepDraft {
   _ProjectStepDraft({
     required String title,
-    this.amountType = AmountType.none,
+    AmountType amountType = AmountType.none,
     int? amount,
     required DateTime baseDate,
     required DateTime dueDate,
-  }) : localId = _nextLocalId++,
-       titleController = TextEditingController(text: title),
-       amountController = TextEditingController(
-         text: amount == null ? '' : (amount / 100).toStringAsFixed(2),
-       ),
-       _dueDate = dueDate;
-
-  static int _nextLocalId = 0;
-
-  final int localId;
+  })  : localId = StepDraftIdGenerator.nextId(),
+        _amountType = amountType,
+        _dueDate = dueDate,
+        super.internal(
+          titleController: TextEditingController(text: title),
+          amountController: TextEditingController(
+            text: amount == null ? '' : (amount / 100).toStringAsFixed(2),
+          ),
+        );
 
   factory _ProjectStepDraft.fromStep(
     ProjectTemplateStep step, {
@@ -1011,9 +963,17 @@ class _ProjectStepDraft {
     );
   }
 
-  final TextEditingController titleController;
-  final TextEditingController amountController;
-  AmountType amountType;
+  @override
+  final int localId;
+
+  AmountType _amountType;
+
+  @override
+  AmountType get amountType => _amountType;
+
+  @override
+  set amountType(AmountType value) => _amountType = value;
+
   DateTime _dueDate;
 
   DateTime get dueDate => _dueDate;
@@ -1027,487 +987,23 @@ class _ProjectStepDraft {
     _dueDate = date;
   }
 
+  @override
+  int? get amount => amountType == AmountType.none
+      ? null
+      : MoneyFormatter.parse(amountController.text);
+
   ProjectTemplateStepInput toInput() {
     return ProjectTemplateStepInput(
       title: titleController.text.trim(),
       amountType: amountType.value,
       offsetDays: 0, // 不再使用相对天数
-      amount: amountType == AmountType.none
-          ? null
-          : MoneyFormatter.parse(amountController.text),
+      amount: amount,
     );
   }
 
+  @override
   void dispose() {
     titleController.dispose();
     amountController.dispose();
   }
 }
-
-class _StepTabHeader extends SliverPersistentHeaderDelegate {
-  const _StepTabHeader({
-    required this.scrollController,
-    required this.steps,
-    required this.selectedIndex,
-    required this.onReorder,
-    required this.onSelected,
-    required this.onAdd,
-  });
-
-  final ScrollController scrollController;
-  final List<_ProjectStepDraft> steps;
-  final int selectedIndex;
-  final ReorderCallback onReorder;
-  final ValueChanged<int> onSelected;
-  final VoidCallback onAdd;
-
-  static const double extent = 60;
-
-  @override
-  double get maxExtent => extent;
-
-  @override
-  double get minExtent => extent;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Material(
-      color: AppColors.background,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          _stepContentHorizontalInset,
-          6,
-          _stepContentHorizontalInset,
-          6,
-        ),
-        child: SizedBox(
-          height: 48,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final hasSteps = steps.isNotEmpty;
-              final buttonWidth = hasSteps
-                  ? _AnimatedAddButton.collapsedExtent
-                  : _AnimatedAddButton.expandedWidth;
-              final tabLimit =
-                  constraints.maxWidth -
-                  buttonWidth -
-                  (hasSteps ? _stepTabAddButtonGap : 0);
-              final tabWidth = hasSteps
-                  ? _StepTabStrip.widthForCount(
-                      steps.length,
-                    ).clamp(0.0, tabLimit < 0 ? 0.0 : tabLimit).toDouble()
-                  : 0.0;
-
-              return Row(
-                children: [
-                  if (hasSteps)
-                    AnimatedContainer(
-                      key: const ValueKey('project-edit-tab-area'),
-                      duration: _AnimatedAddButton.duration,
-                      curve: _AnimatedAddButton.curve,
-                      width: tabWidth,
-                      child: _StepTabStrip(
-                        scrollController: scrollController,
-                        steps: steps,
-                        selectedIndex: selectedIndex,
-                        onReorder: onReorder,
-                        onSelected: onSelected,
-                      ),
-                    ),
-                  if (hasSteps) const SizedBox(width: _stepTabAddButtonGap),
-                  _AnimatedAddButton(
-                    key: const ValueKey('project-edit-add-step'),
-                    isEmpty: !hasSteps,
-                    onPressed: onAdd,
-                  ),
-                  const Spacer(),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _StepTabHeader oldDelegate) => true;
-}
-
-class _AnimatedAddButton extends StatelessWidget {
-  const _AnimatedAddButton({
-    super.key,
-    required this.isEmpty,
-    required this.onPressed,
-  });
-
-  final bool isEmpty;
-  final VoidCallback onPressed;
-
-  static const double collapsedExtent = 44;
-  static const double expandedWidth = 112;
-  static const Duration duration = Duration(milliseconds: 260);
-  static const Curve curve = Curves.easeOutCubic;
-
-  @override
-  Widget build(BuildContext context) {
-    final backgroundColor = isEmpty ? AppColors.surface : AppColors.primary;
-    final foregroundColor = isEmpty ? AppColors.primary : Colors.white;
-
-    return Tooltip(
-      message: '添加节点',
-      child: AnimatedContainer(
-        duration: duration,
-        curve: curve,
-        width: isEmpty ? expandedWidth : collapsedExtent,
-        height: collapsedExtent,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(collapsedExtent / 2),
-          border: Border.all(
-            color: isEmpty
-                ? AppColors.primary.withValues(alpha: 0.35)
-                : AppColors.primary,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: isEmpty ? 0.08 : 0.16),
-              blurRadius: isEmpty ? 8 : 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(collapsedExtent / 2),
-            onTap: onPressed,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final showLabel = isEmpty && constraints.maxWidth >= 96;
-                return AnimatedPadding(
-                  duration: duration,
-                  curve: curve,
-                  padding: EdgeInsets.symmetric(horizontal: showLabel ? 10 : 0),
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.add_rounded,
-                          size: 20,
-                          color: foregroundColor,
-                        ),
-                        if (showLabel) ...[
-                          const SizedBox(width: 4),
-                          Text(
-                            '添加节点',
-                            maxLines: 1,
-                            overflow: TextOverflow.clip,
-                            textAlign: TextAlign.center,
-                            strutStyle: const StrutStyle(
-                              fontSize: 14,
-                              height: 1,
-                              forceStrutHeight: true,
-                            ),
-                            textHeightBehavior: const TextHeightBehavior(
-                              applyHeightToFirstAscent: false,
-                              applyHeightToLastDescent: false,
-                            ),
-                            style: Theme.of(context).textTheme.labelMedium
-                                ?.copyWith(
-                                  color: foregroundColor,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1,
-                                ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StepTabStrip extends StatelessWidget {
-  const _StepTabStrip({
-    required this.scrollController,
-    required this.steps,
-    required this.selectedIndex,
-    required this.onReorder,
-    required this.onSelected,
-  });
-
-  static const double itemExtent = 112;
-
-  static double widthForCount(int count) {
-    if (count <= 0) return 0;
-    return itemExtent * count;
-  }
-
-  final ScrollController scrollController;
-  final List<_ProjectStepDraft> steps;
-  final int selectedIndex;
-  final ReorderCallback onReorder;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    if (steps.isEmpty) return const SizedBox.shrink();
-
-    return ReorderableListView.builder(
-      key: const ValueKey('project-edit-step-tabs'),
-      scrollController: scrollController,
-      scrollDirection: Axis.horizontal,
-      buildDefaultDragHandles: false,
-      itemExtent: itemExtent,
-      padding: EdgeInsets.zero,
-      proxyDecorator: (child, index, animation) {
-        return Material(
-          color: Colors.transparent,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 1, end: 1.04).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      itemCount: steps.length,
-      onReorder: onReorder,
-      itemBuilder: (context, index) {
-        final trailingGap = index == steps.length - 1 ? 0.0 : 6.0;
-        return Padding(
-          key: ValueKey('project-edit-step-tab-${steps[index].localId}'),
-          padding: EdgeInsets.only(right: trailingGap),
-          child: ReorderableDelayedDragStartListener(
-            key: ValueKey('project-edit-step-tab-drag-$index'),
-            index: index,
-            child: _StepTab(
-              index: index,
-              title: steps[index].titleController.text.trim(),
-              selected: index == selectedIndex,
-              onSelected: () => onSelected(index),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _StepTab extends StatelessWidget {
-  const _StepTab({
-    required this.index,
-    required this.title,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final int index;
-  final String title;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final foreground = selected ? AppColors.primaryDark : AppColors.textPrimary;
-    final badgeBg = selected ? AppColors.primary : AppColors.primaryLight;
-    final badgeFg = selected ? Colors.white : AppColors.primary;
-    final displayTitle = title.isNotEmpty ? title : '未命名节点';
-    return InkWell(
-      key: ValueKey('project-edit-step-tab-button-$index'),
-      borderRadius: BorderRadius.circular(10),
-      onTap: onSelected,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: selected ? AppColors.primaryLight : colorScheme.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: selected
-                      ? AppColors.primary
-                      : Colors.black.withValues(alpha: 0.08),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 6, 8, 6),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    displayTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: foreground,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            top: 0,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: badgeBg,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(10),
-                  bottomRight: Radius.circular(8),
-                ),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.18),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: SizedBox(
-                width: 24,
-                height: 18,
-                child: Center(
-                  child: Text(
-                    '${index + 1}',
-                    style: TextStyle(
-                      color: badgeFg,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProjectStepDraftCard extends StatelessWidget {
-  const _ProjectStepDraftCard({
-    required this.draft,
-    required this.onChanged,
-    required this.onDelete,
-  });
-
-  final _ProjectStepDraft draft;
-  final VoidCallback onChanged;
-  final VoidCallback? onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 48),
-              child: Column(
-                children: [
-                  TextFormField(
-                    key: const ValueKey('project-edit-step-title-field'),
-                    controller: draft.titleController,
-                    decoration: const InputDecoration(labelText: '节点标题 *'),
-                    onChanged: (_) => onChanged(),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? '请输入节点标题'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  AppDropdownField<AmountType>(
-                    label: '金额类型',
-                    value: draft.amountType,
-                    options: AmountType.values
-                        .map(
-                          (type) =>
-                              AppDropdownOption(value: type, label: type.label),
-                        )
-                        .toList(),
-                    onSelected: (value) {
-                      draft.amountType = value ?? draft.amountType;
-                      onChanged();
-                    },
-                  ),
-                  if (draft.amountType != AmountType.none) ...[
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: draft.amountController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: '金额',
-                        prefixText: '¥',
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  DateField(
-                    label: '到期日期',
-                    value: DateFormatter.formatDate(draft.dueDate),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: draft.dueDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2035),
-                      );
-                      if (picked != null) {
-                        draft.setDueDate(picked);
-                        onChanged();
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: SizedBox.square(
-                dimension: 48,
-                child: IconButton(
-                  tooltip: '删除节点',
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.close),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ==================== 通用组件 ====================
