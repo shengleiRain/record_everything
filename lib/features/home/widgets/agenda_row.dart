@@ -107,7 +107,7 @@ class AgendaRow extends StatelessWidget {
     );
 
     final actions = <SwipeAction>[
-      if (item.kind == AgendaItemKind.lifeItem && !item.isCompleted) ...[
+      if (item.kind == AgendaItemKind.lifeItem && item.status == 'pending') ...[
         if (onComplete != null)
           SwipeAction(
             label: '完成',
@@ -212,10 +212,10 @@ class AgendaRow extends StatelessWidget {
         final lifeItem = item.lifeItem;
         if (lifeItem == null) return '';
         if (item.isCompleted) {
-          return '完成于 ${lifeItem.updatedAt.month}/${lifeItem.updatedAt.day}';
+          return DateFormatter.formatDateTime(lifeItem.updatedAt);
         }
         return [
-          DateFormatter.formatRelative(lifeItem.dueTime),
+          DateFormatter.formatDateWithRelative(lifeItem.dueTime),
           if (lifeItem.repeatRule != null) '重复',
         ].join(' · ');
       case AgendaItemKind.billRecord:

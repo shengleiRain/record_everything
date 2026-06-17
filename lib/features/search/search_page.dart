@@ -5,9 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/card_parts.dart';
 import '../../core/widgets/swipe_action_reveal.dart';
+import '../../domain/enums/item_status.dart';
+import '../../domain/enums/project_status.dart';
 import '../bill/providers/bill_providers.dart';
 import '../bill/widgets/bill_detail_sheet.dart';
 import '../life_item/providers/life_item_providers.dart';
+import '../life_item/widgets/life_item_detail_sheet.dart';
 import '../project/providers/project_providers.dart';
 import '../project/widgets/project_name_chip.dart';
 import 'search_service.dart';
@@ -163,7 +166,7 @@ class _SearchResultRow extends ConsumerWidget {
     );
 
     final actions = <SwipeAction>[
-      if (result.kind == SearchResultKind.lifeItem) ...[
+      if (result.kind == SearchResultKind.lifeItem && _canMutateLifeItem) ...[
         SwipeAction(
           label: '完成',
           icon: Icons.check,
@@ -186,7 +189,7 @@ class _SearchResultRow extends ConsumerWidget {
           label: '编辑',
           icon: Icons.edit_outlined,
           color: AppColors.primary,
-          onTap: () => context.push('/bills/${result.id}'),
+          onTap: () => context.push('/bills/${result.id}/edit'),
         ),
         SwipeAction(
           label: '删除',
@@ -195,7 +198,7 @@ class _SearchResultRow extends ConsumerWidget {
           onTap: () => _confirmDeleteBill(context, ref),
         ),
       ],
-      if (result.kind == SearchResultKind.project)
+      if (result.kind == SearchResultKind.project && _canEditProject)
         SwipeAction(
           label: '编辑',
           icon: Icons.edit_outlined,
@@ -210,7 +213,10 @@ class _SearchResultRow extends ConsumerWidget {
   void _open(BuildContext context, WidgetRef ref) {
     switch (result.kind) {
       case SearchResultKind.lifeItem:
-        context.push('/items/${result.id}');
+        final item = result.lifeItem;
+        if (item != null) {
+          showLifeItemDetailSheet(context, ref, item);
+        }
       case SearchResultKind.billRecord:
         _openBill(context, ref);
       case SearchResultKind.project:
@@ -219,9 +225,14 @@ class _SearchResultRow extends ConsumerWidget {
   }
 
   Future<void> _openBill(BuildContext context, WidgetRef ref) async {
-    final bill = await ref.read(billRepoProvider).watchById(result.id).first;
+    final bill = result.billRecord;
+    if (bill != null) {
+      showBillDetailSheet(context, ref, bill);
+      return;
+    }
+    final loaded = await ref.read(billRepoProvider).watchById(result.id).first;
     if (!context.mounted) return;
-    showBillDetailSheet(context, ref, bill);
+    showBillDetailSheet(context, ref, loaded);
   }
 
   Future<void> _defer(BuildContext context, WidgetRef ref) async {
@@ -257,5 +268,17 @@ class _SearchResultRow extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  bool get _canMutateLifeItem {
+    final item = result.lifeItem;
+    if (item == null || item.deletedAt != null) return false;
+    return ItemStatus.fromString(item.status) == ItemStatus.pending;
+  }
+
+  bool get _canEditProject {
+    final project = result.project;
+    if (project == null || project.deletedAt != null) return false;
+    return !ProjectStatus.fromString(project.projectStatus).isFinal;
   }
 }

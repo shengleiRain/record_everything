@@ -6,6 +6,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/card_parts.dart';
+import '../../../core/widgets/sheet_action_layout.dart';
+import '../../../data/database/database_provider.dart';
+import '../../life_item/providers/life_item_providers.dart';
 import '../../project/widgets/project_name_chip.dart';
 import '../providers/bill_providers.dart';
 import '../../../data/database/app_database.dart';
@@ -25,6 +28,7 @@ Future<void> showBillDetailSheet(
     builder: (sheetContext) {
       final isIncome = bill.amountType == 'income';
       final accent = isIncome ? AppColors.income : AppColors.expense;
+      final isDeleted = bill.deletedAt != null;
       return SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -51,7 +55,10 @@ Future<void> showBillDetailSheet(
                 _DetailInfoRow(
                   label: '类型',
                   value: isIncome ? '收入' : '支出',
+                  valueColor: accent,
                 ),
+                if (bill.categoryId != null)
+                  _CategoryInfoRow(categoryId: bill.categoryId!),
                 if (bill.note?.trim().isNotEmpty == true)
                   _DetailInfoRow(label: '备注', value: bill.note!.trim()),
                 if (bill.projectId != null) ...[
@@ -69,37 +76,44 @@ Future<void> showBillDetailSheet(
                     ],
                   ),
                 ],
+                if (bill.lifeItemId != null)
+                  _LinkedLifeItemInfoRow(lifeItemId: bill.lifeItemId!),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
+                if (isDeleted)
+                  _DetailActionRow(
+                    children: [
+                      FilledButton.icon(
                         onPressed: () {
                           Navigator.of(sheetContext).pop();
-                          context.push('/bills/${bill.id}');
+                          ref.read(billRepoProvider).restoreRecord(bill.id);
+                        },
+                        icon: const Icon(Icons.restore),
+                        label: const Text('恢复账单'),
+                      ),
+                    ],
+                  )
+                else
+                  _DetailActionRow(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          context.push('/bills/${bill.id}/edit');
                         },
                         icon: const Icon(Icons.edit_outlined),
                         label: const Text('编辑'),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: FilledButton.icon(
+                      FilledButton.icon(
                         style: FilledButton.styleFrom(
                           backgroundColor: AppColors.overdue,
                         ),
-                        onPressed: () => _confirmDelete(
-                          sheetContext,
-                          context,
-                          ref,
-                          bill,
-                        ),
+                        onPressed: () =>
+                            _confirmDelete(sheetContext, context, ref, bill),
                         icon: const Icon(Icons.delete_outline),
                         label: const Text('删除'),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -163,18 +177,16 @@ class _SheetHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 2),
               Text(
                 '账单',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -193,10 +205,15 @@ class _SheetHeader extends StatelessWidget {
 }
 
 class _DetailInfoRow extends StatelessWidget {
-  const _DetailInfoRow({required this.label, required this.value});
+  const _DetailInfoRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 
   final String label;
   final String value;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -209,23 +226,64 @@ class _DetailInfoRow extends StatelessWidget {
             width: 72,
             child: Text(
               label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: valueColor ?? AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+class _CategoryInfoRow extends ConsumerWidget {
+  const _CategoryInfoRow({required this.categoryId});
+
+  final int categoryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return FutureBuilder<Category>(
+      future: ref.read(databaseProvider).categoryDao.getById(categoryId),
+      builder: (context, snapshot) {
+        final category = snapshot.data;
+        if (category == null) return const SizedBox.shrink();
+        return _DetailInfoRow(label: '分类', value: category.name);
+      },
+    );
+  }
+}
+
+class _LinkedLifeItemInfoRow extends ConsumerWidget {
+  const _LinkedLifeItemInfoRow({required this.lifeItemId});
+
+  final int lifeItemId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final item = ref.watch(lifeItemByIdProvider(lifeItemId)).valueOrNull;
+    if (item == null || item.deletedAt != null) return const SizedBox.shrink();
+    return _DetailInfoRow(label: '关联事项', value: item.title);
+  }
+}
+
+class _DetailActionRow extends StatelessWidget {
+  const _DetailActionRow({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SheetActionLayout(children: children);
   }
 }

@@ -38,6 +38,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
   int? _editId;
   bool _loaded = false;
   List<Category> _categories = [];
+  bool _isReadonly = false;
 
   @override
   void initState() {
@@ -102,6 +103,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
       _projectId = bill.projectId;
       _lifeItemId = bill.lifeItemId;
       _noteController.text = bill.note ?? '';
+      _isReadonly = bill.deletedAt != null;
     });
   }
 
@@ -115,6 +117,16 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isReadonly) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: const Text('账单（只读）')),
+        body: const _ReadonlyMessage(
+          title: '账单已删除',
+          message: '回收站中的账单不能编辑，恢复后再修改。',
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -247,6 +259,12 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
   }
 
   void _save() {
+    if (_isReadonly) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('账单已删除，不可编辑')));
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     final notifier = ref.read(billNotifierProvider.notifier);
 
@@ -326,3 +344,44 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
   }
 }
 
+class _ReadonlyMessage extends StatelessWidget {
+  const _ReadonlyMessage({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_outline, size: 48, color: AppColors.textHint),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => context.go('/bills'),
+              child: const Text('返回账单列表'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

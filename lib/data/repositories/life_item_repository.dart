@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../../domain/models/repeat_rule.dart';
+import '../../domain/enums/item_status.dart';
 
 class LifeItemRepository {
   final AppDatabase _db;
@@ -105,6 +106,7 @@ class LifeItemRepository {
 
   Future<LifeItem> complete(int id) async {
     final item = await _db.lifeItemDao.getById(id);
+    _ensureItemTransition(item, ItemStatus.completed);
     final updated = item.copyWith(
       status: 'completed',
       updatedAt: DateTime.now(),
@@ -134,6 +136,7 @@ class LifeItemRepository {
   /// 取消事项：写入 cancelled 状态。
   Future<LifeItem> cancel(int id) async {
     final item = await _db.lifeItemDao.getById(id);
+    _ensureItemTransition(item, ItemStatus.cancelled);
     final updated = item.copyWith(
       status: 'cancelled',
       updatedAt: DateTime.now(),
@@ -163,10 +166,8 @@ class LifeItemRepository {
   /// 重新打开事项：从终态（completed/cancelled）回退到 pending。
   Future<LifeItem> reopen(int id) async {
     final item = await _db.lifeItemDao.getById(id);
-    final updated = item.copyWith(
-      status: 'pending',
-      updatedAt: DateTime.now(),
-    );
+    _ensureItemTransition(item, ItemStatus.pending);
+    final updated = item.copyWith(status: 'pending', updatedAt: DateTime.now());
     await _db.lifeItemDao.updateOne(
       LifeItemsCompanion(
         id: Value(updated.id),
@@ -249,5 +250,14 @@ class LifeItemRepository {
   Future<void> _markCategoryUsed(int? categoryId) async {
     if (categoryId == null) return;
     await _db.categoryDao.markUsed(categoryId);
+  }
+
+  void _ensureItemTransition(LifeItem item, ItemStatus next) {
+    final previous = ItemStatus.fromString(item.status);
+    if (!previous.canTransitionTo(next)) {
+      throw StateError(
+        'Invalid item status transition: ${previous.value} -> ${next.value}',
+      );
+    }
   }
 }

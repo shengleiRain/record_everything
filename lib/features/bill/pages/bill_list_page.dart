@@ -152,7 +152,8 @@ class _BillListPageState extends ConsumerState<BillListPage> {
                       bills: groups[index].bills,
                       onBillTap: (bill) =>
                           showBillDetailSheet(context, ref, bill),
-                      onBillEdit: (bill) => context.push('/bills/${bill.id}'),
+                      onBillEdit: (bill) =>
+                          context.push('/bills/${bill.id}/edit'),
                       onBillDelete: (bill) => _confirmDelete(bill),
                     ),
                   ),

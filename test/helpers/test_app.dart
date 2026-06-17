@@ -9,7 +9,6 @@ import 'package:record_everything/data/database/database_provider.dart';
 import 'package:record_everything/features/bill/pages/bill_edit_page.dart';
 import 'package:record_everything/features/bill/pages/bill_list_page.dart';
 import 'package:record_everything/features/home/pages/home_page.dart';
-import 'package:record_everything/features/life_item/pages/life_item_detail_page.dart';
 import 'package:record_everything/features/life_item/pages/life_item_edit_page.dart';
 import 'package:record_everything/features/life_item/pages/life_item_list_page.dart';
 import 'package:record_everything/features/settings/pages/settings_page.dart';
@@ -120,10 +119,6 @@ GoRouter _createTestRouter() {
               GoRoute(
                 path: 'new',
                 builder: (context, state) => const LifeItemEditPage(),
-              ),
-              GoRoute(
-                path: ':id',
-                builder: (context, state) => const LifeItemDetailPage(),
               ),
               GoRoute(
                 path: ':id/edit',

@@ -52,6 +52,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
   bool _loaded = false;
   bool _isTitleManuallyEdited = false;
   Map<int, String> _categoryNames = {};
+
   /// 终态（已完成/已取消/已归档）或已软删除的项目，编辑页整页只读，
   /// 状态只能通过详情页的「推进/取消/重开/归档」按钮变更。
   bool _isReadonly = false;
@@ -334,16 +335,16 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
   Future<void> _save() async {
     // 守卫：终态/已删除项目整页只读，禁止任何写入（防绕过 UI）。
     if (_isReadonly) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('项目已完结，不可编辑')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('项目已完结，不可编辑')));
       return;
     }
     if (!_formKey.currentState!.validate()) return;
     if (_startDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请选择关键日期')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('请选择关键日期')));
       return;
     }
     final notifier = ref.read(projectNotifierProvider.notifier);
@@ -428,6 +429,24 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isReadonly) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: const Text('项目（只读）')),
+        body: _ReadonlyMessage(
+          title: '项目已完结',
+          message: '只读状态的项目不能编辑，可在项目详情中重新激活后再修改。',
+          onBack: () {
+            final id = _editId;
+            if (id == null) {
+              context.go('/projects');
+            } else {
+              context.go('/projects/$id');
+            }
+          },
+        ),
+      );
+    }
     final templates = ref.watch(projectTemplatesProvider).valueOrNull;
     _applyPendingTemplateSelection(templates);
 
@@ -474,133 +493,131 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
         // 终态/已删除时禁用整页交互，使所有字段只读。
         absorbing: _isReadonly,
         child: Form(
-        key: _formKey,
-        child: CustomScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          slivers: [
-            // 基本信息
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              sliver: SliverToBoxAdapter(
-                child: _BasicInfoSection(
-                  titleController: _titleController,
-                  participantController: _participantController,
-                  noteController: _noteController,
-                  status: _status,
-                  selectedCategoryId: _selectedCategoryId,
-                  startDate: _startDate,
-                  endDate: _endDate,
-                  isEdit: _isEdit,
-                  onTitleManuallyEdited: () => _isTitleManuallyEdited = true,
-                  onStatusChanged: (v) =>
-                      setState(() => _status = v ?? _status),
-                  onCategoryChanged: (v) {
-                    setState(() => _selectedCategoryId = v);
-                    _tryAutoTitle();
-                  },
-                  onStartDateChanged: (date) {
-                    setState(() {
-                      _startDate = date;
-                      _updateStepDates();
-                    });
-                    _tryAutoTitle();
-                  },
-                  onEndDateChanged: (date) => setState(() => _endDate = date),
-                  onParticipantChanged: () => _tryAutoTitle(),
-                  onCategoriesLoaded: (names) {
-                    _categoryNames = names;
-                    _tryAutoTitle();
-                  },
+          key: _formKey,
+          child: CustomScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              // 基本信息
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                sliver: SliverToBoxAdapter(
+                  child: _BasicInfoSection(
+                    titleController: _titleController,
+                    participantController: _participantController,
+                    noteController: _noteController,
+                    selectedCategoryId: _selectedCategoryId,
+                    startDate: _startDate,
+                    endDate: _endDate,
+                    isEdit: _isEdit,
+                    onTitleManuallyEdited: () => _isTitleManuallyEdited = true,
+                    onCategoryChanged: (v) {
+                      setState(() => _selectedCategoryId = v);
+                      _tryAutoTitle();
+                    },
+                    onStartDateChanged: (date) {
+                      setState(() {
+                        _startDate = date;
+                        _updateStepDates();
+                      });
+                      _tryAutoTitle();
+                    },
+                    onEndDateChanged: (date) => setState(() => _endDate = date),
+                    onParticipantChanged: () => _tryAutoTitle(),
+                    onCategoriesLoaded: (names) {
+                      _categoryNames = names;
+                      _tryAutoTitle();
+                    },
+                  ),
                 ),
               ),
-            ),
-            // 节点部分（新建模式下始终显示）
-            if (!_isEdit) ...[
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _StepTabHeader(
-                  scrollController: _stepTabScrollController,
-                  steps: _stepDrafts,
-                  selectedIndex: currentStepIndex,
-                  onReorder: _reorderStep,
-                  onSelected: _selectStep,
-                  onAdd: _addStep,
+              // 节点部分（新建模式下始终显示）
+              if (!_isEdit) ...[
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StepTabHeader(
+                    scrollController: _stepTabScrollController,
+                    steps: _stepDrafts,
+                    selectedIndex: currentStepIndex,
+                    onReorder: _reorderStep,
+                    onSelected: _selectStep,
+                    onAdd: _addStep,
+                  ),
                 ),
-              ),
-              if (_stepDrafts.isNotEmpty)
-                SliverLayoutBuilder(
-                  builder: (context, constraints) {
-                    final workspaceHeight =
-                        constraints.viewportMainAxisExtent + keyboardInset;
-                    final minHeight = workspaceHeight - _StepTabHeader.extent;
-                    final contentHeight =
-                        _stepPageTopInset +
-                        _stepCardContentMinExtent +
-                        _stepPageBottomDragExtent +
-                        bottomPadding;
-                    final pageHeight = minHeight < contentHeight
-                        ? contentHeight
-                        : minHeight;
-                    return SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: pageHeight < 0 ? 0 : pageHeight,
-                        child: PageView.builder(
-                          controller: _stepPageController,
-                          itemCount: _stepDrafts.length,
-                          onPageChanged: _handlePageChanged,
-                          itemBuilder: (context, index) {
-                            return ColoredBox(
-                              color: Colors.transparent,
-                              child: LayoutBuilder(
-                                builder: (context, pageConstraints) {
-                                  final cardMinHeight =
-                                      pageConstraints.maxHeight -
-                                      _stepPageTopInset -
-                                      _stepPageBottomDragExtent -
-                                      bottomPadding;
-                                  return Padding(
-                                    padding: EdgeInsets.fromLTRB(
-                                      _stepContentHorizontalInset,
-                                      _stepPageTopInset,
-                                      _stepContentHorizontalInset,
-                                      bottomPadding,
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Align(
-                                          alignment: Alignment.topCenter,
-                                          child: ConstrainedBox(
-                                            constraints: BoxConstraints(
-                                              maxWidth: 560,
-                                              minHeight: cardMinHeight < 0
-                                                  ? 0
-                                                  : cardMinHeight,
-                                            ),
-                                            child: _ProjectStepDraftCard(
-                                              draft: _stepDrafts[index],
-                                              onChanged: () => setState(() {}),
-                                              onDelete: _deleteCurrentStep,
+                if (_stepDrafts.isNotEmpty)
+                  SliverLayoutBuilder(
+                    builder: (context, constraints) {
+                      final workspaceHeight =
+                          constraints.viewportMainAxisExtent + keyboardInset;
+                      final minHeight = workspaceHeight - _StepTabHeader.extent;
+                      final contentHeight =
+                          _stepPageTopInset +
+                          _stepCardContentMinExtent +
+                          _stepPageBottomDragExtent +
+                          bottomPadding;
+                      final pageHeight = minHeight < contentHeight
+                          ? contentHeight
+                          : minHeight;
+                      return SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: pageHeight < 0 ? 0 : pageHeight,
+                          child: PageView.builder(
+                            controller: _stepPageController,
+                            itemCount: _stepDrafts.length,
+                            onPageChanged: _handlePageChanged,
+                            itemBuilder: (context, index) {
+                              return ColoredBox(
+                                color: Colors.transparent,
+                                child: LayoutBuilder(
+                                  builder: (context, pageConstraints) {
+                                    final cardMinHeight =
+                                        pageConstraints.maxHeight -
+                                        _stepPageTopInset -
+                                        _stepPageBottomDragExtent -
+                                        bottomPadding;
+                                    return Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        _stepContentHorizontalInset,
+                                        _stepPageTopInset,
+                                        _stepContentHorizontalInset,
+                                        bottomPadding,
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Align(
+                                            alignment: Alignment.topCenter,
+                                            child: ConstrainedBox(
+                                              constraints: BoxConstraints(
+                                                maxWidth: 560,
+                                                minHeight: cardMinHeight < 0
+                                                    ? 0
+                                                    : cardMinHeight,
+                                              ),
+                                              child: _ProjectStepDraftCard(
+                                                draft: _stepDrafts[index],
+                                                onChanged: () =>
+                                                    setState(() {}),
+                                                onDelete: _deleteCurrentStep,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        const SizedBox(
-                                          height: _stepPageBottomDragExtent,
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
+                                          const SizedBox(
+                                            height: _stepPageBottomDragExtent,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
+              ],
             ],
-          ],
-        ),
+          ),
         ),
       ),
     );
@@ -614,13 +631,11 @@ class _BasicInfoSection extends ConsumerStatefulWidget {
     required this.titleController,
     required this.participantController,
     required this.noteController,
-    required this.status,
     required this.selectedCategoryId,
     required this.startDate,
     required this.endDate,
     required this.isEdit,
     required this.onTitleManuallyEdited,
-    required this.onStatusChanged,
     required this.onCategoryChanged,
     required this.onStartDateChanged,
     required this.onEndDateChanged,
@@ -631,13 +646,11 @@ class _BasicInfoSection extends ConsumerStatefulWidget {
   final TextEditingController titleController;
   final TextEditingController participantController;
   final TextEditingController noteController;
-  final ProjectStatus status;
   final int? selectedCategoryId;
   final DateTime? startDate;
   final DateTime? endDate;
   final bool isEdit;
   final VoidCallback onTitleManuallyEdited;
-  final ValueChanged<ProjectStatus?> onStatusChanged;
   final ValueChanged<int?> onCategoryChanged;
   final ValueChanged<DateTime?> onStartDateChanged;
   final ValueChanged<DateTime?> onEndDateChanged;
@@ -723,15 +736,6 @@ class _BasicInfoSectionState extends ConsumerState<_BasicInfoSection> {
                 widget.onStartDateChanged(picked);
               }
             },
-          ),
-          const SizedBox(height: 16),
-          AppDropdownField<ProjectStatus>(
-            label: '项目状态',
-            value: widget.status,
-            options: ProjectStatus.values
-                .map((s) => AppDropdownOption(value: s, label: s.label))
-                .toList(),
-            onSelected: widget.onStatusChanged,
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -917,6 +921,50 @@ class _TemplateOptionFrame extends StatelessWidget {
           ),
         ),
         child: Padding(padding: const EdgeInsets.all(12), child: child),
+      ),
+    );
+  }
+}
+
+class _ReadonlyMessage extends StatelessWidget {
+  const _ReadonlyMessage({
+    required this.title,
+    required this.message,
+    required this.onBack,
+  });
+
+  final String title;
+  final String message;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_outline, size: 48, color: AppColors.textHint),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(onPressed: onBack, child: const Text('返回项目')),
+          ],
+        ),
       ),
     );
   }
@@ -1475,4 +1523,3 @@ class _ProjectStepDraftCard extends StatelessWidget {
 }
 
 // ==================== 通用组件 ====================
-

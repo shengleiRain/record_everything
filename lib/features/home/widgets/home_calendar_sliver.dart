@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../models/calendar_window.dart';
 import '../models/day_bucket_view_model.dart';
 import 'calendar_collapse_geometry.dart';
@@ -67,27 +68,30 @@ class CalendarSliver extends SliverPersistentHeaderDelegate {
     );
     final currentExtent = maxExtent - shrinkOffset.clamp(0.0, range);
 
-    return SizedBox(
-      height: currentExtent,
-      child: ClipRect(
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            SizedBox(
-              height: HomeHeaderLayout.summaryExtent,
-              child: summaryStrip,
-            ),
-            HomeCalendar(
-              isWeek: isWeek,
-              visibleAnchorDate: visibleAnchorDate,
-              visibleBuckets: monthBuckets,
-              onPrevious: onPrevious,
-              onNext: onNext,
-              onSelectDate: onSelectDate,
-              gridHeight: geometry.visibleHeight,
-              gridVerticalOffset: -geometry.viewportTop,
-            ),
-          ],
+    return ColoredBox(
+      color: AppColors.background,
+      child: SizedBox(
+        height: currentExtent,
+        child: ClipRect(
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              SizedBox(
+                height: HomeHeaderLayout.summaryExtent,
+                child: summaryStrip,
+              ),
+              HomeCalendar(
+                isWeek: isWeek,
+                visibleAnchorDate: visibleAnchorDate,
+                visibleBuckets: monthBuckets,
+                onPrevious: onPrevious,
+                onNext: onNext,
+                onSelectDate: onSelectDate,
+                gridHeight: geometry.visibleHeight,
+                gridVerticalOffset: -geometry.viewportTop,
+              ),
+            ],
+          ),
         ),
       ),
     );

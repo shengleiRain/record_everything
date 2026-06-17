@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../database/daos/bill_record_dao.dart';
+import '../../domain/enums/project_event_type.dart';
+import '../../domain/enums/project_status.dart';
 
 class ProjectTemplateStepInput {
   const ProjectTemplateStepInput({
@@ -87,10 +89,30 @@ class ProjectRepository {
     await _markCategoryUsed(project.categoryId);
   }
 
+  Future<Project> changeStatus(Project project, ProjectStatus next) async {
+    final previous = ProjectStatus.fromString(project.projectStatus);
+    if (!previous.canTransitionTo(next)) {
+      throw StateError(
+        'Invalid project status transition: ${previous.value} -> ${next.value}',
+      );
+    }
+    final now = DateTime.now();
+    final updated = project.copyWith(projectStatus: next.value, updatedAt: now);
+    await updateProject(updated);
+    await addEvent(
+      projectId: project.id,
+      eventType: ProjectEventType.statusChange.value,
+      title: '状态变更: ${previous.label} -> ${next.label}',
+      description: '项目状态从 ${previous.label} 变为 ${next.label}',
+      eventTime: now,
+      isSystem: true,
+    );
+    return updated;
+  }
+
   Future<void> softDeleteProject(int id) => _db.projectDao.softDeleteById(id);
 
-  Future<void> permanentDeleteProject(int id) =>
-      _db.projectDao.deleteById(id);
+  Future<void> permanentDeleteProject(int id) => _db.projectDao.deleteById(id);
 
   Future<void> restoreProject(int id) => _db.projectDao.restoreById(id);
 

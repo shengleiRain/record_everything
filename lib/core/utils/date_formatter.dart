@@ -24,6 +24,22 @@ class DateFormatter {
     return DateFormat('MM-dd').format(date);
   }
 
+  static String formatDateWithRelative(DateTime date) {
+    final relative = formatRelative(date);
+    if (relative == DateFormat('MM-dd').format(date)) {
+      return formatDate(date);
+    }
+    return '${formatDate(date)} · $relative';
+  }
+
+  static String formatDateTimeWithRelative(DateTime date) {
+    final relative = formatRelative(date);
+    if (relative == DateFormat('MM-dd').format(date)) {
+      return formatDateTime(date);
+    }
+    return '${formatDateTime(date)} · $relative';
+  }
+
   static bool isToday(DateTime date) {
     final now = DateTime.now();
     return date.year == now.year &&

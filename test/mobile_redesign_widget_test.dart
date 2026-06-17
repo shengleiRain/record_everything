@@ -7,9 +7,12 @@ import 'package:record_everything/features/bill/widgets/month_summary_card.dart'
 import 'package:record_everything/features/home/models/agenda_item_view_model.dart';
 import 'package:record_everything/features/home/models/day_bucket_view_model.dart';
 import 'package:record_everything/features/home/widgets/home_calendar.dart';
+import 'package:record_everything/features/home/widgets/home_calendar_sliver.dart';
+import 'package:record_everything/features/home/widgets/home_summary_strip.dart';
 import 'package:record_everything/features/home/widgets/quick_create_sheet.dart';
 import 'package:record_everything/features/home/widgets/selected_day_agenda.dart';
 import 'package:record_everything/features/life_item/widgets/life_item_card.dart';
+import 'package:record_everything/core/widgets/sheet_action_layout.dart';
 
 void main() {
   testWidgets('home calendar renders controls and handles taps', (
@@ -52,6 +55,19 @@ void main() {
   testWidgets('selected day agenda only renders supplied selected-day items', (
     tester,
   ) async {
+    final lifeItem = _lifeItem(
+      id: 1,
+      title: '选中日事项',
+      amount: 1200,
+      amountType: 'expense',
+    );
+    final billRecord = _billRecord(
+      id: 2,
+      title: '选中日账单',
+      amount: 800,
+      amountType: 'expense',
+    );
+
     await tester.pumpWidget(
       _Harness(
         child: SelectedDayAgenda(
@@ -68,6 +84,7 @@ void main() {
               status: '待处理',
               isCompleted: false,
               isOverdue: false,
+              lifeItem: lifeItem,
             ),
             AgendaItemViewModel(
               id: 2,
@@ -80,6 +97,7 @@ void main() {
               status: '已记录',
               isCompleted: true,
               isOverdue: false,
+              billRecord: billRecord,
             ),
           ],
         ),
@@ -89,6 +107,58 @@ void main() {
     expect(find.byKey(const ValueKey('selected-day-agenda')), findsOneWidget);
     expect(find.text('选中日事项'), findsOneWidget);
     expect(find.text('选中日账单'), findsOneWidget);
+
+    await tester.tap(find.text('选中日事项'));
+    await tester.pumpAndSettle();
+    expect(find.text('到期时间'), findsOneWidget);
+
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('选中日账单'));
+    await tester.pumpAndSettle();
+    expect(find.text('记账时间'), findsOneWidget);
+  });
+
+  testWidgets('home calendar sliver paints opaque background behind gaps', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _Harness(
+        child: CustomScrollView(
+          slivers: [
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: CalendarSliver(
+                summaryStrip: const HomeSummaryStrip(
+                  monthlyExpense: 0,
+                  monthlyIncome: 0,
+                  pendingCount: 0,
+                  overdueCount: 0,
+                ),
+                visibleAnchorDate: DateTime(2026, 6, 4),
+                selectedDate: DateTime(2026, 6, 4),
+                monthBuckets: _weekBuckets(DateTime(2026, 6, 4)),
+                onPrevious: () {},
+                onNext: () {},
+                onSelectDate: (_) {},
+                screenWidth: 390,
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 600)),
+          ],
+        ),
+      ),
+    );
+
+    final background = tester.widget<ColoredBox>(
+      find
+          .ancestor(
+            of: find.byKey(const ValueKey('home-calendar-surface')),
+            matching: find.byType(ColoredBox),
+          )
+          .first,
+    );
+    expect(background.color, const Color(0xFFF8FAF9));
   });
 
   testWidgets('quick create sheet exposes mobile creation actions', (
@@ -150,6 +220,84 @@ void main() {
     await tester.tap(find.text('完成'));
     await tester.pumpAndSettle();
     expect(completed, isTrue);
+  });
+
+  testWidgets(
+    'life item card avoids duplicate date and redundant status copy',
+    (tester) async {
+      await tester.pumpWidget(
+        _Harness(
+          child: Column(
+            children: [
+              LifeItemCard(
+                item: _lifeItem(
+                  id: 8,
+                  title: '远期事项',
+                  dueTime: DateTime(2026, 6, 25),
+                ),
+              ),
+              LifeItemCard(
+                item: _lifeItem(
+                  id: 9,
+                  title: '完成事项',
+                  status: 'completed',
+                  updatedAt: DateTime(2026, 6, 15, 8, 46),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.textContaining('2026-06-25 · 06-25'), findsNothing);
+      expect(find.text('2026-06-25'), findsOneWidget);
+      expect(find.textContaining('完成于'), findsNothing);
+      expect(find.text('2026-06-15 08:46'), findsOneWidget);
+    },
+  );
+
+  testWidgets('sheet action layout adapts symmetrically by action count', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _Harness(
+        child: SizedBox(
+          width: 320,
+          child: SheetActionLayout(
+            children: [
+              FilledButton(
+                key: const ValueKey('sheet-primary-action'),
+                onPressed: () {},
+                child: const Text('主操作'),
+              ),
+              OutlinedButton(
+                key: const ValueKey('sheet-secondary-action'),
+                onPressed: () {},
+                child: const Text('次操作'),
+              ),
+              OutlinedButton(
+                key: const ValueKey('sheet-delete-action'),
+                onPressed: () {},
+                child: const Text('删除'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final primary = tester.getSize(
+      find.byKey(const ValueKey('sheet-primary-action')),
+    );
+    final secondary = tester.getSize(
+      find.byKey(const ValueKey('sheet-secondary-action')),
+    );
+    final delete = tester.getSize(
+      find.byKey(const ValueKey('sheet-delete-action')),
+    );
+
+    expect(primary.width, greaterThan(secondary.width));
+    expect(secondary.width, delete.width);
   });
 
   testWidgets('bill summary and day group render compact monthly information', (
@@ -226,6 +374,9 @@ LifeItem _lifeItem({
   int? amount,
   String amountType = 'none',
   String? repeatRule,
+  DateTime? dueTime,
+  DateTime? updatedAt,
+  String status = 'pending',
 }) {
   final now = DateTime(2026, 6, 4, 9);
   return LifeItem(
@@ -234,11 +385,11 @@ LifeItem _lifeItem({
     itemType: 'bill',
     amount: amount,
     amountType: amountType,
-    dueTime: now,
+    dueTime: dueTime ?? now,
     repeatRule: repeatRule,
-    status: 'pending',
+    status: status,
     createdAt: now,
-    updatedAt: now,
+    updatedAt: updatedAt ?? now,
   );
 }
 

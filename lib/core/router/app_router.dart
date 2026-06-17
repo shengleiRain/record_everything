@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/home/pages/home_page.dart';
 import '../../features/life_item/pages/life_item_list_page.dart';
-import '../../features/life_item/pages/life_item_detail_page.dart';
 import '../../features/life_item/pages/life_item_edit_page.dart';
 import '../../features/bill/pages/bill_list_page.dart';
-import '../../features/bill/pages/bill_detail_page.dart';
 import '../../features/bill/pages/bill_edit_page.dart';
 import '../../features/project/pages/project_list_page.dart';
 import '../../features/project/pages/project_detail_page.dart';
@@ -74,10 +72,7 @@ final appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
     // Full-screen routes (no bottom navigation bar).
-    GoRoute(
-      path: '/search',
-      builder: (context, state) => const SearchPage(),
-    ),
+    GoRoute(path: '/search', builder: (context, state) => const SearchPage()),
     ShellRoute(
       builder: _buildShell,
       routes: [
@@ -89,10 +84,6 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'new',
               builder: (context, state) => const LifeItemEditPage(),
-            ),
-            GoRoute(
-              path: ':id',
-              builder: (context, state) => const LifeItemDetailPage(),
             ),
             GoRoute(
               path: ':id/edit',
@@ -107,10 +98,6 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'new',
               builder: (context, state) => const BillEditPage(),
-            ),
-            GoRoute(
-              path: ':id',
-              builder: (context, state) => const BillDetailPage(),
             ),
             GoRoute(
               path: ':id/edit',

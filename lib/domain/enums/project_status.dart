@@ -54,13 +54,25 @@ enum ProjectStatus {
   /// 单向推进的下一状态（详情页「推进状态」按钮使用）。终态返回 null，
   /// 表示该按钮不再出现。
   ProjectStatus? get nextStatus => switch (this) {
-        ProjectStatus.active => ProjectStatus.completed,
-        _ => null,
-      };
+    ProjectStatus.active => ProjectStatus.completed,
+    _ => null,
+  };
+
+  bool canTransitionTo(ProjectStatus next) {
+    if (this == next) return false;
+    return switch (this) {
+      ProjectStatus.active =>
+        next == ProjectStatus.completed || next == ProjectStatus.cancelled,
+      ProjectStatus.completed =>
+        next == ProjectStatus.archived || next == ProjectStatus.active,
+      ProjectStatus.cancelled => next == ProjectStatus.active,
+      ProjectStatus.archived => next == ProjectStatus.active,
+    };
+  }
 
   /// 推进状态按钮的文案。
   String get advanceLabel => switch (this) {
-        ProjectStatus.active => '标记完成',
-        _ => '推进状态',
-      };
+    ProjectStatus.active => '标记完成',
+    _ => '推进状态',
+  };
 }

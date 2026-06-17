@@ -10,6 +10,9 @@ class SearchResult {
     required this.subtitle,
     required this.date,
     this.projectId,
+    this.lifeItem,
+    this.billRecord,
+    this.project,
   });
 
   final SearchResultKind kind;
@@ -18,6 +21,9 @@ class SearchResult {
   final String subtitle;
   final DateTime date;
   final int? projectId;
+  final LifeItem? lifeItem;
+  final BillRecord? billRecord;
+  final Project? project;
 }
 
 class SearchService {
@@ -44,6 +50,7 @@ class SearchService {
                 : '事项',
             date: item.dueTime,
             projectId: item.projectId,
+            lifeItem: item,
           ),
       for (final bill in billRecords)
         if (_matches([bill.title, bill.note, bill.amountType], normalized))
@@ -54,6 +61,7 @@ class SearchService {
             subtitle: bill.note?.isNotEmpty == true ? bill.note! : '账单',
             date: bill.billTime,
             projectId: bill.projectId,
+            billRecord: bill,
           ),
       for (final project in projects)
         if (_matches([
@@ -69,6 +77,7 @@ class SearchService {
                 ? '${project.participant!} · 项目'
                 : '项目',
             date: project.startDate ?? project.createdAt,
+            project: project,
           ),
     ]..sort((a, b) => b.date.compareTo(a.date));
 

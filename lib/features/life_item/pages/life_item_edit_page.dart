@@ -46,6 +46,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
+
   /// 终态（已完成/已取消/已归档）或已软删除的事项，编辑页整页只读，
   /// 状态只能通过详情页的「重新打开」按钮变更。
   bool _isReadonly = false;
@@ -261,9 +262,9 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   void _save() {
     // 守卫：终态/已删除事项整页只读，禁止任何写入（防绕过 UI）。
     if (_isReadonly) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('事项已完结，不可编辑')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('事项已完结，不可编辑')));
       return;
     }
     if (!_formKey.currentState!.validate()) return;
@@ -328,6 +329,16 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isReadonly) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(title: const Text('事项（只读）')),
+        body: const _ReadonlyMessage(
+          title: '事项已完结',
+          message: '只读状态的事项不能编辑，可在详情中重新打开后再修改。',
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -341,223 +352,233 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
         // 终态/已删除时禁用整页交互，使所有字段只读。
         absorbing: _isReadonly,
         child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (!_isEdit) ...[
-              _ItemTemplateSelector(
-                selectedTemplateId: _selectedTemplateId,
-                onSelected: (template) {
-                  if (template == null) {
-                    setState(() => _selectedTemplateId = null);
-                  } else {
-                    _applyItemTemplate(template);
-                  }
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-            SectionCard(
-              title: '事项内容',
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(labelText: '标题 *'),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? '请输入标题' : null,
-                  ),
-                  if (!_isEdit) ...[
-                    _ItemTemplateRecommendations(
-                      title: _titleInput,
-                      selectedTemplateId: _selectedTemplateId,
-                      onApply: (template) =>
-                          _applyItemTemplate(template, replaceTitle: false),
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (!_isEdit) ...[
+                _ItemTemplateSelector(
+                  selectedTemplateId: _selectedTemplateId,
+                  onSelected: (template) {
+                    if (template == null) {
+                      setState(() => _selectedTemplateId = null);
+                    } else {
+                      _applyItemTemplate(template);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+              SectionCard(
+                title: '事项内容',
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(labelText: '标题 *'),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? '请输入标题' : null,
                     ),
-                  ],
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descController,
-                    decoration: const InputDecoration(labelText: '备注'),
-                    maxLines: 3,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SectionCard(
-              title: '类型与分类',
-              child: Column(
-                children: [
-                  _QuickTypeSelector(
-                    selected: _selectedQuickType,
-                    onSelected: _applyQuickType,
-                  ),
-                  const SizedBox(height: 16),
-                  AppDropdownField<ItemType>(
-                    label: '事项类型',
-                    value: _itemType,
-                    options: ItemType.values
-                        .map((t) => AppDropdownOption(value: t, label: t.label))
-                        .toList(),
-                    onSelected: (v) =>
-                        setState(() => _itemType = v ?? _itemType),
-                  ),
-                  const SizedBox(height: 16),
-                  FutureBuilder(
-                    future: ref
-                        .read(databaseProvider)
-                        .categoryDao
-                        .getByType('item'),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const SizedBox.shrink();
-                      final cats = snapshot.data!;
-                      final validValue =
-                          cats.any((c) => c.id == _selectedCategoryId)
-                          ? _selectedCategoryId
-                          : null;
-                      return AppDropdownField<int>(
-                        label: '分类',
-                        value: validValue,
-                        options: cats
-                            .map(
-                              (c) =>
-                                  AppDropdownOption(value: c.id, label: c.name),
-                            )
-                            .toList(),
-                        onSelected: (v) =>
-                            setState(() => _selectedCategoryId = v),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SectionCard(
-              title: '时间与金额',
-              child: Column(
-                children: [
-                  ProjectPickerField(
-                    value: _projectId,
-                    onChanged: (v) => setState(() => _projectId = v),
-                  ),
-                  const SizedBox(height: 16),
-                  DateField(
-                    key: const ValueKey('life-item-date-field'),
-                    label: '日期',
-                    value: DateFormatter.formatDate(_dueDate),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _dueDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2035),
-                      );
-                      if (picked != null && mounted) {
-                        setState(() => _dueDate = picked);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  AppDropdownField<ReminderPreset>(
-                    label: '提醒',
-                    value: _reminderPreset,
-                    options: ReminderPreset.values
-                        .map((p) => AppDropdownOption(value: p, label: p.label))
-                        .toList(),
-                    onSelected: (v) =>
-                        setState(() => _reminderPreset = v ?? _reminderPreset),
-                  ),
-                  if (_reminderPreset == ReminderPreset.custom) ...[
-                    const SizedBox(height: 16),
-                    DateField(
-                      label: '提醒日期',
-                      value: DateFormatter.formatDate(
-                        _customReminderTime ?? _dueDate,
+                    if (!_isEdit) ...[
+                      _ItemTemplateRecommendations(
+                        title: _titleInput,
+                        selectedTemplateId: _selectedTemplateId,
+                        onApply: (template) =>
+                            _applyItemTemplate(template, replaceTitle: false),
                       ),
-                      onTap: _pickCustomReminderDate,
-                    ),
-                    const SizedBox(height: 16),
-                    DateField(
-                      label: '提醒时间',
-                      value: _formatTime(_customReminderTime ?? _dueDate),
-                      onTap: _pickCustomReminderTime,
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  AppDropdownField<AmountType>(
-                    label: '金额类型',
-                    value: _amountType,
-                    options: AmountType.values
-                        .map((t) => AppDropdownOption(value: t, label: t.label))
-                        .toList(),
-                    onSelected: (v) =>
-                        setState(() => _amountType = v ?? _amountType),
-                  ),
-                  if (_amountType != AmountType.none) ...[
+                    ],
                     const SizedBox(height: 16),
                     TextFormField(
-                      controller: _amountController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: '金额',
-                        prefixText: '¥',
-                      ),
+                      controller: _descController,
+                      decoration: const InputDecoration(labelText: '备注'),
+                      maxLines: 3,
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            SectionCard(
-              title: '重复规则',
-              child: Column(
-                children: [
-                  SwitchListTile(
-                    value: _hasRepeat,
-                    title: const Text('重复'),
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (v) => setState(() => _hasRepeat = v),
-                  ),
-                  if (_hasRepeat) ...[
-                    const SizedBox(height: 8),
-                    AppDropdownField<RepeatPeriod>(
-                      label: '重复频率',
-                      value: _repeatPeriod,
-                      options: RepeatPeriod.values
+              const SizedBox(height: 16),
+              SectionCard(
+                title: '类型与分类',
+                child: Column(
+                  children: [
+                    _QuickTypeSelector(
+                      selected: _selectedQuickType,
+                      onSelected: _applyQuickType,
+                    ),
+                    const SizedBox(height: 16),
+                    AppDropdownField<ItemType>(
+                      label: '事项类型',
+                      value: _itemType,
+                      options: ItemType.values
+                          .map(
+                            (t) => AppDropdownOption(value: t, label: t.label),
+                          )
+                          .toList(),
+                      onSelected: (v) =>
+                          setState(() => _itemType = v ?? _itemType),
+                    ),
+                    const SizedBox(height: 16),
+                    FutureBuilder(
+                      future: ref
+                          .read(databaseProvider)
+                          .categoryDao
+                          .getByType('item'),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const SizedBox.shrink();
+                        final cats = snapshot.data!;
+                        final validValue =
+                            cats.any((c) => c.id == _selectedCategoryId)
+                            ? _selectedCategoryId
+                            : null;
+                        return AppDropdownField<int>(
+                          label: '分类',
+                          value: validValue,
+                          options: cats
+                              .map(
+                                (c) => AppDropdownOption(
+                                  value: c.id,
+                                  label: c.name,
+                                ),
+                              )
+                              .toList(),
+                          onSelected: (v) =>
+                              setState(() => _selectedCategoryId = v),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SectionCard(
+                title: '时间与金额',
+                child: Column(
+                  children: [
+                    ProjectPickerField(
+                      value: _projectId,
+                      onChanged: (v) => setState(() => _projectId = v),
+                    ),
+                    const SizedBox(height: 16),
+                    DateField(
+                      key: const ValueKey('life-item-date-field'),
+                      label: '日期',
+                      value: DateFormatter.formatDate(_dueDate),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _dueDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2035),
+                        );
+                        if (picked != null && mounted) {
+                          setState(() => _dueDate = picked);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    AppDropdownField<ReminderPreset>(
+                      label: '提醒',
+                      value: _reminderPreset,
+                      options: ReminderPreset.values
                           .map(
                             (p) => AppDropdownOption(value: p, label: p.label),
                           )
                           .toList(),
-                      onSelected: (v) =>
-                          setState(() => _repeatPeriod = v ?? _repeatPeriod),
+                      onSelected: (v) => setState(
+                        () => _reminderPreset = v ?? _reminderPreset,
+                      ),
                     ),
-                    if (_repeatPeriod == RepeatPeriod.custom) ...[
+                    if (_reminderPreset == ReminderPreset.custom) ...[
+                      const SizedBox(height: 16),
+                      DateField(
+                        label: '提醒日期',
+                        value: DateFormatter.formatDate(
+                          _customReminderTime ?? _dueDate,
+                        ),
+                        onTap: _pickCustomReminderDate,
+                      ),
+                      const SizedBox(height: 16),
+                      DateField(
+                        label: '提醒时间',
+                        value: _formatTime(_customReminderTime ?? _dueDate),
+                        onTap: _pickCustomReminderTime,
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    AppDropdownField<AmountType>(
+                      label: '金额类型',
+                      value: _amountType,
+                      options: AmountType.values
+                          .map(
+                            (t) => AppDropdownOption(value: t, label: t.label),
+                          )
+                          .toList(),
+                      onSelected: (v) =>
+                          setState(() => _amountType = v ?? _amountType),
+                    ),
+                    if (_amountType != AmountType.none) ...[
                       const SizedBox(height: 16),
                       TextFormField(
-                        initialValue: _customRepeatDays.toString(),
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: '每 N 天'),
-                        onChanged: (v) =>
-                            _customRepeatDays = int.tryParse(v) ?? 30,
+                        controller: _amountController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: '金额',
+                          prefixText: '¥',
+                        ),
                       ),
                     ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            if (!_isReadonly)
-              FilledButton(
-                onPressed: _save,
-                child: Text(_isEdit ? '保存修改' : '创建事项'),
+              const SizedBox(height: 16),
+              SectionCard(
+                title: '重复规则',
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      value: _hasRepeat,
+                      title: const Text('重复'),
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (v) => setState(() => _hasRepeat = v),
+                    ),
+                    if (_hasRepeat) ...[
+                      const SizedBox(height: 8),
+                      AppDropdownField<RepeatPeriod>(
+                        label: '重复频率',
+                        value: _repeatPeriod,
+                        options: RepeatPeriod.values
+                            .map(
+                              (p) =>
+                                  AppDropdownOption(value: p, label: p.label),
+                            )
+                            .toList(),
+                        onSelected: (v) =>
+                            setState(() => _repeatPeriod = v ?? _repeatPeriod),
+                      ),
+                      if (_repeatPeriod == RepeatPeriod.custom) ...[
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          initialValue: _customRepeatDays.toString(),
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: '每 N 天'),
+                          onChanged: (v) =>
+                              _customRepeatDays = int.tryParse(v) ?? 30,
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
               ),
-          ],
-        ),
+              const SizedBox(height: 32),
+              if (!_isReadonly)
+                FilledButton(
+                  onPressed: _save,
+                  child: Text(_isEdit ? '保存修改' : '创建事项'),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -614,7 +635,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     return '$hour:$minute';
   }
 }
-
 
 class _ItemTemplateSelector extends ConsumerWidget {
   const _ItemTemplateSelector({
@@ -678,6 +698,48 @@ class _ItemTemplateSelector extends ConsumerWidget {
           Navigator.of(sheetContext).pop();
           onSelected(template);
         },
+      ),
+    );
+  }
+}
+
+class _ReadonlyMessage extends StatelessWidget {
+  const _ReadonlyMessage({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_outline, size: 48, color: AppColors.textHint),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => context.go('/items'),
+              child: const Text('返回事项列表'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1017,4 +1079,3 @@ class _QuickTypeSelector extends StatelessWidget {
     );
   }
 }
-

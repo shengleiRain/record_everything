@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../data/database/app_database.dart';
+import '../../life_item/widgets/life_item_detail_sheet.dart';
 
-class UpcomingCard extends StatelessWidget {
+class UpcomingCard extends ConsumerWidget {
   final List<LifeItem> items;
   const UpcomingCard({super.key, required this.items});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -63,7 +65,7 @@ class UpcomingCard extends StatelessWidget {
                       style: TextStyle(color: color, fontSize: 12),
                     ),
                   ),
-                  onTap: () => context.push('/items/${item.id}'),
+                  onTap: () => showLifeItemDetailSheet(context, ref, item),
                 );
               }),
           ],

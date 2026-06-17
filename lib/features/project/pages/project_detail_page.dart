@@ -9,10 +9,11 @@ import '../../../core/widgets/deleted_entity_banner.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
-import '../../../domain/enums/project_event_type.dart';
 import '../../../domain/enums/project_status.dart';
+import '../../bill/widgets/bill_detail_sheet.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../life_item/providers/life_item_providers.dart';
+import '../../life_item/widgets/life_item_detail_sheet.dart';
 import '../providers/project_providers.dart';
 import '../widgets/project_event_sheet.dart';
 
@@ -46,6 +47,8 @@ class _ProjectDetailBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDeleted = project.deletedAt != null;
+    final isReadonly =
+        ProjectStatus.fromString(project.projectStatus).isFinal || isDeleted;
     final incomeAsync = ref.watch(projectIncomeProvider(project.id));
     final expenseAsync = ref.watch(projectExpenseProvider(project.id));
     final itemsAsync = ref.watch(projectLifeItemsProvider(project.id));
@@ -64,11 +67,12 @@ class _ProjectDetailBody extends ConsumerWidget {
         title: Text(project.title),
         actions: [
           if (!isDeleted) ...[
-            IconButton(
-              tooltip: '编辑项目',
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () => context.push('/projects/${project.id}/edit'),
-            ),
+            if (!isReadonly)
+              IconButton(
+                tooltip: '编辑项目',
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => context.push('/projects/${project.id}/edit'),
+              ),
             IconButton(
               key: const ValueKey('project-detail-delete'),
               tooltip: '删除项目',
@@ -100,42 +104,42 @@ class _ProjectDetailBody extends ConsumerWidget {
                 return Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: Listener(
-                behavior: HitTestBehavior.translucent,
-                onPointerDown: (event) {
-                  SwipeRevealController.closeIfOutside(event.position);
-                },
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-                  children: [
-                    SectionCard(
-                      title: '财务概览',
-                      child: _FinancialOverview(
-                        income: income,
-                        pendingReceivable: pendingReceivable,
-                        expense: expense,
+                    constraints: const BoxConstraints(maxWidth: 720),
+                    child: Listener(
+                      behavior: HitTestBehavior.translucent,
+                      onPointerDown: (event) {
+                        SwipeRevealController.closeIfOutside(event.position);
+                      },
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+                        children: [
+                          SectionCard(
+                            title: '财务概览',
+                            child: _FinancialOverview(
+                              income: income,
+                              pendingReceivable: pendingReceivable,
+                              expense: expense,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _ProjectSummaryCard(project: project),
+                          const SizedBox(height: 12),
+                          const _SectionHeader(title: '时间线'),
+                          const SizedBox(height: 8),
+                          _ProjectFlowPanel(
+                            itemsAsync: itemsAsync,
+                            billsAsync: billsAsync,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    _ProjectSummaryCard(project: project),
-                    const SizedBox(height: 12),
-                    const _SectionHeader(title: '时间线'),
-                    const SizedBox(height: 8),
-                    _ProjectFlowPanel(
-                      itemsAsync: itemsAsync,
-                      billsAsync: billsAsync,
-                    ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
-          );
-        },
-        ),
-        ),
-      ],
-    ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -143,7 +147,7 @@ class _ProjectDetailBody extends ConsumerWidget {
     final current = ProjectStatus.fromString(project.projectStatus);
     final nextStatus = current.nextStatus;
     final isDeleted = project.deletedAt != null;
-    final canManage = !isDeleted;
+    final canEditProject = !isDeleted && !current.isFinal;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -160,33 +164,41 @@ class _ProjectDetailBody extends ConsumerWidget {
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-              if (canManage) ...[
-                _ActionTile(
-                  key: const ValueKey('project-detail-action-add-item'),
-                  icon: Icons.add_task,
-                  label: '添加项目事项',
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    context.push('/items/new', extra: {'projectId': project.id});
-                  },
-                ),
-                _ActionTile(
-                  key: const ValueKey('project-detail-action-add-bill'),
-                  icon: Icons.receipt_long,
-                  label: '记一笔独立账单',
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    context.push('/bills/new', extra: {'projectId': project.id});
-                  },
-                ),
-                _ActionTile(
-                  icon: Icons.note_add_outlined,
-                  label: '添加项目事件',
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    showProjectEventSheet(context, ref, project.id);
-                  },
-                ),
+              if (!isDeleted) ...[
+                if (canEditProject) ...[
+                  _ActionTile(
+                    key: const ValueKey('project-detail-action-add-item'),
+                    icon: Icons.add_task,
+                    label: '添加项目事项',
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      context.push(
+                        '/items/new',
+                        extra: {'projectId': project.id},
+                      );
+                    },
+                  ),
+                  _ActionTile(
+                    key: const ValueKey('project-detail-action-add-bill'),
+                    icon: Icons.receipt_long,
+                    label: '记一笔独立账单',
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      context.push(
+                        '/bills/new',
+                        extra: {'projectId': project.id},
+                      );
+                    },
+                  ),
+                  _ActionTile(
+                    icon: Icons.note_add_outlined,
+                    label: '添加项目事件',
+                    onTap: () {
+                      Navigator.of(sheetContext).pop();
+                      showProjectEventSheet(context, ref, project.id);
+                    },
+                  ),
+                ],
                 // 推进状态（如 进行中 → 已完成）
                 if (nextStatus != null)
                   _ActionTile(
@@ -275,22 +287,9 @@ class _ProjectDetailBody extends ConsumerWidget {
   /// 保证状态流转与审计记录始终一致。所有状态变更（推进/取消/重开/归档）
   /// 都走这里，禁止在编辑页直接改状态。
   Future<void> _changeStatus(WidgetRef ref, ProjectStatus next) async {
-    final previous = ProjectStatus.fromString(project.projectStatus);
-    if (previous == next) return;
-    final now = DateTime.now();
     await ref
         .read(projectNotifierProvider.notifier)
-        .update(project.copyWith(projectStatus: next.value, updatedAt: now));
-    await ref
-        .read(projectNotifierProvider.notifier)
-        .addEvent(
-          projectId: project.id,
-          eventType: ProjectEventType.statusChange.value,
-          title: '状态变更: ${previous.label} -> ${next.label}',
-          description: '项目状态从 ${previous.label} 变为 ${next.label}',
-          eventTime: now,
-          isSystem: true,
-        );
+        .changeStatus(project: project, next: next);
   }
 }
 
@@ -1157,150 +1156,13 @@ class _ProjectFlowCard extends ConsumerWidget {
   ) {
     final item = data.entry.item;
     final bill = data.entry.bill;
-    final linkedBill = data.entry.linkedBill;
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _DetailSheetHeader(data: data),
-                  const SizedBox(height: 12),
-                  if (item != null) ...[
-                    _DetailInfoRow(
-                      label: '预期时间',
-                      value: DateFormatter.formatDateTime(item.dueTime),
-                    ),
-                    _DetailInfoRow(
-                      label: '状态',
-                      value: data.statusLabel ?? '待处理',
-                    ),
-                    if (linkedBill != null)
-                      _DetailInfoRow(
-                        label: '实际时间',
-                        value: DateFormatter.formatDateTime(
-                          linkedBill.billTime,
-                        ),
-                      ),
-                    if (item.description?.trim().isNotEmpty == true)
-                      _DetailInfoRow(
-                        label: '说明',
-                        value: item.description!.trim(),
-                      ),
-                    const SizedBox(height: 12),
-                    if (item.status == 'pending' && linkedBill == null)
-                      _DetailActionRow(
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.of(sheetContext).pop();
-                              context.push('/items/${item.id}/edit');
-                            },
-                            icon: const Icon(Icons.edit_outlined),
-                            label: const Text('编辑'),
-                          ),
-                          if (item.amountType == 'income' ||
-                              item.amountType == 'expense')
-                            FilledButton.icon(
-                              onPressed: () {
-                                Navigator.of(sheetContext).pop();
-                                _openBillForItem(context, item);
-                              },
-                              icon: Icon(
-                                item.amountType == 'income'
-                                    ? Icons.payments_outlined
-                                    : Icons.outbox_outlined,
-                              ),
-                              label: Text(
-                                item.amountType == 'income' ? '收款' : '付款',
-                              ),
-                            )
-                          else
-                            FilledButton.icon(
-                              onPressed: () {
-                                Navigator.of(sheetContext).pop();
-                                _completeItem(context, ref, item);
-                              },
-                              icon: const Icon(Icons.check),
-                              label: const Text('完成'),
-                            ),
-                        ],
-                      )
-                    else if (linkedBill != null)
-                      _DetailActionRow(
-                        children: [
-                          FilledButton.icon(
-                            onPressed: () {
-                              Navigator.of(sheetContext).pop();
-                              _confirmDeleteBill(context, ref, linkedBill);
-                            },
-                            icon: const Icon(Icons.delete_outline),
-                            label: const Text('删除账单'),
-                          ),
-                        ],
-                      )
-                    else
-                      _DetailActionRow(
-                        children: [
-                          if (item.amountType == 'income' ||
-                              item.amountType == 'expense')
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.of(sheetContext).pop();
-                                _openBillForItem(context, item);
-                              },
-                              icon: const Icon(Icons.receipt_long),
-                              label: const Text('补账'),
-                            ),
-                          FilledButton.icon(
-                            onPressed: () {
-                              Navigator.of(sheetContext).pop();
-                              _confirmDeleteItem(context, ref, item);
-                            },
-                            icon: const Icon(Icons.delete_outline),
-                            label: const Text('删除事项'),
-                          ),
-                        ],
-                      ),
-                  ] else if (bill != null) ...[
-                    _DetailInfoRow(
-                      label: '记账时间',
-                      value: DateFormatter.formatDateTime(bill.billTime),
-                    ),
-                    _DetailInfoRow(
-                      label: '类型',
-                      value: bill.amountType == 'income' ? '收入' : '支出',
-                    ),
-                    if (bill.note?.trim().isNotEmpty == true)
-                      _DetailInfoRow(label: '备注', value: bill.note!.trim()),
-                    const SizedBox(height: 12),
-                    _DetailActionRow(
-                      children: [
-                        FilledButton.icon(
-                          onPressed: () {
-                            Navigator.of(sheetContext).pop();
-                            _confirmDeleteBill(context, ref, bill);
-                          },
-                          icon: const Icon(Icons.delete_outline),
-                          label: const Text('删除'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
+    if (item != null) {
+      showLifeItemDetailSheet(context, ref, item);
+      return;
+    }
+    if (bill != null) {
+      showBillDetailSheet(context, ref, bill);
+    }
   }
 }
 
@@ -1333,103 +1195,6 @@ class _FlowVisual {
 
   final IconData icon;
   final Color color;
-}
-
-class _DetailSheetHeader extends StatelessWidget {
-  const _DetailSheetHeader({required this.data});
-
-  final _FlowCardData data;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = data.entry.title;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CardEntryIcon(icon: data.visual.icon, color: data.visual.color),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                data.entry.kind == ProjectFlowEntryKind.bill ? '账单' : '事项',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ),
-        if (data.trailingText != null)
-          CardTrailingValue(
-            text: data.trailingText!,
-            color: data.trailingColor,
-          ),
-      ],
-    );
-  }
-}
-
-class _DetailInfoRow extends StatelessWidget {
-  const _DetailInfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 72,
-            child: Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailActionRow extends StatelessWidget {
-  const _DetailActionRow({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (var index = 0; index < children.length; index++) ...[
-          Expanded(child: children[index]),
-          if (index != children.length - 1) const SizedBox(width: 10),
-        ],
-      ],
-    );
-  }
 }
 
 class _DatePill extends StatelessWidget {
@@ -1527,4 +1292,3 @@ class _SectionHeader extends StatelessWidget {
     );
   }
 }
-

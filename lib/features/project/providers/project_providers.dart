@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../../data/repositories/project_repository.dart';
+import '../../../domain/enums/project_status.dart';
 
 final projectRepoProvider = Provider<ProjectRepository>((ref) {
   return ProjectRepository(ref.watch(databaseProvider));
@@ -171,6 +172,13 @@ class ProjectNotifier extends Notifier<void> {
   Future<void> deleteTemplate(int id) => _repo.deleteProjectTemplate(id);
 
   Future<void> update(Project project) => _repo.updateProject(project);
+
+  Future<Project> changeStatus({
+    required Project project,
+    required ProjectStatus next,
+  }) {
+    return _repo.changeStatus(project, next);
+  }
 
   Future<void> delete(int id) => _repo.softDeleteProject(id);
 

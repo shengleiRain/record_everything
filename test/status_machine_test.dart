@@ -1,8 +1,11 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/data/database/app_database.dart';
+import 'package:record_everything/data/repositories/bill_record_repository.dart';
 import 'package:record_everything/data/repositories/life_item_repository.dart';
 import 'package:record_everything/domain/enums/item_status.dart';
+import 'package:record_everything/data/repositories/project_repository.dart';
+import 'package:record_everything/domain/enums/project_event_type.dart';
 import 'package:record_everything/domain/enums/project_status.dart';
 
 /// 状态机与状态流转的回归测试。
@@ -36,6 +39,41 @@ void main() {
       expect(ProjectStatus.active.advanceLabel, '标记完成');
     });
 
+    test('canTransitionTo 只允许显式方向', () {
+      expect(
+        ProjectStatus.active.canTransitionTo(ProjectStatus.completed),
+        isTrue,
+      );
+      expect(
+        ProjectStatus.active.canTransitionTo(ProjectStatus.cancelled),
+        isTrue,
+      );
+      expect(
+        ProjectStatus.completed.canTransitionTo(ProjectStatus.archived),
+        isTrue,
+      );
+      expect(
+        ProjectStatus.completed.canTransitionTo(ProjectStatus.active),
+        isTrue,
+      );
+      expect(
+        ProjectStatus.cancelled.canTransitionTo(ProjectStatus.active),
+        isTrue,
+      );
+      expect(
+        ProjectStatus.archived.canTransitionTo(ProjectStatus.active),
+        isTrue,
+      );
+      expect(
+        ProjectStatus.active.canTransitionTo(ProjectStatus.archived),
+        isFalse,
+      );
+      expect(
+        ProjectStatus.cancelled.canTransitionTo(ProjectStatus.archived),
+        isFalse,
+      );
+    });
+
     test('fromString 正确解析四个状态', () {
       expect(ProjectStatus.fromString('active'), ProjectStatus.active);
       expect(ProjectStatus.fromString('completed'), ProjectStatus.completed);
@@ -51,6 +89,18 @@ void main() {
     test('fromString 未知值兜底为 active', () {
       expect(ProjectStatus.fromString('unknown'), ProjectStatus.active);
       expect(ProjectStatus.fromString(''), ProjectStatus.active);
+    });
+
+    test('canTransitionTo 只允许 pending 完成/取消，终态重开', () {
+      expect(ItemStatus.pending.canTransitionTo(ItemStatus.completed), isTrue);
+      expect(ItemStatus.pending.canTransitionTo(ItemStatus.cancelled), isTrue);
+      expect(ItemStatus.completed.canTransitionTo(ItemStatus.pending), isTrue);
+      expect(ItemStatus.cancelled.canTransitionTo(ItemStatus.pending), isTrue);
+      expect(ItemStatus.archived.canTransitionTo(ItemStatus.pending), isFalse);
+      expect(
+        ItemStatus.completed.canTransitionTo(ItemStatus.cancelled),
+        isFalse,
+      );
     });
   });
 
@@ -99,6 +149,19 @@ void main() {
       expect(updated.status, 'completed');
     });
 
+    test('completed 不能再次 complete 或 cancel', () async {
+      final item = await seed();
+      await repo.complete(item.id);
+
+      await expectLater(repo.complete(item.id), throwsA(isA<StateError>()));
+      await expectLater(repo.cancel(item.id), throwsA(isA<StateError>()));
+    });
+
+    test('pending 不能 reopen', () async {
+      final item = await seed();
+      await expectLater(repo.reopen(item.id), throwsA(isA<StateError>()));
+    });
+
     test('cancel 写入 cancelled', () async {
       final item = await seed();
       final updated = await repo.cancel(item.id);
@@ -120,6 +183,73 @@ void main() {
     });
   });
 
+  group('Project 状态流转（repository 层）', () {
+    late AppDatabase db;
+    late ProjectRepository repo;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      repo = ProjectRepository(db);
+    });
+
+    tearDown(() => db.close());
+
+    test('changeStatus 写入状态并记录 status_change 事件', () async {
+      final project = await repo.createProject(title: '测试项目');
+      final updated = await repo.changeStatus(project, ProjectStatus.completed);
+
+      expect(updated.projectStatus, ProjectStatus.completed.value);
+
+      final events = await db.projectEventDao.getByProject(project.id);
+      expect(events, hasLength(1));
+      expect(events.single.eventType, ProjectEventType.statusChange.value);
+      expect(events.single.title, '状态变更: 进行中 -> 已完成');
+    });
+
+    test('非法状态流转不会写状态或事件', () async {
+      final project = await repo.createProject(title: '测试项目');
+
+      await expectLater(
+        repo.changeStatus(project, ProjectStatus.archived),
+        throwsA(isA<StateError>()),
+      );
+
+      final current = await db.projectDao.getById(project.id);
+      final events = await db.projectEventDao.getByProject(project.id);
+      expect(current.projectStatus, ProjectStatus.active.value);
+      expect(events, isEmpty);
+    });
+  });
+
+  group('BillRecord 删除生命周期', () {
+    late AppDatabase db;
+    late BillRecordRepository repo;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      repo = BillRecordRepository(db);
+    });
+
+    tearDown(() => db.close());
+
+    test('active -> deleted -> restored，不新增业务状态', () async {
+      final bill = await repo.create(
+        title: '生命周期账单',
+        amount: 1000,
+        billTime: DateTime(2026, 6, 17),
+      );
+
+      await repo.deleteRecord(bill.id);
+      expect(await db.billRecordDao.getAll(), isEmpty);
+      expect((await db.billRecordDao.getDeleted()).single.id, bill.id);
+
+      await repo.restoreRecord(bill.id);
+      final restored = (await db.billRecordDao.getAll()).single;
+      expect(restored.id, bill.id);
+      expect(restored.deletedAt, isNull);
+    });
+  });
+
   group('数据库迁移 v6→v7（项目状态归并）', () {
     test('存量 planned/waiting 项目迁移为 active', () async {
       // 直接用内存库，手动插入旧状态行，模拟旧版本数据。
@@ -138,11 +268,15 @@ void main() {
         "WHERE project_status IN ('planned', 'waiting')",
       );
 
-      final rows = await db.customSelect(
-        'SELECT title, project_status AS status FROM projects ORDER BY id',
-      ).get();
+      final rows = await db
+          .customSelect(
+            'SELECT title, project_status AS status FROM projects ORDER BY id',
+          )
+          .get();
 
-      final byTitle = {for (final r in rows) r.read<String>('title'): r.read<String>('status')};
+      final byTitle = {
+        for (final r in rows) r.read<String>('title'): r.read<String>('status'),
+      };
       expect(byTitle['计划项目'], 'active');
       expect(byTitle['等待项目'], 'active');
       expect(byTitle['进行项目'], 'active');

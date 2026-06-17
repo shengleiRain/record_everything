@@ -7,6 +7,7 @@ import '../../../data/database/app_database.dart';
 import '../providers/life_item_providers.dart';
 import '../widgets/life_item_card.dart';
 import '../widgets/complete_action_sheet.dart';
+import '../widgets/life_item_detail_sheet.dart';
 import '../../bill/providers/bill_providers.dart';
 
 enum _LifeItemFilter {
@@ -111,7 +112,8 @@ class LifeItemListPage extends ConsumerWidget {
                       ),
                       child: LifeItemCard(
                         item: item,
-                        onTap: () => context.push('/items/${item.id}'),
+                        onTap: () =>
+                            showLifeItemDetailSheet(context, ref, item),
                         onComplete: () =>
                             _showCompleteAction(context, ref, item),
                         onDefer: () => _showDeferPicker(context, ref, item),

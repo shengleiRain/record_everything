@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../bill/widgets/bill_detail_sheet.dart';
+import '../../../domain/enums/project_status.dart';
 import '../../life_item/providers/life_item_providers.dart';
 import '../../life_item/widgets/complete_action_sheet.dart';
+import '../../life_item/widgets/life_item_detail_sheet.dart';
 import '../models/agenda_item_view_model.dart';
 import 'agenda_row.dart';
 
@@ -55,8 +57,8 @@ class SelectedDayAgenda extends ConsumerWidget {
                           ? () => _showDeferPicker(context, ref, items[i])
                           : null,
                       onEdit: items[i].kind == AgendaItemKind.billRecord
-                          ? () => context.push('/bills/${items[i].id}')
-                          : items[i].kind == AgendaItemKind.project
+                          ? () => context.push('/bills/${items[i].id}/edit')
+                          : _canEditProject(items[i])
                           ? () => context.push('/projects/${items[i].id}/edit')
                           : null,
                       onDelete: items[i].kind == AgendaItemKind.billRecord
@@ -78,13 +80,14 @@ class SelectedDayAgenda extends ConsumerWidget {
   ) {
     switch (item.kind) {
       case AgendaItemKind.lifeItem:
-        context.push('/items/${item.id}');
+        final lifeItem = item.lifeItem;
+        if (lifeItem != null) {
+          showLifeItemDetailSheet(context, ref, lifeItem);
+        }
       case AgendaItemKind.billRecord:
         final bill = item.billRecord;
         if (bill != null) {
           showBillDetailSheet(context, ref, bill);
-        } else {
-          context.push('/bills/${item.id}');
         }
       case AgendaItemKind.project:
         context.push('/projects/${item.id}');
@@ -98,7 +101,6 @@ class SelectedDayAgenda extends ConsumerWidget {
   ) {
     final lifeItem = item.lifeItem;
     if (lifeItem == null) {
-      context.push('/items/${item.id}');
       return;
     }
     showCompleteActionSheet(
@@ -183,5 +185,12 @@ class SelectedDayAgenda extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  bool _canEditProject(AgendaItemViewModel item) {
+    if (item.kind != AgendaItemKind.project) return false;
+    final project = item.project;
+    if (project == null || project.deletedAt != null) return false;
+    return !ProjectStatus.fromString(project.projectStatus).isFinal;
   }
 }

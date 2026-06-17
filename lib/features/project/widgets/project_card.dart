@@ -30,8 +30,7 @@ class ProjectCard extends StatelessWidget {
     final theme = Theme.of(context);
     final ps = ProjectStatus.fromString(project.projectStatus);
     final stripeColor = _colorFor(ps);
-    // Archived projects are read-only: editing is not allowed.
-    final isArchived = ps == ProjectStatus.archived;
+    final isReadonly = ps.isFinal || project.deletedAt != null;
 
     final card = Card(
       margin: EdgeInsets.zero,
@@ -114,15 +113,14 @@ class ProjectCard extends StatelessWidget {
     );
 
     final actions = <SwipeAction>[
-      // Edit is a modification; archived projects are read-only.
-      if (onEdit != null && !isArchived)
+      if (onEdit != null && !isReadonly)
         SwipeAction(
           label: '编辑',
           icon: Icons.edit_outlined,
           color: AppColors.primary,
           onTap: onEdit!,
         ),
-      if (onArchive != null && ps != ProjectStatus.archived)
+      if (onArchive != null && ps == ProjectStatus.completed)
         SwipeAction(
           label: '归档',
           icon: Icons.inventory_2_outlined,
