@@ -7,7 +7,6 @@ import '../../../domain/enums/amount_type.dart';
 import '../../../domain/enums/repeat_period.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
-import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../data/database/app_database.dart';
@@ -15,8 +14,10 @@ import '../../../data/database/database_provider.dart';
 import '../models/reminder_preset.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
+import '../../../shared/widgets/money_text_form_field.dart';
 import '../../../shared/widgets/readonly_message.dart';
 import '../../project/widgets/project_picker_field.dart';
+import '../../settings/providers/settings_providers.dart';
 import '../providers/life_item_providers.dart';
 
 class LifeItemEditPage extends ConsumerStatefulWidget {
@@ -358,14 +359,13 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                       ),
                     ],
                     const SizedBox(height: 16),
-                    FutureBuilder(
-                      future: ref
-                          .read(databaseProvider)
-                          .categoryDao
-                          .getByType('item'),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) return const SizedBox.shrink();
-                        final cats = snapshot.data!;
+                    Builder(
+                      builder: (context) {
+                        final cats = ref
+                                .watch(categoriesByTypeProvider('item'))
+                                .valueOrNull ??
+                            const <Category>[];
+                        if (cats.isEmpty) return const SizedBox.shrink();
                         final validValue =
                             cats.any((c) => c.id == _selectedCategoryId)
                             ? _selectedCategoryId
@@ -408,8 +408,8 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                     DateField(
                       key: const ValueKey('life-item-date-field'),
                       label: '日期',
-                      value: DateFormatter.formatDate(_dueDate),
-                      onTap: () async {
+                      initialValue: _dueDate,
+                      onPick: () async {
                         final picked = await showDatePicker(
                           context: context,
                           initialDate: _dueDate,
@@ -419,6 +419,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                         if (picked != null && mounted) {
                           setState(() => _dueDate = picked);
                         }
+                        return picked;
                       },
                     ),
                     const SizedBox(height: 16),
@@ -438,16 +439,16 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                       const SizedBox(height: 16),
                       DateField(
                         label: '提醒日期',
-                        value: DateFormatter.formatDate(
-                          _customReminderTime ?? _dueDate,
-                        ),
-                        onTap: _pickCustomReminderDate,
+                        initialValue: _customReminderTime ?? _dueDate,
+                        onPick: _pickCustomReminderDate,
                       ),
                       const SizedBox(height: 16),
                       DateField(
                         label: '提醒时间',
-                        value: _formatTime(_customReminderTime ?? _dueDate),
-                        onTap: _pickCustomReminderTime,
+                        initialValue: _customReminderTime ?? _dueDate,
+                        formatter: _formatTime,
+                        suffixIcon: Icons.access_time,
+                        onPick: _pickCustomReminderTime,
                       ),
                     ],
                     const SizedBox(height: 16),
@@ -464,16 +465,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                     ),
                     if (_amountType != AmountType.none) ...[
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _amountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: const InputDecoration(
-                          labelText: '金额',
-                          prefixText: '¥',
-                        ),
-                      ),
+                      MoneyTextFormField(controller: _amountController),
                     ],
                   ],
                 ),
@@ -531,7 +523,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
     );
   }
 
-  Future<void> _pickCustomReminderDate() async {
+  Future<DateTime?> _pickCustomReminderDate() async {
     final current = _customReminderTime ?? _dueDate;
     final picked = await showDatePicker(
       context: context,
@@ -539,34 +531,34 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
     );
-    if (picked == null || !mounted) return;
-    setState(() {
-      _customReminderTime = DateTime(
-        picked.year,
-        picked.month,
-        picked.day,
-        current.hour,
-        current.minute,
-      );
-    });
+    if (picked == null || !mounted) return null;
+    final merged = DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      current.hour,
+      current.minute,
+    );
+    setState(() => _customReminderTime = merged);
+    return merged;
   }
 
-  Future<void> _pickCustomReminderTime() async {
+  Future<DateTime?> _pickCustomReminderTime() async {
     final current = _customReminderTime ?? _dueDate;
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(current),
     );
-    if (picked == null || !mounted) return;
-    setState(() {
-      _customReminderTime = DateTime(
-        current.year,
-        current.month,
-        current.day,
-        picked.hour,
-        picked.minute,
-      );
-    });
+    if (picked == null || !mounted) return null;
+    final merged = DateTime(
+      current.year,
+      current.month,
+      current.day,
+      picked.hour,
+      picked.minute,
+    );
+    setState(() => _customReminderTime = merged);
+    return merged;
   }
 
   String _formatTime(DateTime value) {
@@ -659,12 +651,9 @@ class _ItemTemplatePickerSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final categoriesAsync = ref.watch(
-      FutureProvider.autoDispose(
-        (ref) => ref.read(databaseProvider).categoryDao.getByType('item'),
-      ),
-    );
-    final categories = categoriesAsync.valueOrNull ?? const <Category>[];
+    final categories =
+        ref.watch(categoriesByTypeProvider('item')).valueOrNull ??
+        const <Category>[];
     final categoryNames = {
       for (final category in categories) category.id: category.name,
     };

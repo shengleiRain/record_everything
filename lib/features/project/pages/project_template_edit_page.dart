@@ -7,11 +7,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../data/database/app_database.dart';
-import '../../../data/database/database_provider.dart';
 import '../../../data/repositories/project_repository.dart';
 import '../../../domain/enums/amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
+import '../../settings/providers/settings_providers.dart';
 import '../providers/project_providers.dart';
 import '../widgets/step_editor/step_draft.dart';
 import '../widgets/step_editor/step_draft_card.dart';
@@ -39,7 +39,6 @@ class _ProjectTemplateEditPageState
   final _noteController = TextEditingController();
   final StepEditorController<_StepDraft> _stepEditor = StepEditorController();
 
-  Future<List<Category>>? _categoriesFuture;
   bool _loaded = false;
   bool _isEdit = false;
   int? _editId;
@@ -49,10 +48,6 @@ class _ProjectTemplateEditPageState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _categoriesFuture ??= ref
-        .read(databaseProvider)
-        .categoryDao
-        .getByType('project');
     if (_loaded) return;
     final idStr = GoRouterState.of(context).pathParameters['id'];
     if (idStr != null && idStr != 'new') {
@@ -192,8 +187,6 @@ class _ProjectTemplateEditPageState
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               sliver: SliverToBoxAdapter(
                 child: _TemplateInfoSection(
-                  categoriesFuture:
-                      _categoriesFuture ?? Future.value(const <Category>[]),
                   categoryId: _categoryId,
                   nameController: _nameController,
                   noteController: _noteController,
@@ -342,23 +335,24 @@ class _ProjectTemplateEditPageState
   }
 }
 
-class _TemplateInfoSection extends StatelessWidget {
+class _TemplateInfoSection extends ConsumerWidget {
   const _TemplateInfoSection({
-    required this.categoriesFuture,
     required this.categoryId,
     required this.nameController,
     required this.noteController,
     required this.onCategorySelected,
   });
 
-  final Future<List<Category>> categoriesFuture;
   final int? categoryId;
   final TextEditingController nameController;
   final TextEditingController noteController;
   final ValueChanged<int?> onCategorySelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final categories =
+        ref.watch(categoriesByTypeProvider('project')).valueOrNull ??
+        const <Category>[];
     return SectionCard(
       title: '模板信息',
       child: Column(
@@ -370,35 +364,24 @@ class _TemplateInfoSection extends StatelessWidget {
             validator: (value) =>
                 value == null || value.trim().isEmpty ? '请输入模板名称' : null,
           ),
-          FutureBuilder<List<Category>>(
-            future: categoriesFuture,
-            builder: (context, snapshot) {
-              final categories = snapshot.data ?? const <Category>[];
-              if (categories.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return Column(
-                children: [
-                  const SizedBox(height: 16),
-                  AppDropdownField<int>(
-                    label: '默认项目类型',
-                    value: categories.any((c) => c.id == categoryId)
-                        ? categoryId
-                        : null,
-                    options: categories
-                        .map(
-                          (category) => AppDropdownOption(
-                            value: category.id,
-                            label: category.name,
-                          ),
-                        )
-                        .toList(),
-                    onSelected: onCategorySelected,
-                  ),
-                ],
-              );
-            },
-          ),
+          if (categories.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            AppDropdownField<int>(
+              label: '默认项目类型',
+              value: categories.any((c) => c.id == categoryId)
+                  ? categoryId
+                  : null,
+              options: categories
+                  .map(
+                    (category) => AppDropdownOption(
+                      value: category.id,
+                      label: category.name,
+                    ),
+                  )
+                  .toList(),
+              onSelected: onCategorySelected,
+            ),
+          ],
           const SizedBox(height: 16),
           TextFormField(
             key: const ValueKey('project-template-note-field'),

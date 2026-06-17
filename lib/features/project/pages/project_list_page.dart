@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
-import '../../../data/database/database_provider.dart';
 import '../../../domain/enums/project_status.dart';
+import '../../settings/providers/settings_providers.dart';
 import '../providers/project_providers.dart';
 import '../widgets/project_card.dart';
 
@@ -104,19 +104,16 @@ class _GroupedProjectList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<List<Category>>(
-      future: ref.read(databaseProvider).categoryDao.getByType('project'),
-      builder: (context, snapshot) {
-        final categories = snapshot.data ?? const <Category>[];
-        final grouped = _groupProjects(projects, categories);
-        return ListView.builder(
-          padding: const EdgeInsets.only(bottom: 88),
-          itemCount: grouped.length,
-          itemBuilder: (context, index) {
-            final group = grouped[index];
-            return _ProjectCategorySection(group: group);
-          },
-        );
+    final categories =
+        ref.watch(categoriesByTypeProvider('project')).valueOrNull ??
+        const <Category>[];
+    final grouped = _groupProjects(projects, categories);
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 88),
+      itemCount: grouped.length,
+      itemBuilder: (context, index) {
+        final group = grouped[index];
+        return _ProjectCategorySection(group: group);
       },
     );
   }
@@ -301,25 +298,22 @@ class _CategoryFilterBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<List<Category>>(
-      future: ref.read(databaseProvider).categoryDao.getByType('project'),
-      builder: (context, snapshot) {
-        final categories = snapshot.data ?? const <Category>[];
-        if (categories.isEmpty) return const SizedBox.shrink();
-        return SizedBox(
-          height: 46,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            children: [
-              _chip(context, null, '全部类型'),
-              ...categories.map(
-                (category) => _chip(context, category.id, category.name),
-              ),
-            ],
+    final categories =
+        ref.watch(categoriesByTypeProvider('project')).valueOrNull ??
+        const <Category>[];
+    if (categories.isEmpty) return const SizedBox.shrink();
+    return SizedBox(
+      height: 46,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        children: [
+          _chip(context, null, '全部类型'),
+          ...categories.map(
+            (category) => _chip(context, category.id, category.name),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 

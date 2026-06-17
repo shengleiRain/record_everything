@@ -16,6 +16,7 @@ import '../../../domain/enums/project_status.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
 import '../../../shared/widgets/readonly_message.dart';
+import '../../settings/providers/settings_providers.dart';
 import '../providers/project_providers.dart';
 import '../widgets/step_editor/step_draft.dart';
 import '../widgets/step_editor/step_draft_card.dart';
@@ -227,12 +228,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       return;
     }
     if (!_formKey.currentState!.validate()) return;
-    if (_startDate == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请选择关键日期')));
-      return;
-    }
     final notifier = ref.read(projectNotifierProvider.notifier);
 
     await runSave(() async {
@@ -537,10 +532,8 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                                                 onDelete: _deleteCurrentStep,
                                                 extraSlot: (draft) => DateField(
                                                   label: '到期日期',
-                                                  value: DateFormatter.formatDate(
-                                                    draft.dueDate,
-                                                  ),
-                                                  onTap: () async {
+                                                  initialValue: draft.dueDate,
+                                                  onPick: () async {
                                                     final picked =
                                                         await showDatePicker(
                                                           context: context,
@@ -555,6 +548,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                                                       draft.setDueDate(picked);
                                                       setState(() {});
                                                     }
+                                                    return picked;
                                                   },
                                                 ),
                                               ),
@@ -653,12 +647,13 @@ class _BasicInfoSectionState extends ConsumerState<_BasicInfoSection> {
             onChanged: (_) => widget.onTitleManuallyEdited(),
           ),
           const SizedBox(height: 16),
-          FutureBuilder(
-            future: ref.read(databaseProvider).categoryDao.getByType('project'),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) return const SizedBox.shrink();
-              final cats = snapshot.data!;
+          Builder(
+            builder: (context) {
+              final cats =
+                  ref.watch(categoriesByTypeProvider('project')).valueOrNull ??
+                  const <Category>[];
               _publishCategoriesLoaded(cats);
+              if (cats.isEmpty) return const SizedBox.shrink();
               final validValue =
                   cats.any((c) => c.id == widget.selectedCategoryId)
                   ? widget.selectedCategoryId
@@ -681,11 +676,12 @@ class _BasicInfoSectionState extends ConsumerState<_BasicInfoSection> {
           ),
           const SizedBox(height: 16),
           DateField(
+            key: const ValueKey('project-key-date-field'),
             label: '关键日期 *',
-            value: widget.startDate != null
-                ? DateFormatter.formatDate(widget.startDate!)
-                : '未设置',
-            onTap: () async {
+            initialValue: widget.startDate,
+            validator: (value) =>
+                value == null ? '请选择关键日期' : null,
+            onPick: () async {
               final picked = await showDatePicker(
                 context: context,
                 initialDate: widget.startDate ?? DateTime.now(),
@@ -695,6 +691,7 @@ class _BasicInfoSectionState extends ConsumerState<_BasicInfoSection> {
               if (picked != null) {
                 widget.onStartDateChanged(picked);
               }
+              return picked;
             },
           ),
           const SizedBox(height: 16),

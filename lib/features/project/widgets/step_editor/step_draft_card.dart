@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../domain/enums/amount_type.dart';
 import '../../../../shared/widgets/app_dropdown_field.dart';
+import '../../../../shared/widgets/money_text_form_field.dart';
 import 'step_draft.dart';
 
 /// A card that edits a single [StepDraft].
@@ -93,16 +94,10 @@ class StepDraftCard<T extends StepDraft> extends StatelessWidget {
                   ),
                   if (draft.amountType != AmountType.none) ...[
                     const SizedBox(height: 12),
-                    TextFormField(
+                    MoneyTextFormField(
                       key: amountFieldKey,
                       controller: draft.amountController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: amountLabel,
-                        prefixText: '¥',
-                      ),
+                      label: amountLabel,
                     ),
                   ],
                   if (extraSlot != null) ...[

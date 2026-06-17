@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
-import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../domain/enums/bill_amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
+import '../../../shared/widgets/money_text_form_field.dart';
 import '../../../shared/widgets/readonly_message.dart';
 import '../../../shared/widgets/saving_button.dart';
 import '../../project/widgets/project_picker_field.dart';
@@ -18,6 +18,7 @@ import '../providers/bill_providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../life_item/providers/life_item_providers.dart';
+import '../../settings/providers/settings_providers.dart';
 
 class BillEditPage extends ConsumerStatefulWidget {
   const BillEditPage({super.key});
@@ -41,22 +42,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
-  List<Category> _categories = [];
   bool _isReadonly = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCategories();
-  }
-
-  void _loadCategories() {
-    final type = _amountType == BillAmountType.income ? 'income' : 'expense';
-    ref.read(databaseProvider).categoryDao.getByType(type).then((cats) {
-      if (!mounted) return;
-      setState(() => _categories = cats);
-    });
-  }
 
   @override
   void didChangeDependencies() {
@@ -133,6 +119,11 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
         ),
       );
     }
+    final categoryType =
+        _amountType == BillAmountType.income ? 'income' : 'expense';
+    final categories =
+        ref.watch(categoriesByTypeProvider(categoryType)).valueOrNull ??
+        const <Category>[];
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -194,30 +185,21 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                     onSelected: (v) => setState(() {
                       _amountType = v ?? _amountType;
                       _selectedCategoryId = null;
-                      _loadCategories();
                     }),
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  MoneyTextFormField(
                     controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: '金额',
-                      prefixText: '¥',
-                    ),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? '请输入金额' : null,
+                    isRequired: true,
                   ),
                   const SizedBox(height: 16),
-                  if (_categories.isNotEmpty)
+                  if (categories.isNotEmpty)
                     AppDropdownField<int>(
                       label: '分类',
-                      value: _categories.any((c) => c.id == _selectedCategoryId)
+                      value: categories.any((c) => c.id == _selectedCategoryId)
                           ? _selectedCategoryId
                           : null,
-                      options: _categories
+                      options: categories
                           .map(
                             (c) =>
                                 AppDropdownOption(value: c.id, label: c.name),
@@ -242,8 +224,8 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                   DateField(
                     key: const ValueKey('bill-date-field'),
                     label: '日期',
-                    value: DateFormatter.formatDate(_billTime),
-                    onTap: () async {
+                    initialValue: _billTime,
+                    onPick: () async {
                       final picked = await showDatePicker(
                         context: context,
                         initialDate: _billTime,
@@ -253,6 +235,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                       if (picked != null && mounted) {
                         setState(() => _billTime = picked);
                       }
+                      return picked;
                     },
                   ),
                 ],

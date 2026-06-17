@@ -16,6 +16,18 @@ final categoriesProvider = StreamProvider<List<Category>>((ref) {
   return ref.watch(categoryRepositoryProvider).watchAll();
 });
 
+/// Categories filtered by [type] (e.g. 'income', 'expense', 'item', 'project').
+///
+/// Uses a [FutureProvider] (one-shot) rather than a [StreamProvider] because
+/// the form pages read the category list once on open — they don't need to
+/// react to live changes, and a stream would prevent widget-test
+/// `pumpAndSettle` from ever completing. Callers that need fresh data after a
+/// category edit can `ref.invalidate` this provider.
+final categoriesByTypeProvider =
+    FutureProvider.family<List<Category>, String>((ref, type) {
+      return ref.watch(categoryRepositoryProvider).getByType(type);
+    });
+
 final backupServiceProvider = Provider<BackupService>((ref) {
   return BackupService(ref.watch(databaseProvider));
 });
