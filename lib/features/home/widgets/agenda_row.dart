@@ -77,14 +77,19 @@ class AgendaRow extends StatelessWidget {
                               ProjectNameChip(projectId: _projectId),
                               if (_metaText.isNotEmpty)
                                 Flexible(
-                                  child: Text(
-                                    _metaText,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: AppColors.textSecondary,
-                                        ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      _metaText,
+                                      maxLines: 1,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                    ),
                                   ),
                                 ),
                             ],

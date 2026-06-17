@@ -72,7 +72,10 @@ Future<void> showBillDetailSheet(
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ),
-                      ProjectNameChip(projectId: bill.projectId),
+                      ProjectNameChip(
+                        projectId: bill.projectId,
+                        expanded: true,
+                      ),
                     ],
                   ),
                 ],

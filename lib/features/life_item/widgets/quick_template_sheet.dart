@@ -37,30 +37,25 @@ const templates = [
     title: '会员订阅',
     amountType: 'expense',
     repeatRule: 'monthly',
-    categoryName: '订阅会员',
+    categoryName: '订阅续费',
   ),
   TemplateData(
     title: '保险续费',
     amountType: 'expense',
     repeatRule: 'yearly',
-    categoryName: '保险',
+    categoryName: '账单提醒',
   ),
   TemplateData(title: '证件到期', amountType: 'none', categoryName: '证件'),
-  TemplateData(title: '药品过期', amountType: 'none', categoryName: '药品'),
-  TemplateData(title: '食品过期', amountType: 'none', categoryName: '食品'),
+  TemplateData(title: '药品过期', amountType: 'none', categoryName: '药品健康'),
+  TemplateData(title: '食品过期', amountType: 'none', categoryName: '食品库存'),
   TemplateData(
     title: '滤芯更换',
     amountType: 'expense',
     repeatRule: 'every:180:days',
     categoryName: '家庭耗材',
   ),
-  TemplateData(
-    title: '工资收入',
-    amountType: 'income',
-    repeatRule: 'monthly',
-    categoryName: '工资',
-  ),
-  TemplateData(title: '普通待办', amountType: 'none', categoryName: '普通待办'),
+  TemplateData(title: '工资收入', amountType: 'income', repeatRule: 'monthly'),
+  TemplateData(title: '待办', amountType: 'none', categoryName: '待办'),
 ];
 
 void showQuickTemplateSheet(

@@ -10,10 +10,34 @@ import '../providers/project_providers.dart';
 /// title via [projectByIdProvider] (mirroring the detail-page `_ProjectLink`)
 /// and navigates to `/projects/$projectId` on tap. Designed to sit inside a
 /// card's subtitle line.
+///
+/// A small tappable chip that shows a bound project's name.
+///
+/// Renders nothing when [projectId] is null. Otherwise it resolves the project
+/// title via [projectByIdProvider] (mirroring the detail-page `_ProjectLink`)
+/// and navigates to `/projects/$projectId` on tap. Designed to sit inside a
+/// card's subtitle line.
+///
+/// The chip always sizes to its content (icon + padding + title) — it never
+/// stretches to fill a row. [expanded] only loosens the title's max width so
+/// longer names render in full where there's room (e.g. inside a bottom-sheet
+/// "归属项目" row); pass `expanded: false` (the default) to keep the title tight
+/// for compact card rows. [maxExpandedWidth] caps the title width in expanded
+/// mode so an unusually long name still wraps with an ellipsis.
 class ProjectNameChip extends ConsumerWidget {
-  const ProjectNameChip({super.key, required this.projectId});
+  const ProjectNameChip({
+    super.key,
+    required this.projectId,
+    this.expanded = false,
+    this.maxExpandedWidth = 220,
+  });
 
   final int? projectId;
+  final bool expanded;
+
+  /// Upper bound on the title width in [expanded] mode, so very long project
+  /// names don't stretch the chip out. Ignored when [expanded] is false.
+  final double maxExpandedWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,6 +49,16 @@ class ProjectNameChip extends ConsumerWidget {
     if (project == null || project.deletedAt != null) {
       return const SizedBox.shrink();
     }
+
+    final title = Text(
+      project.title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: Colors.blue,
+        fontWeight: FontWeight.w700,
+      ),
+    );
 
     return InkWell(
       onTap: () => context.push('/projects/$id'),
@@ -42,16 +76,10 @@ class ProjectNameChip extends ConsumerWidget {
             const Icon(Icons.folder_outlined, size: 12, color: Colors.blue),
             const SizedBox(width: 3),
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 120),
-              child: Text(
-                project.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.blue,
-                  fontWeight: FontWeight.w700,
-                ),
+              constraints: BoxConstraints(
+                maxWidth: expanded ? maxExpandedWidth : 80,
               ),
+              child: title,
             ),
           ],
         ),

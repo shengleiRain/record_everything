@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/category_icon_options.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/database/app_database.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
@@ -74,16 +75,11 @@ class _CategoryManagementPageState
     );
   }
 
-  Future<void> _showCategoryDialog(
-    BuildContext context, {
-    Category? category,
-  }) {
+  Future<void> _showCategoryDialog(BuildContext context, {Category? category}) {
     return showDialog<void>(
       context: context,
-      builder: (dialogContext) => _CategoryEditDialog(
-        category: category,
-        type: _selectedType,
-      ),
+      builder: (dialogContext) =>
+          _CategoryEditDialog(category: category, type: _selectedType),
     );
   }
 
@@ -265,12 +261,10 @@ class _CategoryRow extends StatelessWidget {
             color: AppColors.primaryLight.withValues(alpha: 0.28),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
-            category.name.characters.first,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.primaryDark,
-              fontWeight: FontWeight.w800,
-            ),
+          child: Icon(
+            categoryIconData(category.icon),
+            size: 17,
+            color: AppColors.primaryDark,
           ),
         ),
         title: Row(
@@ -309,7 +303,7 @@ class _CategoryRow extends StatelessWidget {
           },
           itemBuilder: (_) => [
             if (!category.isDefault)
-              const PopupMenuItem(value: 'edit', child: Text('重命名')),
+              const PopupMenuItem(value: 'edit', child: Text('编辑')),
             PopupMenuItem(
               value: 'pin',
               child: Text(category.isPinned ? '取消常用置顶' : '常用置顶'),
@@ -380,12 +374,14 @@ class _CategoryEditDialog extends ConsumerStatefulWidget {
   final String type;
 
   @override
-  ConsumerState<_CategoryEditDialog> createState() => _CategoryEditDialogState();
+  ConsumerState<_CategoryEditDialog> createState() =>
+      _CategoryEditDialogState();
 }
 
 class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog> {
+  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
-  late final TextEditingController _iconController;
+  late String _iconKey;
   late final bool _isEditing;
   bool _saving = false;
 
@@ -394,43 +390,35 @@ class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog> {
     super.initState();
     _isEditing = widget.category != null;
     _nameController = TextEditingController(text: widget.category?.name ?? '');
-    _iconController = TextEditingController(
-      text: widget.category?.icon ?? 'category',
-    );
+    _iconKey = categoryIconOption(widget.category?.icon).key;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _iconController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
     final name = _nameController.text.trim();
-    if (name.isEmpty) return;
     FocusScope.of(context).unfocus();
     setState(() => _saving = true);
     final notifier = ref.read(categoryNotifierProvider.notifier);
     final category = widget.category;
     try {
       if (category == null) {
-        await notifier.create(
-          name: name,
-          type: widget.type,
-          icon: _iconController.text,
-        );
+        await notifier.create(name: name, type: widget.type, icon: _iconKey);
       } else {
-        await notifier.update(
-          category.copyWith(
-            name: name,
-            icon: _iconController.text.trim().isEmpty
-                ? 'category'
-                : _iconController.text.trim(),
-          ),
-        );
+        await notifier.update(category.copyWith(name: name, icon: _iconKey));
       }
       if (mounted) Navigator.of(context).maybePop();
+    } on Object catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('保存失败：$error')));
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -438,28 +426,63 @@ class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final selected = categoryIconOption(_iconKey);
     return AlertDialog(
       title: Text(_isEditing ? '编辑分类' : '新增分类'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _nameController,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: '名称',
-              border: OutlineInputBorder(),
+      contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      content: SizedBox(
+        width: 360,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CategoryPreview(
+                  name: _nameController.text.trim().isEmpty
+                      ? (_isEditing ? widget.category!.name : '新分类')
+                      : _nameController.text.trim(),
+                  icon: selected.icon,
+                  typeLabel: _typeLabel(widget.type),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  key: const ValueKey('category-name-field'),
+                  controller: _nameController,
+                  autofocus: true,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: '分类名称',
+                    hintText: '例如：咖啡、家庭维修、学习计划',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 12,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return '请输入分类名称';
+                    }
+                    return null;
+                  },
+                  onChanged: (_) => setState(() {}),
+                  onFieldSubmitted: (_) => _saving ? null : _save(),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '选择图标',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                _CategoryIconPicker(
+                  selectedKey: _iconKey,
+                  onSelected: (key) => setState(() => _iconKey = key),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _iconController,
-            decoration: const InputDecoration(
-              labelText: '图标标识',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ],
+        ),
       ),
       actions: [
         TextButton(
@@ -468,9 +491,175 @@ class _CategoryEditDialogState extends ConsumerState<_CategoryEditDialog> {
         ),
         FilledButton(
           onPressed: _saving ? null : _save,
-          child: Text(_isEditing ? '保存' : '新增'),
+          child: _saving
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(_isEditing ? '保存' : '新增'),
         ),
       ],
+    );
+  }
+
+  String _typeLabel(String type) => switch (type) {
+    'income' => '收入分类',
+    'expense' => '支出分类',
+    'item' => '事项分类',
+    'project' => '项目分类',
+    _ => '分类',
+  };
+}
+
+class _CategoryPreview extends StatelessWidget {
+  const _CategoryPreview({
+    required this.name,
+    required this.icon,
+    required this.typeLabel,
+  });
+
+  final String name;
+  final IconData icon;
+  final String typeLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight.withValues(alpha: 0.24),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: AppColors.primaryDark),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    typeLabel,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryIconPicker extends StatelessWidget {
+  const _CategoryIconPicker({
+    required this.selectedKey,
+    required this.onSelected,
+  });
+
+  final String selectedKey;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 220,
+      child: GridView.builder(
+        itemCount: categoryIconOptions.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 5,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.92,
+        ),
+        itemBuilder: (context, index) {
+          final option = categoryIconOptions[index];
+          final selected = option.key == selectedKey;
+          return _CategoryIconChoice(
+            key: ValueKey('category-icon-option-${option.key}'),
+            option: option,
+            selected: selected,
+            onTap: () => onSelected(option.key),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CategoryIconChoice extends StatelessWidget {
+  const _CategoryIconChoice({
+    super.key,
+    required this.option,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final CategoryIconOption option;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.primary : AppColors.textSecondary;
+    return Tooltip(
+      message: option.label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primaryLight
+                : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary
+                  : Colors.black.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(option.icon, size: 22, color: color),
+              const SizedBox(height: 4),
+              Text(
+                option.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

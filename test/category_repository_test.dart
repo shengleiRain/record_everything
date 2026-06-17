@@ -16,6 +16,22 @@ void main() {
 
     tearDown(() => db.close());
 
+    test('seeds generic default categories for fresh installs', () async {
+      final income = await repository.getByType('income');
+      final expense = await repository.getByType('expense');
+      final items = await repository.getByType('item');
+      final projects = await repository.getByType('project');
+
+      expect(income.map((category) => category.name), contains('投资收益'));
+      expect(income.map((category) => category.name), contains('退款返现'));
+      expect(expense.map((category) => category.name), contains('人情礼物'));
+      expect(expense.map((category) => category.name), contains('旅行差旅'));
+      expect(items.map((category) => category.name), contains('账单提醒'));
+      expect(items.map((category) => category.name), contains('保修售后'));
+      expect(projects.map((category) => category.name), contains('个人项目'));
+      expect(projects.map((category) => category.name), contains('家庭事务'));
+    });
+
     test('creates and renames a custom category', () async {
       final created = await repository.create(
         name: '咖啡',

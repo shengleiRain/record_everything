@@ -99,7 +99,10 @@ Future<void> showLifeItemDetailSheet(
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ),
-                      ProjectNameChip(projectId: item.projectId),
+                      ProjectNameChip(
+                        projectId: item.projectId,
+                        expanded: true,
+                      ),
                     ],
                   ),
                 ],
