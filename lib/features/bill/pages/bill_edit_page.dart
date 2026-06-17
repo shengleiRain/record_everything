@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,10 +7,12 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/dialog_helper.dart';
+import '../../../core/utils/form_draft_store.dart';
 import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../domain/enums/bill_amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../../shared/widgets/dirty_guard_mixin.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
 import '../../../shared/widgets/money_text_form_field.dart';
 import '../../../shared/widgets/readonly_message.dart';
@@ -28,11 +32,14 @@ class BillEditPage extends ConsumerStatefulWidget {
 }
 
 class _BillEditPageState extends ConsumerState<BillEditPage>
-    with FormSaveMixin<BillEditPage> {
+    with FormSaveMixin<BillEditPage>, DirtyGuardMixin<BillEditPage> {
+  static const String _draftType = 'bill';
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
+  final FormDraftStore _draftStore = FormDraftStore();
+  Timer? _draftDebounce;
 
   BillAmountType _amountType = BillAmountType.expense;
   DateTime _billTime = DateTime.now();
@@ -75,8 +82,81 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
       _isEdit = true;
       _editId = int.tryParse(idStr);
       _loadBill();
+    } else {
+      // New bill: offer to restore a recent unsaved draft.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRestoreDraft());
     }
     _loaded = true;
+  }
+
+  Future<void> _maybeRestoreDraft() async {
+    if (!mounted) return;
+    final draft = await _draftStore.load(_draftType);
+    if (draft == null || !mounted) return;
+    final savedAt = DateTime.tryParse(draft['_savedAt'] as String? ?? '');
+    final ageLabel = savedAt == null
+        ? ''
+        : '（${savedAt.month}/${savedAt.day} ${savedAt.hour.toString().padLeft(2, '0')}:${savedAt.minute.toString().padLeft(2, '0')}）';
+    final restore = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('恢复未完成的账单？'),
+        content: Text('发现一条未提交的草稿$ageLabel，是否恢复？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('丢弃'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('恢复'),
+          ),
+        ],
+      ),
+    );
+    if (restore != true) {
+      await _draftStore.clear(_draftType);
+      return;
+    }
+    _applyDraft(draft);
+  }
+
+  void _applyDraft(Map<String, dynamic> draft) {
+    setState(() {
+      _titleController.text = (draft['title'] as String?) ?? '';
+      _amountController.text = (draft['amount'] as String?) ?? '';
+      _noteController.text = (draft['note'] as String?) ?? '';
+      _amountType = BillAmountType.fromString(
+        (draft['amountType'] as String?) ?? 'expense',
+      );
+      _billTime = DateTime.tryParse(
+            (draft['billTime'] as String?) ?? '',
+          ) ??
+          DateTime.now();
+      _selectedCategoryId = draft['categoryId'] as int?;
+      _projectId = draft['projectId'] as int?;
+    });
+    markDirty();
+  }
+
+  void _markDirtyAndPersist() {
+    markDirty();
+    _draftDebounce?.cancel();
+    _draftDebounce = Timer(const Duration(milliseconds: 500), () {
+      _draftStore.save(_draftType, _collectDraft());
+    });
+  }
+
+  Map<String, dynamic> _collectDraft() {
+    return {
+      'title': _titleController.text,
+      'amount': _amountController.text,
+      'note': _noteController.text,
+      'amountType': _amountType.value,
+      'billTime': _billTime.toIso8601String(),
+      'categoryId': _selectedCategoryId,
+      'projectId': _projectId,
+    };
   }
 
   Future<void> _loadBill() async {
@@ -99,6 +179,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
 
   @override
   void dispose() {
+    _draftDebounce?.cancel();
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
@@ -124,50 +205,55 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
     final categories =
         ref.watch(categoriesByTypeProvider(categoryType)).valueOrNull ??
         const <Category>[];
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(_isEdit ? '编辑账单' : '新建账单'),
-        actions: [
-          IconButton(
-            tooltip: '保存',
-            icon: isSaving
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check),
-            onPressed: isSaving ? null : _save,
-          ),
-          if (_isEdit)
+    return PopScope(
+      canPop: !isDirty,
+      onPopInvokedWithResult: (didPop, _) => onPopInvoked(didPop),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Text(_isEdit ? '编辑账单' : '新建账单'),
+          actions: [
             IconButton(
-              tooltip: '删除',
-              icon: const Icon(Icons.delete),
-              onPressed: isSaving ? null : () => _confirmDelete(context),
+              tooltip: '保存',
+              icon: isSaving
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check),
+              onPressed: isSaving ? null : _save,
             ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            SectionCard(
-              title: '账单内容',
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(labelText: '标题 *'),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? '请输入标题' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _noteController,
-                    decoration: const InputDecoration(labelText: '备注'),
-                    maxLines: 2,
-                  ),
+            if (_isEdit)
+              IconButton(
+                tooltip: '删除',
+                icon: const Icon(Icons.delete),
+                onPressed: isSaving ? null : () => _confirmDelete(context),
+              ),
+          ],
+        ),
+        body: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              SectionCard(
+                title: '账单内容',
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(labelText: '标题 *'),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? '请输入标题' : null,
+                      onChanged: (_) => _markDirtyAndPersist(),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _noteController,
+                      decoration: const InputDecoration(labelText: '备注'),
+                      maxLines: 2,
+                      onChanged: (_) => _markDirtyAndPersist(),
+                    ),
                 ],
               ),
             ),
@@ -185,6 +271,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                     onSelected: (v) => setState(() {
                       _amountType = v ?? _amountType;
                       _selectedCategoryId = null;
+                      _markDirtyAndPersist();
                     }),
                   ),
                   const SizedBox(height: 16),
@@ -205,8 +292,10 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                                 AppDropdownOption(value: c.id, label: c.name),
                           )
                           .toList(),
-                      onSelected: (v) =>
-                          setState(() => _selectedCategoryId = v),
+                      onSelected: (v) => setState(() {
+                        _selectedCategoryId = v;
+                        _markDirtyAndPersist();
+                      }),
                     ),
                 ],
               ),
@@ -218,7 +307,10 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                 children: [
                   ProjectPickerField(
                     value: _projectId,
-                    onChanged: (v) => setState(() => _projectId = v),
+                    onChanged: (v) => setState(() {
+                      _projectId = v;
+                      _markDirtyAndPersist();
+                    }),
                   ),
                   const SizedBox(height: 16),
                   DateField(
@@ -234,6 +326,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                       );
                       if (picked != null && mounted) {
                         setState(() => _billTime = picked);
+                        _markDirtyAndPersist();
                       }
                       return picked;
                     },
@@ -249,6 +342,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -280,6 +374,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                 updatedAt: DateTime.now(),
               ),
             );
+        markClean();
         if (mounted) context.pop();
       });
     } else {
@@ -300,6 +395,8 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
         if (lifeItemId != null) {
           await ref.read(lifeItemNotifierProvider.notifier).complete(lifeItemId);
         }
+        markClean();
+        await _draftStore.clear(_draftType);
         if (mounted) context.pop();
       });
       // runSave surfaced any error via SnackBar; nothing more to do.

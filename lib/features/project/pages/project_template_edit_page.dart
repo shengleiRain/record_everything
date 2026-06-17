@@ -10,6 +10,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/repositories/project_repository.dart';
 import '../../../domain/enums/amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../../shared/widgets/dirty_guard_mixin.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
 import '../../settings/providers/settings_providers.dart';
 import '../providers/project_providers.dart';
@@ -33,7 +34,7 @@ class ProjectTemplateEditPage extends ConsumerStatefulWidget {
 
 class _ProjectTemplateEditPageState
     extends ConsumerState<ProjectTemplateEditPage>
-    with FormSaveMixin<ProjectTemplateEditPage> {
+    with FormSaveMixin<ProjectTemplateEditPage>, DirtyGuardMixin<ProjectTemplateEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _noteController = TextEditingController();
@@ -135,7 +136,10 @@ class _ProjectTemplateEditPageState
           steps: steps,
         );
       }
-      if (mounted) context.pop();
+      if (mounted) {
+        markClean();
+        context.pop();
+      }
     });
   }
 
@@ -160,26 +164,29 @@ class _ProjectTemplateEditPageState
     final bottomPadding = mediaQuery.viewPadding.bottom + _stepPageBottomInset;
     final keyboardInset = mediaQuery.viewInsets.bottom;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(_isEdit ? '编辑项目模板' : '新建项目模板'),
-        actions: [
-          IconButton(
-            tooltip: '保存',
-            icon: isSaving
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check),
-            onPressed: (_canSave && !isSaving) ? _save : null,
-          ),
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: CustomScrollView(
+    return PopScope(
+      canPop: !isDirty,
+      onPopInvokedWithResult: (didPop, _) => onPopInvoked(didPop),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Text(_isEdit ? '编辑项目模板' : '新建项目模板'),
+          actions: [
+            IconButton(
+              tooltip: '保存',
+              icon: isSaving
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check),
+              onPressed: (_canSave && !isSaving) ? _save : null,
+            ),
+          ],
+        ),
+        body: Form(
+          key: _formKey,
+          child: CustomScrollView(
           key: const ValueKey('project-template-scroll-view'),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           slivers: [
@@ -330,6 +337,7 @@ class _ProjectTemplateEditPageState
             ),
           ],
         ),
+      ),
       ),
     );
   }

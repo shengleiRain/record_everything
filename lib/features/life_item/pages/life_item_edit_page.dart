@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +15,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../models/reminder_preset.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../../shared/widgets/dirty_guard_mixin.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
 import '../../../shared/widgets/money_text_form_field.dart';
 import '../../../shared/widgets/readonly_message.dart';
@@ -28,7 +31,7 @@ class LifeItemEditPage extends ConsumerStatefulWidget {
 }
 
 class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
-    with FormSaveMixin<LifeItemEditPage> {
+    with FormSaveMixin<LifeItemEditPage>, DirtyGuardMixin<LifeItemEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
@@ -43,6 +46,8 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   int? _projectId;
   int? _selectedTemplateId;
   String _titleInput = '';
+  String _recommendTitle = '';
+  Timer? _recommendDebounce;
   ReminderPreset _reminderPreset = ReminderPreset.none;
   DateTime? _customReminderTime;
   bool _isEdit = false;
@@ -64,6 +69,16 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
     final next = _titleController.text;
     if (next == _titleInput) return;
     setState(() => _titleInput = next);
+    markDirty();
+    // Debounce the template recommendation query so we don't hit the DB on
+    // every keystroke.
+    _recommendDebounce?.cancel();
+    _recommendDebounce = Timer(
+      const Duration(milliseconds: 250),
+      () {
+        if (mounted) setState(() => _recommendTitle = next);
+      },
+    );
   }
 
   @override
@@ -214,6 +229,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
 
   @override
   void dispose() {
+    _recommendDebounce?.cancel();
     _titleController.removeListener(_onTitleChanged);
     _titleController.dispose();
     _descController.dispose();
@@ -267,6 +283,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
             updatedAt: DateTime.now(),
           ),
         );
+        markClean();
         if (mounted) context.pop();
       });
     } else {
@@ -286,6 +303,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
           'remindTime': _resolvedReminderTime(),
           'repeatRule': _buildRepeatRule(),
         });
+        markClean();
         if (mounted) context.pop();
       });
     }
@@ -305,34 +323,37 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
         ),
       );
     }
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          _isReadonly
-              ? '${_isEdit ? '事项' : '新建事项'}（只读）'
-              : (_isEdit ? '编辑事项' : '新建事项'),
-        ),
-        actions: [
-          if (!_isEdit)
-            IconButton(
-              tooltip: '选择模板',
-              onPressed: isSaving ? null : _openTemplatePicker,
-              icon: const Icon(Icons.auto_awesome_motion_outlined),
-            ),
-          IconButton(
-            tooltip: _isEdit ? '保存修改' : '创建事项',
-            onPressed: isSaving ? null : _save,
-            icon: isSaving
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check_rounded),
+    return PopScope(
+      canPop: !isDirty,
+      onPopInvokedWithResult: (didPop, _) => onPopInvoked(didPop),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Text(
+            _isReadonly
+                ? '${_isEdit ? '事项' : '新建事项'}（只读）'
+                : (_isEdit ? '编辑事项' : '新建事项'),
           ),
-        ],
-      ),
-      body: AbsorbPointer(
+          actions: [
+            if (!_isEdit)
+              IconButton(
+                tooltip: '选择模板',
+                onPressed: isSaving ? null : _openTemplatePicker,
+                icon: const Icon(Icons.auto_awesome_motion_outlined),
+              ),
+            IconButton(
+              tooltip: _isEdit ? '保存修改' : '创建事项',
+              onPressed: isSaving ? null : _save,
+              icon: isSaving
+                  ? const SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.check_rounded),
+            ),
+          ],
+        ),
+        body: AbsorbPointer(
         // 终态/已删除时禁用整页交互，使所有字段只读。
         absorbing: _isReadonly,
         child: Form(
@@ -352,7 +373,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                     ),
                     if (!_isEdit) ...[
                       _ItemTemplateRecommendations(
-                        title: _titleInput,
+                        title: _recommendTitle,
                         selectedTemplateId: _selectedTemplateId,
                         onApply: (template) =>
                             _applyItemTemplate(template, replaceTitle: false),
@@ -512,6 +533,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
             ],
           ),
         ),
+      ),
       ),
     );
   }

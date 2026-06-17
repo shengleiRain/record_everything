@@ -14,6 +14,7 @@ import '../../../data/repositories/project_repository.dart';
 import '../../../domain/enums/amount_type.dart';
 import '../../../domain/enums/project_status.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
+import '../../../shared/widgets/dirty_guard_mixin.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
 import '../../../shared/widgets/readonly_message.dart';
 import '../../settings/providers/settings_providers.dart';
@@ -36,7 +37,7 @@ class ProjectEditPage extends ConsumerStatefulWidget {
 }
 
 class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
-    with FormSaveMixin<ProjectEditPage> {
+    with FormSaveMixin<ProjectEditPage>, DirtyGuardMixin<ProjectEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _participantController = TextEditingController();
@@ -289,6 +290,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
         );
       }
       if (!mounted) return;
+      markClean();
       context.pop();
     });
   }
@@ -357,43 +359,46 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
         ?.where((t) => t.id == _selectedTemplateId)
         .firstOrNull;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          _isReadonly
-              ? '${_isEdit ? '项目' : '新建项目'}（只读）'
-              : (_isEdit ? '编辑项目' : '新建项目'),
-        ),
-        actions: [
-          if (!_isEdit && !_isReadonly)
-            TextButton(
-              onPressed: isSaving ? null : _openTemplatePicker,
-              child: Text(
-                selectedTemplate?.name ?? '模板',
-                style: TextStyle(
-                  color: selectedTemplate != null
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+    return PopScope(
+      canPop: !isDirty,
+      onPopInvokedWithResult: (didPop, _) => onPopInvoked(didPop),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: Text(
+            _isReadonly
+                ? '${_isEdit ? '项目' : '新建项目'}（只读）'
+                : (_isEdit ? '编辑项目' : '新建项目'),
+          ),
+          actions: [
+            if (!_isEdit && !_isReadonly)
+              TextButton(
+                onPressed: isSaving ? null : _openTemplatePicker,
+                child: Text(
+                  selectedTemplate?.name ?? '模板',
+                  style: TextStyle(
+                    color: selectedTemplate != null
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
                 ),
               ),
-            ),
-          if (!_isReadonly)
-            IconButton(
-              key: const ValueKey('project-edit-save'),
-              tooltip: '保存',
-              icon: isSaving
-                  ? const SizedBox.square(
-                      dimension: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.check),
-              onPressed: isSaving ? null : _save,
-            ),
-        ],
-      ),
-      body: AbsorbPointer(
-        // 终态/已删除时禁用整页交互，使所有字段只读。
+            if (!_isReadonly)
+              IconButton(
+                key: const ValueKey('project-edit-save'),
+                tooltip: '保存',
+                icon: isSaving
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check),
+                onPressed: isSaving ? null : _save,
+              ),
+          ],
+        ),
+        body: AbsorbPointer(
+          // 终态/已删除时禁用整页交互，使所有字段只读。
         absorbing: _isReadonly,
         child: Form(
           key: _formKey,
@@ -573,6 +578,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
             ],
           ),
         ),
+      ),
       ),
     );
   }
