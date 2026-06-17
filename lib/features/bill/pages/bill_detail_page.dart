@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/money_formatter.dart';
+import '../../../core/widgets/deleted_entity_banner.dart';
 import '../../project/providers/project_providers.dart';
 import '../providers/bill_providers.dart';
 
@@ -23,6 +24,7 @@ class BillDetailPage extends ConsumerWidget {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(body: Center(child: Text('加载失败: $error'))),
       data: (bill) {
+        final isDeleted = bill.deletedAt != null;
         final isIncome = bill.amountType == 'income';
         final amountColor = isIncome ? AppColors.income : AppColors.expense;
         return Scaffold(
@@ -30,19 +32,30 @@ class BillDetailPage extends ConsumerWidget {
           appBar: AppBar(
             title: const Text('账单详情'),
             actions: [
-              IconButton(
-                tooltip: '编辑',
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => context.push('/bills/${bill.id}/edit'),
-              ),
-              IconButton(
-                tooltip: '删除',
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => _confirmDelete(context, ref, bill.id),
-              ),
+              if (!isDeleted) ...[
+                IconButton(
+                  tooltip: '编辑',
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => context.push('/bills/${bill.id}/edit'),
+                ),
+                IconButton(
+                  tooltip: '删除',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _confirmDelete(context, ref, bill.id),
+                ),
+              ],
             ],
           ),
-          body: ListView(
+          body: Column(
+            children: [
+              if (isDeleted)
+                DeletedEntityBanner(
+                  entityLabel: '账单',
+                  onRestore: () =>
+                      ref.read(billRepoProvider).restoreRecord(bill.id),
+                ),
+              Expanded(
+                child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
               Card(
@@ -126,7 +139,10 @@ class BillDetailPage extends ConsumerWidget {
               ],
             ],
           ),
-        );
+          ),
+        ],
+      ),
+      );
       },
     );
   }
@@ -164,14 +180,21 @@ class _ProjectLink extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final project = ref.watch(projectByIdProvider(projectId)).valueOrNull;
+    // Project not found or is in the recycle bin.
+    if (project == null || project.deletedAt != null) {
+      return const SizedBox.shrink();
+    }
+
     return Card(
       elevation: 0,
       color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppColors.cardRadiusLarge),
+      ),
       child: ListTile(
         leading: const Icon(Icons.folder_outlined),
         title: const Text('归属项目'),
-        subtitle: Text(project?.title ?? '加载中'),
+        subtitle: Text(project.title),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/projects/$projectId'),
       ),

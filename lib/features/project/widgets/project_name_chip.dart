@@ -21,7 +21,10 @@ class ProjectNameChip extends ConsumerWidget {
     if (id == null) return const SizedBox.shrink();
 
     final project = ref.watch(projectByIdProvider(id)).valueOrNull;
-    final label = project?.title;
+    // Project not found or is in the recycle bin — hide the chip entirely.
+    if (project == null || project.deletedAt != null) {
+      return const SizedBox.shrink();
+    }
 
     return InkWell(
       onTap: () => context.push('/projects/$id'),
@@ -41,7 +44,7 @@ class ProjectNameChip extends ConsumerWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 120),
               child: Text(
-                label ?? '加载中',
+                project.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(

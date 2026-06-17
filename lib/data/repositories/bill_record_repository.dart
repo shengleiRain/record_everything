@@ -64,6 +64,9 @@ class BillRecordRepository {
 
   Future<void> deleteRecord(int id) => _db.billRecordDao.softDeleteById(id);
 
+  Future<void> permanentDeleteRecord(int id) =>
+      _db.billRecordDao.deleteById(id);
+
   Future<void> restoreRecord(int id) => _db.billRecordDao.restoreById(id);
 
   Future<int> sumIncomeForMonth(DateTime month) =>

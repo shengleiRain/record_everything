@@ -99,6 +99,8 @@ class LifeItemRepository {
 
   Future<void> deleteItem(int id) => _db.lifeItemDao.softDeleteById(id);
 
+  Future<void> permanentDeleteItem(int id) => _db.lifeItemDao.deleteById(id);
+
   Future<void> restoreItem(int id) => _db.lifeItemDao.restoreById(id);
 
   Future<LifeItem> complete(int id) async {

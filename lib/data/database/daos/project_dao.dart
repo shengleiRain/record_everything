@@ -63,6 +63,9 @@ class ProjectDao extends DatabaseAccessor<AppDatabase>
         ProjectsCompanion(deletedAt: Value(DateTime.now())),
       );
 
+  Future<void> deleteById(int id) =>
+      (delete(projects)..where((t) => t.id.equals(id))).go();
+
   Future<int> restoreById(int id) =>
       (update(projects)..where((t) => t.id.equals(id))).write(
         const ProjectsCompanion(deletedAt: Value(null)),

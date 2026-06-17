@@ -174,6 +174,8 @@ class ProjectNotifier extends Notifier<void> {
 
   Future<void> delete(int id) => _repo.softDeleteProject(id);
 
+  Future<void> permanentDelete(int id) => _repo.permanentDeleteProject(id);
+
   Future<void> restore(int id) => _repo.restoreProject(id);
 
   Future<bool> hasLinkedRecords(int id) => _repo.hasLinkedRecords(id);

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/deleted_entity_banner.dart';
 import '../../../data/database/app_database.dart';
 import '../../../domain/enums/item_type.dart';
 import '../../../domain/enums/item_status.dart';
@@ -28,92 +29,117 @@ class LifeItemDetailPage extends ConsumerWidget {
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(body: Center(child: Text('加载失败: $e'))),
-      data: (item) => Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text('事项详情'),
-          actions: [
-            IconButton(
-              tooltip: '编辑',
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () => context.push('/items/$id/edit'),
-            ),
-            IconButton(
-              tooltip: '添加到系统日历',
-              icon: const Icon(Icons.event_available_outlined),
-              onPressed: () => _addToCalendar(context, ref, item),
-            ),
-            IconButton(
-              tooltip: '删除',
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _confirmDelete(context, ref, id),
-            ),
-          ],
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _HeroCard(
-              type: ItemType.fromString(item.itemType).label,
-              title: item.title,
-              description: item.description,
-              isOverdue:
-                  DateFormatter.isOverdue(item.dueTime) &&
-                  item.status == 'pending',
-            ),
-            const SizedBox(height: 16),
-            _MetadataGrid(
-              entries: [
-                _MetadataEntry(
-                  label: '到期时间',
-                  value:
-                      '${DateFormatter.formatDate(item.dueTime)}\n${DateFormatter.formatRelative(item.dueTime)}',
-                  valueColor:
-                      DateFormatter.isOverdue(item.dueTime) &&
-                          item.status == 'pending'
-                      ? AppColors.overdue
-                      : null,
+      data: (item) {
+        final isDeleted = item.deletedAt != null;
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: const Text('事项详情'),
+            actions: [
+              if (!isDeleted) ...[
+                IconButton(
+                  tooltip: '编辑',
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () => context.push('/items/$id/edit'),
                 ),
-                _MetadataEntry(
-                  label: '预计金额',
-                  value: _formatAmountValue(item.amount, item.amountType),
-                  valueColor: item.amount != null && item.amountType != 'none'
-                      ? (item.amountType == 'income'
-                            ? AppColors.income
-                            : AppColors.expense)
-                      : null,
+                IconButton(
+                  tooltip: '添加到系统日历',
+                  icon: const Icon(Icons.event_available_outlined),
+                  onPressed: () => _addToCalendar(context, ref, item),
                 ),
-                _MetadataEntry(
-                  label: '重复规则',
-                  value: item.repeatRule != null
-                      ? _formatRepeatRule(item.repeatRule!)
-                      : '不重复',
-                ),
-                _MetadataEntry(
-                  label: '状态/分类',
-                  value:
-                      '${ItemStatus.fromString(item.status).label}\n${ItemType.fromString(item.itemType).label}',
+                IconButton(
+                  tooltip: '删除',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => _confirmDelete(context, ref, id),
                 ),
               ],
-            ),
-            if (item.projectId != null) ...[
-              const SizedBox(height: 16),
-              _ProjectLink(projectId: item.projectId!),
             ],
-            if (item.status == 'pending') ...[
-              const SizedBox(height: 16),
-              _ActionPanel(
-                primaryLabel: item.amount != null && item.amountType != 'none'
-                    ? '完成并记账'
-                    : '完成',
-                onComplete: () => _showCompleteAction(context, ref, item),
-                onDefer: () => _defer(context, ref, item),
+          ),
+          body: Column(
+            children: [
+              if (isDeleted)
+                DeletedEntityBanner(
+                  entityLabel: '事项',
+                  onRestore: () =>
+                      ref.read(lifeItemRepoProvider).restoreItem(item.id),
+                ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _HeroCard(
+                      type: ItemType.fromString(item.itemType).label,
+                      title: item.title,
+                      description: item.description,
+                      isOverdue:
+                          DateFormatter.isOverdue(item.dueTime) &&
+                          item.status == 'pending',
+                    ),
+                    const SizedBox(height: 16),
+                    _MetadataGrid(
+                      entries: [
+                        _MetadataEntry(
+                          label: '到期时间',
+                          value:
+                              '${DateFormatter.formatDate(item.dueTime)}\n${DateFormatter.formatRelative(item.dueTime)}',
+                          valueColor:
+                              DateFormatter.isOverdue(item.dueTime) &&
+                                  item.status == 'pending'
+                              ? AppColors.overdue
+                              : null,
+                        ),
+                        _MetadataEntry(
+                          label: '预计金额',
+                          value: _formatAmountValue(
+                            item.amount,
+                            item.amountType,
+                          ),
+                          valueColor:
+                              item.amount != null &&
+                                  item.amountType != 'none'
+                              ? (item.amountType == 'income'
+                                    ? AppColors.income
+                                    : AppColors.expense)
+                              : null,
+                        ),
+                        _MetadataEntry(
+                          label: '重复规则',
+                          value: item.repeatRule != null
+                              ? _formatRepeatRule(item.repeatRule!)
+                              : '不重复',
+                        ),
+                        _MetadataEntry(
+                          label: '状态/分类',
+                          value:
+                              '${ItemStatus.fromString(item.status).label}\n${ItemType.fromString(item.itemType).label}',
+                        ),
+                      ],
+                    ),
+                    if (item.projectId != null) ...[
+                      const SizedBox(height: 16),
+                      _ProjectLink(projectId: item.projectId!),
+                    ],
+                    if (!isDeleted && item.status == 'pending') ...[
+                      const SizedBox(height: 16),
+                      _ActionPanel(
+                        primaryLabel:
+                            item.amount != null &&
+                                item.amountType != 'none'
+                            ? '完成并记账'
+                            : '完成',
+                        onComplete: () =>
+                            _showCompleteAction(context, ref, item),
+                        onDefer: () => _defer(context, ref, item),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ],
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -408,14 +434,21 @@ class _ProjectLink extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final project = ref.watch(projectByIdProvider(projectId)).valueOrNull;
+    // Project not found or is in the recycle bin.
+    if (project == null || project.deletedAt != null) {
+      return const SizedBox.shrink();
+    }
+
     return Card(
       elevation: 0,
       color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppColors.cardRadiusLarge),
+      ),
       child: ListTile(
         leading: const Icon(Icons.folder_outlined),
         title: const Text('归属项目'),
-        subtitle: Text(project?.title ?? '加载中'),
+        subtitle: Text(project.title),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/projects/$projectId'),
       ),

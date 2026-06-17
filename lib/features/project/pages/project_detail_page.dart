@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/card_parts.dart';
+import '../../../core/widgets/deleted_entity_banner.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
@@ -44,6 +45,7 @@ class _ProjectDetailBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDeleted = project.deletedAt != null;
     final incomeAsync = ref.watch(projectIncomeProvider(project.id));
     final expenseAsync = ref.watch(projectExpenseProvider(project.id));
     final itemsAsync = ref.watch(projectLifeItemsProvider(project.id));
@@ -61,31 +63,43 @@ class _ProjectDetailBody extends ConsumerWidget {
       appBar: AppBar(
         title: Text(project.title),
         actions: [
-          IconButton(
-            tooltip: '编辑项目',
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => context.push('/projects/${project.id}/edit'),
-          ),
-          IconButton(
-            key: const ValueKey('project-detail-delete'),
-            tooltip: '删除项目',
-            color: Theme.of(context).colorScheme.error,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmDelete(context, ref),
-          ),
-          IconButton(
-            key: const ValueKey('project-detail-more-actions'),
-            tooltip: '更多项目操作',
-            icon: const Icon(Icons.more_horiz),
-            onPressed: () => _showQuickActionsSheet(context, ref),
-          ),
+          if (!isDeleted) ...[
+            IconButton(
+              tooltip: '编辑项目',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => context.push('/projects/${project.id}/edit'),
+            ),
+            IconButton(
+              key: const ValueKey('project-detail-delete'),
+              tooltip: '删除项目',
+              color: Theme.of(context).colorScheme.error,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _confirmDelete(context, ref),
+            ),
+            IconButton(
+              key: const ValueKey('project-detail-more-actions'),
+              tooltip: '更多项目操作',
+              icon: const Icon(Icons.more_horiz),
+              onPressed: () => _showQuickActionsSheet(context, ref),
+            ),
+          ],
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return Align(
-            alignment: Alignment.topCenter,
-            child: ConstrainedBox(
+      body: Column(
+        children: [
+          if (isDeleted)
+            DeletedEntityBanner(
+              entityLabel: '项目',
+              onRestore: () => ref
+                  .read(projectNotifierProvider.notifier)
+                  .restore(project.id),
+            ),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720),
               child: Listener(
                 behavior: HitTestBehavior.translucent,
@@ -118,7 +132,10 @@ class _ProjectDetailBody extends ConsumerWidget {
             ),
           );
         },
-      ),
+        ),
+        ),
+      ],
+    ),
     );
   }
 

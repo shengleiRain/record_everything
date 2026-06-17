@@ -89,6 +89,9 @@ class ProjectRepository {
 
   Future<void> softDeleteProject(int id) => _db.projectDao.softDeleteById(id);
 
+  Future<void> permanentDeleteProject(int id) =>
+      _db.projectDao.deleteById(id);
+
   Future<void> restoreProject(int id) => _db.projectDao.restoreById(id);
 
   Future<bool> hasLinkedRecords(int id) => _db.projectDao.hasLinkedRecords(id);
