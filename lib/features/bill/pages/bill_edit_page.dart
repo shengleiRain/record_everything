@@ -11,6 +11,7 @@ import '../../../core/widgets/section_card.dart';
 import '../../../domain/enums/bill_amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
+import '../../../shared/widgets/readonly_message.dart';
 import '../../../shared/widgets/saving_button.dart';
 import '../../project/widgets/project_picker_field.dart';
 import '../providers/bill_providers.dart';
@@ -124,9 +125,11 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(title: const Text('账单（只读）')),
-        body: const _ReadonlyMessage(
+        body: ReadonlyMessage(
           title: '账单已删除',
           message: '回收站中的账单不能编辑，恢复后再修改。',
+          backLabel: '返回账单列表',
+          onBack: () => context.go('/bills'),
         ),
       );
     }
@@ -341,48 +344,6 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
             child: const Text('删除'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ReadonlyMessage extends StatelessWidget {
-  const _ReadonlyMessage({required this.title, required this.message});
-
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.lock_outline, size: 48, color: AppColors.textHint),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => context.go('/bills'),
-              child: const Text('返回账单列表'),
-            ),
-          ],
-        ),
       ),
     );
   }

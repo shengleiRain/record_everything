@@ -15,6 +15,7 @@ import '../../../data/database/database_provider.dart';
 import '../models/reminder_preset.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
+import '../../../shared/widgets/readonly_message.dart';
 import '../../project/widgets/project_picker_field.dart';
 import '../providers/life_item_providers.dart';
 
@@ -295,9 +296,11 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(title: const Text('事项（只读）')),
-        body: const _ReadonlyMessage(
+        body: ReadonlyMessage(
           title: '事项已完结',
           message: '只读状态的事项不能编辑，可在详情中重新打开后再修改。',
+          backLabel: '返回事项列表',
+          onBack: () => context.go('/items'),
         ),
       );
     }
@@ -589,48 +592,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
             _applyItemTemplate(template);
           }
         },
-      ),
-    );
-  }
-}
-
-class _ReadonlyMessage extends StatelessWidget {
-  const _ReadonlyMessage({required this.title, required this.message});
-
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.lock_outline, size: 48, color: AppColors.textHint),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => context.go('/items'),
-              child: const Text('返回事项列表'),
-            ),
-          ],
-        ),
       ),
     );
   }
