@@ -130,6 +130,11 @@ class _BillListPageState extends ConsumerState<BillListPage> {
                           '本月还没有账单',
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '点击右下角按钮记录第一笔账单',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   );

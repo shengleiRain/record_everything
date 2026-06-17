@@ -35,7 +35,7 @@ class LifeItemDetailPage extends ConsumerWidget {
           actions: [
             IconButton(
               tooltip: '编辑',
-              icon: const Icon(Icons.edit),
+              icon: const Icon(Icons.edit_outlined),
               onPressed: () => context.push('/items/$id/edit'),
             ),
             IconButton(
@@ -45,7 +45,7 @@ class LifeItemDetailPage extends ConsumerWidget {
             ),
             IconButton(
               tooltip: '删除',
-              icon: const Icon(Icons.delete),
+              icon: const Icon(Icons.delete_outline),
               onPressed: () => _confirmDelete(context, ref, id),
             ),
           ],
@@ -111,7 +111,6 @@ class LifeItemDetailPage extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 24),
-            const _HistorySection(),
           ],
         ),
       ),
@@ -132,7 +131,7 @@ class LifeItemDetailPage extends ConsumerWidget {
     return '支出\n${MoneyFormatter.formatExpense(amount)}';
   }
 
-  void _showCompleteAction(BuildContext context, WidgetRef ref, dynamic item) {
+  void _showCompleteAction(BuildContext context, WidgetRef ref, LifeItem item) {
     showCompleteActionSheet(
       context: context,
       item: item,
@@ -191,7 +190,7 @@ class LifeItemDetailPage extends ConsumerWidget {
     }
   }
 
-  void _defer(BuildContext context, WidgetRef ref, dynamic item) {
+  void _defer(BuildContext context, WidgetRef ref, LifeItem item) {
     showDatePicker(
       context: context,
       initialDate: item.dueTime.add(const Duration(days: 1)),
@@ -209,7 +208,7 @@ class LifeItemDetailPage extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('确认删除'),
-        content: const Text('删除后无法恢复，确认要删除这个事项吗？'),
+        content: const Text('删除后可在回收站恢复，确认要删除这个事项吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -335,7 +334,7 @@ class _MetadataTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -424,38 +423,3 @@ class _ProjectLink extends ConsumerWidget {
   }
 }
 
-class _HistorySection extends StatelessWidget {
-  const _HistorySection();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '历史记录',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '暂无历史记录',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

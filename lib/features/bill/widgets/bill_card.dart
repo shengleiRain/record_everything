@@ -76,20 +76,18 @@ class _BillRow extends StatelessWidget {
 
     return Material(
       color: AppColors.surface,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
         child: Stack(
           children: [
             CardLeftStripe(color: accent),
             if (linkedToItem) const BillFoldCorner(),
             DecoratedBox(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.textHint.withValues(alpha: 0.4),
-                ),
+                borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
+                border: Border.all(color: AppColors.border),
               ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 66),

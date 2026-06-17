@@ -50,16 +50,16 @@ class LifeItemCard extends StatelessWidget {
 
     final row = Material(
       color: Theme.of(context).colorScheme.surface,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
         child: Stack(
           children: [
             CardLeftStripe(color: statusColor),
             DecoratedBox(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
                 border: Border.all(
                   color: cardBorderColor(
                     isOverdue: isOverdue,
@@ -157,16 +157,8 @@ class LifeItemCard extends StatelessWidget {
         ),
     ];
 
-    if (actions.isEmpty) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: row,
-      );
-    }
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: SwipeActionReveal(actions: actions, child: row),
-    );
+    if (actions.isEmpty) return row;
+    return SwipeActionReveal(actions: actions, child: row);
   }
 
   IconData _leadingIcon(bool isOverdue, bool isCompleted) {

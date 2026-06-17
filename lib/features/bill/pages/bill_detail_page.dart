@@ -49,7 +49,7 @@ class BillDetailPage extends ConsumerWidget {
                 elevation: 0,
                 color: AppColors.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppColors.cardRadiusLarge),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(18),
@@ -63,7 +63,7 @@ class BillDetailPage extends ConsumerWidget {
                             height: 40,
                             decoration: BoxDecoration(
                               color: amountColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppColors.cardRadiusLarge),
                             ),
                             child: Icon(
                               isIncome

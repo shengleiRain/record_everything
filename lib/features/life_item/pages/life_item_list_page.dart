@@ -104,11 +104,18 @@ class LifeItemListPage extends ConsumerWidget {
                   )
                 else
                   ...filtered.map(
-                    (item) => LifeItemCard(
-                      item: item,
-                      onTap: () => context.push('/items/${item.id}'),
-                      onComplete: () => _showCompleteAction(context, ref, item),
-                      onDefer: () => _showDeferPicker(context, ref, item),
+                    (item) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      child: LifeItemCard(
+                        item: item,
+                        onTap: () => context.push('/items/${item.id}'),
+                        onComplete: () =>
+                            _showCompleteAction(context, ref, item),
+                        onDefer: () => _showDeferPicker(context, ref, item),
+                      ),
                     ),
                   ),
               ],

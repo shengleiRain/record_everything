@@ -73,14 +73,15 @@ Widget _buildShell(BuildContext context, GoRouterState state, Widget child) {
 final appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
+    // Full-screen routes (no bottom navigation bar).
+    GoRoute(
+      path: '/search',
+      builder: (context, state) => const SearchPage(),
+    ),
     ShellRoute(
       builder: _buildShell,
       routes: [
         GoRoute(path: '/home', builder: (context, state) => const HomePage()),
-        GoRoute(
-          path: '/search',
-          builder: (context, state) => const SearchPage(),
-        ),
         GoRoute(
           path: '/items',
           builder: (context, state) => const LifeItemListPage(),

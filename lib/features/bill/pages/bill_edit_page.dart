@@ -6,10 +6,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/dialog_helper.dart';
+import '../../../core/widgets/date_field.dart';
+import '../../../core/widgets/section_card.dart';
 import '../../../domain/enums/bill_amount_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../project/widgets/project_picker_field.dart';
 import '../providers/bill_providers.dart';
+import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../life_item/providers/life_item_providers.dart';
 
@@ -34,6 +37,21 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
+  List<Category> _categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  void _loadCategories() {
+    final type = _amountType == BillAmountType.income ? 'income' : 'expense';
+    ref.read(databaseProvider).categoryDao.getByType(type).then((cats) {
+      if (!mounted) return;
+      setState(() => _categories = cats);
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -120,7 +138,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _SectionCard(
+            SectionCard(
               title: '账单内容',
               child: Column(
                 children: [
@@ -140,7 +158,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
               ),
             ),
             const SizedBox(height: 16),
-            _SectionCard(
+            SectionCard(
               title: '金额与分类',
               child: Column(
                 children: [
@@ -153,6 +171,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
                     onSelected: (v) => setState(() {
                       _amountType = v ?? _amountType;
                       _selectedCategoryId = null;
+                      _loadCategories();
                     }),
                   ),
                   const SizedBox(height: 16),
@@ -169,39 +188,26 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
                         (v == null || v.trim().isEmpty) ? '请输入金额' : null,
                   ),
                   const SizedBox(height: 16),
-                  FutureBuilder(
-                    future: ref
-                        .read(databaseProvider)
-                        .categoryDao
-                        .getByType(
-                          _amountType == BillAmountType.income
-                              ? 'income'
-                              : 'expense',
-                        ),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const SizedBox.shrink();
-                      final cats = snapshot.data!;
-                      return AppDropdownField<int>(
-                        label: '分类',
-                        value: cats.any((c) => c.id == _selectedCategoryId)
-                            ? _selectedCategoryId
-                            : null,
-                        options: cats
-                            .map(
-                              (c) =>
-                                  AppDropdownOption(value: c.id, label: c.name),
-                            )
-                            .toList(),
-                        onSelected: (v) =>
-                            setState(() => _selectedCategoryId = v),
-                      );
-                    },
-                  ),
+                  if (_categories.isNotEmpty)
+                    AppDropdownField<int>(
+                      label: '分类',
+                      value: _categories.any((c) => c.id == _selectedCategoryId)
+                          ? _selectedCategoryId
+                          : null,
+                      options: _categories
+                          .map(
+                            (c) =>
+                                AppDropdownOption(value: c.id, label: c.name),
+                          )
+                          .toList(),
+                      onSelected: (v) =>
+                          setState(() => _selectedCategoryId = v),
+                    ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            _SectionCard(
+            SectionCard(
               title: '账单时间',
               child: Column(
                 children: [
@@ -210,7 +216,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
                     onChanged: (v) => setState(() => _projectId = v),
                   ),
                   const SizedBox(height: 16),
-                  _DateField(
+                  DateField(
                     key: const ValueKey('bill-date-field'),
                     label: '日期',
                     value: DateFormatter.formatDate(_billTime),
@@ -300,7 +306,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('确认删除'),
-        content: const Text('删除后无法恢复，确认要删除这条账单吗？'),
+        content: const Text('删除后可在回收站恢复，确认要删除这条账单吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -320,65 +326,3 @@ class _BillEditPageState extends ConsumerState<BillEditPage> {
   }
 }
 
-class _DateField extends StatelessWidget {
-  const _DateField({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          suffixIcon: const Icon(Icons.calendar_today),
-        ),
-        child: Text(value, style: Theme.of(context).textTheme.bodyLarge),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}

@@ -115,7 +115,6 @@ class StatisticsPage extends ConsumerWidget {
               trailing: '支出 ${MoneyFormatter.format(expense)}',
               child: _CategoryBreakdownList(
                 rows: catExpense,
-                categories: ref,
                 amountType: 'expense',
               ),
             ),
@@ -129,7 +128,6 @@ class StatisticsPage extends ConsumerWidget {
               trailing: '收入 ${MoneyFormatter.format(income)}',
               child: _CategoryBreakdownList(
                 rows: catIncome,
-                categories: ref,
                 amountType: 'income',
               ),
             ),
@@ -446,40 +444,61 @@ class _CompareRow extends StatelessWidget {
 
 // --- Category breakdown list ---
 
-class _CategoryBreakdownList extends ConsumerWidget {
+class _CategoryBreakdownList extends ConsumerStatefulWidget {
   const _CategoryBreakdownList({
     required this.rows,
-    required this.categories,
     required this.amountType,
   });
 
   final List<CategoryBreakdownRow> rows;
-  final WidgetRef categories;
   final String amountType;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CategoryBreakdownList> createState() =>
+      _CategoryBreakdownListState();
+}
+
+class _CategoryBreakdownListState
+    extends ConsumerState<_CategoryBreakdownList> {
+  Map<int, String> _categoryNames = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategoryNames();
+  }
+
+  Future<void> _loadCategoryNames() async {
+    try {
+      final db = ref.read(databaseProvider);
+      final cats = await db.categoryDao.getAll();
+      if (!mounted) return;
+      setState(() {
+        _categoryNames = {for (final c in cats) c.id: c.name};
+      });
+    } catch (_) {
+      // Keep empty map; names will show as '未分类'.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = widget.rows;
     final total = rows.fold<int>(0, (sum, r) => sum + r.sum);
     final displayRows = rows.take(5).toList();
     final otherSum = rows.skip(5).fold<int>(0, (sum, r) => sum + r.sum);
-    final color = amountType == 'income' ? AppColors.income : AppColors.expense;
+    final color = widget.amountType == 'income'
+        ? AppColors.income
+        : AppColors.expense;
 
     return Column(
       children: [
         for (final row in displayRows)
-          FutureBuilder<String>(
-            future: _getCategoryName(ref, row.categoryId),
-            builder: (context, snapshot) {
-              final name = snapshot.data ?? '加载中...';
-              final percent = total > 0 ? ((row.sum / total) * 100).round() : 0;
-              return _CategoryRow(
-                icon: name.isNotEmpty ? name.characters.first : '?',
-                label: name,
-                subtitle: '$percent%',
-                amount: MoneyFormatter.format(row.sum),
-                color: color,
-              );
-            },
+          _CategoryRowWithPercent(
+            row: row,
+            total: total,
+            name: _categoryNames[row.categoryId] ?? '未分类',
+            color: color,
           ),
         if (otherSum > 0)
           _CategoryRow(
@@ -492,17 +511,31 @@ class _CategoryBreakdownList extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Future<String> _getCategoryName(WidgetRef ref, int? categoryId) async {
-    if (categoryId == null) return '未分类';
-    try {
-      final db = ref.read(databaseProvider);
-      final cats = await db.categoryDao.getAll();
-      final cat = cats.where((c) => c.id == categoryId).firstOrNull;
-      return cat?.name ?? '未分类';
-    } catch (_) {
-      return '未分类';
-    }
+class _CategoryRowWithPercent extends StatelessWidget {
+  const _CategoryRowWithPercent({
+    required this.row,
+    required this.total,
+    required this.name,
+    required this.color,
+  });
+
+  final CategoryBreakdownRow row;
+  final int total;
+  final String name;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = total > 0 ? ((row.sum / total) * 100).round() : 0;
+    return _CategoryRow(
+      icon: name.isNotEmpty ? name.characters.first : '?',
+      label: name,
+      subtitle: '$percent%',
+      amount: MoneyFormatter.format(row.sum),
+      color: color,
+    );
   }
 }
 
@@ -617,7 +650,7 @@ class _SummaryCell extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,7 +716,7 @@ class _ChartCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/card_parts.dart';
+import '../../../core/widgets/section_card.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
 import '../../../domain/enums/project_event_type.dart';
@@ -94,7 +95,7 @@ class _ProjectDetailBody extends ConsumerWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
                   children: [
-                    _SectionCard(
+                    SectionCard(
                       title: '财务概览',
                       child: _FinancialOverview(
                         income: income,
@@ -186,13 +187,16 @@ class _ProjectDetailBody extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('删除项目'),
-        content: const Text('确定删除此项目？关联的事项和账单将保留。'),
+        content: const Text('删除后可在回收站恢复，关联的事项和账单将保留。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('取消'),
           ),
-          TextButton(
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () async {
               Navigator.of(ctx).pop();
               await ref
@@ -436,7 +440,7 @@ class _ProjectSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SectionCard(
+    return SectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1473,37 +1477,3 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({this.title, required this.child});
-
-  final String? title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (title != null) ...[
-              Text(
-                title!,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 12),
-            ],
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}

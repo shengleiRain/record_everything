@@ -8,6 +8,8 @@ import '../../../domain/enums/repeat_period.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/widgets/date_field.dart';
+import '../../../core/widgets/section_card.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../models/reminder_preset.dart';
@@ -333,7 +335,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
               ),
               const SizedBox(height: 16),
             ],
-            _SectionCard(
+            SectionCard(
               title: '事项内容',
               child: Column(
                 children: [
@@ -361,7 +363,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
               ),
             ),
             const SizedBox(height: 16),
-            _SectionCard(
+            SectionCard(
               title: '类型与分类',
               child: Column(
                 children: [
@@ -410,7 +412,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
               ),
             ),
             const SizedBox(height: 16),
-            _SectionCard(
+            SectionCard(
               title: '时间与金额',
               child: Column(
                 children: [
@@ -419,7 +421,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                     onChanged: (v) => setState(() => _projectId = v),
                   ),
                   const SizedBox(height: 16),
-                  _DateField(
+                  DateField(
                     key: const ValueKey('life-item-date-field'),
                     label: '日期',
                     value: DateFormatter.formatDate(_dueDate),
@@ -447,7 +449,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                   ),
                   if (_reminderPreset == ReminderPreset.custom) ...[
                     const SizedBox(height: 16),
-                    _DateField(
+                    DateField(
                       label: '提醒日期',
                       value: DateFormatter.formatDate(
                         _customReminderTime ?? _dueDate,
@@ -455,7 +457,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                       onTap: _pickCustomReminderDate,
                     ),
                     const SizedBox(height: 16),
-                    _DateField(
+                    DateField(
                       label: '提醒时间',
                       value: _formatTime(_customReminderTime ?? _dueDate),
                       onTap: _pickCustomReminderTime,
@@ -488,7 +490,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
               ),
             ),
             const SizedBox(height: 16),
-            _SectionCard(
+            SectionCard(
               title: '重复规则',
               child: Column(
                 children: [
@@ -588,33 +590,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   }
 }
 
-class _DateField extends StatelessWidget {
-  const _DateField({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
-
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          suffixIcon: const Icon(Icons.calendar_today),
-        ),
-        child: Text(value, style: Theme.of(context).textTheme.bodyLarge),
-      ),
-    );
-  }
-}
 
 class _ItemTemplateSelector extends ConsumerWidget {
   const _ItemTemplateSelector({
@@ -1018,37 +993,3 @@ class _QuickTypeSelector extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 16),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
