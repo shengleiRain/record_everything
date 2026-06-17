@@ -70,6 +70,9 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
       _isEdit = true;
       _editId = int.tryParse(idStr);
       _loadFromDatabase();
+    } else {
+      // 新建项目时，关键日期默认为当天
+      _startDate = DateTime.now();
     }
     // Check if template is requested via extra
     final extra = state.extra;
@@ -93,6 +96,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
         _selectedCategoryId = template.categoryId ?? _selectedCategoryId;
         _pendingTemplateKey = null;
       });
+      _tryAutoTitle();
       _loadTemplateDrafts(template);
     });
   }
@@ -103,6 +107,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
       _selectedCategoryId = template?.categoryId ?? _selectedCategoryId;
       _pendingTemplateKey = null;
     });
+    _tryAutoTitle();
     _loadTemplateDrafts(template);
   }
 
@@ -309,13 +314,12 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
     final participant = _participantController.text.trim();
     if (participant.isNotEmpty) parts.add(participant);
     if (_startDate != null) parts.add(DateFormatter.formatDate(_startDate!));
-    return parts.join(' · ');
+    return parts.join('-');
   }
 
   void _tryAutoTitle() {
+    // 用户已手动编辑标题或处于编辑模式时，不再自动生成
     if (_isTitleManuallyEdited || _isEdit) return;
-    // 如果用户已经输入了内容，不再覆盖
-    if (_titleController.text.trim().isNotEmpty) return;
     final auto = _generateAutoTitle();
     if (auto.isNotEmpty) {
       _titleController.text = auto;
@@ -324,6 +328,12 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请选择关键日期')),
+      );
+      return;
+    }
     final notifier = ref.read(projectNotifierProvider.notifier);
 
     if (_isEdit && _editId != null) {
@@ -677,7 +687,7 @@ class _BasicInfoSectionState extends ConsumerState<_BasicInfoSection> {
           ),
           const SizedBox(height: 16),
           DateField(
-            label: '关键日期',
+            label: '关键日期 *',
             value: widget.startDate != null
                 ? DateFormatter.formatDate(widget.startDate!)
                 : '未设置',
@@ -1007,7 +1017,9 @@ class _StepTabHeader extends SliverPersistentHeaderDelegate {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final hasSteps = steps.isNotEmpty;
-              final buttonWidth = _AnimatedAddButton.expandedWidth;
+              final buttonWidth = hasSteps
+                  ? _AnimatedAddButton.collapsedExtent
+                  : _AnimatedAddButton.expandedWidth;
               final tabLimit =
                   constraints.maxWidth -
                   buttonWidth -
