@@ -61,46 +61,53 @@ class ProjectTimeline extends ConsumerWidget {
     final List<_TimelineEntryData> result = [];
 
     for (final e in events) {
-      result.add(_TimelineEntryData(
-        time: e.eventTime,
-        title: e.title,
-        subtitle: e.description,
-        icon: _iconForEventType(e.eventType),
-        color: _colorForEventType(e.eventType),
-      ));
+      result.add(
+        _TimelineEntryData(
+          time: e.eventTime,
+          title: e.title,
+          subtitle: e.description,
+          icon: _iconForEventType(e.eventType),
+          color: _colorForEventType(e.eventType),
+        ),
+      );
     }
 
-    // Only show payment_due items that are not linked to a bill
+    // Only show bill-like items that are not linked to a bill record.
     final linkedLifeItemIds = bills
         .where((b) => b.lifeItemId != null)
         .map((b) => b.lifeItemId!)
         .toSet();
 
     for (final item in items) {
-      if (item.itemType == 'payment_due' &&
-          linkedLifeItemIds.contains(item.id)) {
+      final hasAmount =
+          item.amountType == 'income' || item.amountType == 'expense';
+      if (hasAmount && linkedLifeItemIds.contains(item.id)) {
         continue; // Will be shown via the bill
       }
-      result.add(_TimelineEntryData(
-        time: item.dueTime,
-        title: item.title,
-        subtitle: item.status == 'completed' ? '已完成' : null,
-        icon: _iconForItemType(item.itemType),
-        color: _colorForItemType(item.itemType),
-      ));
+      result.add(
+        _TimelineEntryData(
+          time: item.dueTime,
+          title: item.title,
+          subtitle: item.status == 'completed' ? '已完成' : null,
+          icon: hasAmount ? Icons.schedule_outlined : Icons.event_note_outlined,
+          color: hasAmount ? Colors.orange : Colors.blueGrey,
+        ),
+      );
     }
 
     for (final b in bills) {
       final prefix = b.amountType == 'income' ? '收入' : '支出';
-      result.add(_TimelineEntryData(
-        time: b.billTime,
-        title: '$prefix: ${b.title}',
-        subtitle: MoneyFormatter.formatInt(b.amount),
-        icon: b.amountType == 'income'
-            ? Icons.arrow_downward
-            : Icons.arrow_upward,
-        color: b.amountType == 'income' ? Colors.green : Colors.red,
-      ));
+      result.add(
+        _TimelineEntryData(
+          time: b.billTime,
+          title: '$prefix: ${b.title}',
+          subtitle: MoneyFormatter.formatInt(b.amount),
+          icon: b.amountType == 'income'
+              ? Icons.arrow_downward
+              : Icons.arrow_upward,
+          color: b.amountType == 'income' ? Colors.green : Colors.red,
+        ),
+      );
     }
 
     result.sort((a, b) => b.time.compareTo(a.time));
@@ -121,21 +128,6 @@ class ProjectTimeline extends ConsumerWidget {
     'milestone' => Colors.amber,
     'delivery' => Colors.teal,
     _ => Colors.grey,
-  };
-
-  IconData _iconForItemType(String type) => switch (type) {
-    'payment_due' => Icons.payment,
-    'milestone' => Icons.flag_outlined,
-    'delivery' => Icons.local_shipping_outlined,
-    'todo' => Icons.check_circle_outline,
-    _ => Icons.circle_outlined,
-  };
-
-  Color _colorForItemType(String type) => switch (type) {
-    'payment_due' => Colors.orange,
-    'milestone' => Colors.amber,
-    'delivery' => Colors.teal,
-    _ => Colors.blueGrey,
   };
 }
 

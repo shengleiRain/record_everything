@@ -6,7 +6,6 @@ class LifeItems extends Table {
   TextColumn get description =>
       text().nullable().withDefault(const Constant(''))();
   IntColumn get categoryId => integer().nullable()();
-  TextColumn get itemType => text().withDefault(const Constant('todo'))();
   IntColumn get amount => integer().nullable()();
   TextColumn get amountType => text().withDefault(const Constant('none'))();
   DateTimeColumn get dueTime => dateTime()();

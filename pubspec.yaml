@@ -30,7 +30,7 @@ dependencies:
   # File access
   path_provider: ^2.1.5
   file_picker: ^11.0.2
-  add_2_calendar: ^3.1.0
+  add_2_calendar: 3.1.0  # pinned: 3.1.1's android/build.gradle.kts uses an incompatible `kotlin { compilerOptions }` DSL (missing kotlin plugin + AGP 9.0.1/Kotlin 2.3.20). 3.1.0 uses the legacy Groovy build.gradle and the same Dart API.
 
 dev_dependencies:
   flutter_test:

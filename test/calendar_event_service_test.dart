@@ -12,7 +12,6 @@ void main() {
         title: '办理护照',
         description: '带照片',
         categoryId: null,
-        itemType: 'expiration',
         amount: null,
         amountType: 'none',
         dueTime: DateTime(2026, 6, 6, 15, 30),

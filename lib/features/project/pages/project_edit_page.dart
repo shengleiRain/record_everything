@@ -12,7 +12,6 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../../data/repositories/project_repository.dart';
 import '../../../domain/enums/amount_type.dart';
-import '../../../domain/enums/item_type.dart';
 import '../../../domain/enums/project_status.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../providers/project_providers.dart';
@@ -975,7 +974,6 @@ class _ReadonlyMessage extends StatelessWidget {
 class _ProjectStepDraft {
   _ProjectStepDraft({
     required String title,
-    this.itemType = ItemType.todo,
     this.amountType = AmountType.none,
     int? amount,
     required DateTime baseDate,
@@ -998,7 +996,6 @@ class _ProjectStepDraft {
     final dueDate = baseDate.add(Duration(days: step.offsetDays));
     return _ProjectStepDraft(
       title: step.title,
-      itemType: ItemType.fromString(step.itemType),
       amountType: AmountType.fromString(step.amountType),
       amount: step.amount,
       baseDate: baseDate,
@@ -1008,7 +1005,6 @@ class _ProjectStepDraft {
 
   final TextEditingController titleController;
   final TextEditingController amountController;
-  ItemType itemType;
   AmountType amountType;
   DateTime _dueDate;
 
@@ -1026,7 +1022,6 @@ class _ProjectStepDraft {
   ProjectTemplateStepInput toInput() {
     return ProjectTemplateStepInput(
       title: titleController.text.trim(),
-      itemType: itemType.value,
       amountType: amountType.value,
       offsetDays: 0, // 不再使用相对天数
       amount: amountType == AmountType.none
@@ -1439,21 +1434,6 @@ class _ProjectStepDraftCard extends StatelessWidget {
                     validator: (value) => value == null || value.trim().isEmpty
                         ? '请输入节点标题'
                         : null,
-                  ),
-                  const SizedBox(height: 12),
-                  AppDropdownField<ItemType>(
-                    label: '节点类型',
-                    value: draft.itemType,
-                    options: ItemType.values
-                        .map(
-                          (type) =>
-                              AppDropdownOption(value: type, label: type.label),
-                        )
-                        .toList(),
-                    onSelected: (value) {
-                      draft.itemType = value ?? draft.itemType;
-                      onChanged();
-                    },
                   ),
                   const SizedBox(height: 12),
                   AppDropdownField<AmountType>(

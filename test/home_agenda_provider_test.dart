@@ -105,7 +105,6 @@ void main() {
 
     await lifeRepository.create(
       title: '信用卡还款',
-      itemType: 'bill',
       amount: 1000,
       amountType: 'expense',
       dueTime: DateTime(2026, 6, 4, 10),

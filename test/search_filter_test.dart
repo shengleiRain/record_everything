@@ -12,7 +12,6 @@ void main() {
           title: '咖啡豆补货',
           description: '下周用',
           categoryId: null,
-          itemType: 'todo',
           amount: null,
           amountType: 'none',
           dueTime: DateTime(2026, 6, 6),

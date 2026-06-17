@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   static QueryExecutor openConnection() {
     return driftDatabase(name: 'life_items.db');
@@ -116,6 +116,10 @@ class AppDatabase extends _$AppDatabase {
           "UPDATE projects SET project_status = 'active' "
           "WHERE project_status IN ('planned', 'waiting')",
         );
+      }
+      if (from < 8) {
+        // 事项类型已从新 schema 中移除。用户确认无需兼容旧数据，
+        // 因此这里不做旧表改写或数据迁移。
       }
     },
   );
@@ -286,7 +290,6 @@ class AppDatabase extends _$AppDatabase {
       ProjectTemplateStepsCompanion.insert(
         templateId: template.id,
         title: '收定金',
-        itemType: const Value('payment_due'),
         amountType: const Value('income'),
         offsetDays: const Value(-7),
         sortOrder: const Value(0),
@@ -294,28 +297,24 @@ class AppDatabase extends _$AppDatabase {
       ProjectTemplateStepsCompanion.insert(
         templateId: template.id,
         title: '拍摄日提醒',
-        itemType: const Value('milestone'),
         offsetDays: const Value(0),
         sortOrder: const Value(1),
       ),
       ProjectTemplateStepsCompanion.insert(
         templateId: template.id,
         title: '选片/确认交付内容',
-        itemType: const Value('todo'),
         offsetDays: const Value(3),
         sortOrder: const Value(2),
       ),
       ProjectTemplateStepsCompanion.insert(
         templateId: template.id,
         title: '修图交付',
-        itemType: const Value('delivery'),
         offsetDays: const Value(14),
         sortOrder: const Value(3),
       ),
       ProjectTemplateStepsCompanion.insert(
         templateId: template.id,
         title: '收尾款',
-        itemType: const Value('payment_due'),
         amountType: const Value('income'),
         offsetDays: const Value(14),
         sortOrder: const Value(4),
@@ -337,7 +336,6 @@ class AppDatabase extends _$AppDatabase {
       _DefaultItemTemplate(
         key: ItemTemplateKeys.membershipRenewal,
         name: '会员续费',
-        itemType: 'subscription',
         amountType: 'expense',
         categoryId: categoryId('订阅会员'),
         dueOffsetDays: 30,
@@ -349,7 +347,6 @@ class AppDatabase extends _$AppDatabase {
       _DefaultItemTemplate(
         key: ItemTemplateKeys.documentExpiry,
         name: '证件到期',
-        itemType: 'expiration',
         amountType: 'none',
         categoryId: categoryId('证件'),
         dueOffsetDays: 30,
@@ -360,7 +357,6 @@ class AppDatabase extends _$AppDatabase {
       _DefaultItemTemplate(
         key: ItemTemplateKeys.medicineRestock,
         name: '药品补货',
-        itemType: 'consumable',
         amountType: 'expense',
         categoryId: categoryId('药品'),
         dueOffsetDays: 14,
@@ -371,7 +367,6 @@ class AppDatabase extends _$AppDatabase {
       _DefaultItemTemplate(
         key: ItemTemplateKeys.householdBill,
         name: '家庭账单',
-        itemType: 'bill',
         amountType: 'expense',
         categoryId: categoryId('家庭账单'),
         dueOffsetDays: 7,
@@ -383,7 +378,6 @@ class AppDatabase extends _$AppDatabase {
       _DefaultItemTemplate(
         key: ItemTemplateKeys.warranty,
         name: '保修',
-        itemType: 'expiration',
         amountType: 'none',
         categoryId: categoryId('保修'),
         dueOffsetDays: 365,
@@ -394,7 +388,6 @@ class AppDatabase extends _$AppDatabase {
       _DefaultItemTemplate(
         key: ItemTemplateKeys.consumableReplacement,
         name: '耗材更换',
-        itemType: 'consumable',
         amountType: 'expense',
         categoryId: categoryId('家庭耗材'),
         dueOffsetDays: 180,
@@ -427,7 +420,6 @@ class AppDatabase extends _$AppDatabase {
           name: template.name,
           templateKey: Value(template.key),
           categoryId: Value(template.categoryId),
-          itemType: Value(template.itemType),
           amountType: Value(template.amountType),
           dueOffsetDays: Value(template.dueOffsetDays),
           reminderOffsetDays: Value(template.reminderOffsetDays),
@@ -445,7 +437,6 @@ class _DefaultItemTemplate {
   const _DefaultItemTemplate({
     required this.key,
     required this.name,
-    required this.itemType,
     required this.amountType,
     required this.categoryId,
     required this.dueOffsetDays,
@@ -457,7 +448,6 @@ class _DefaultItemTemplate {
 
   final String key;
   final String name;
-  final String itemType;
   final String amountType;
   final int? categoryId;
   final int dueOffsetDays;

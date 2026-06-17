@@ -40,9 +40,7 @@ class AgendaItemViewModel {
     final isCompleted = item.status == 'completed';
     final isOverdue = item.status == 'pending' && dueDate.isBefore(todayDate);
     final isBillItem =
-        item.itemType == 'bill' ||
-        item.amountType == 'income' ||
-        item.amountType == 'expense';
+        item.amountType == 'income' || item.amountType == 'expense';
 
     return AgendaItemViewModel(
       kind: AgendaItemKind.lifeItem,

@@ -169,9 +169,7 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
 
   Stream<List<LifeItem>> watchByProjectId(int projectId) =>
       (select(lifeItems)
-            ..where(
-              (t) => t.projectId.equals(projectId) & t.deletedAt.isNull(),
-            )
+            ..where((t) => t.projectId.equals(projectId) & t.deletedAt.isNull())
             ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
           .watch();
 
@@ -180,7 +178,8 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
             ..where(
               (t) =>
                   t.projectId.equals(projectId) &
-                  t.itemType.equals('payment_due') &
+                  (t.amountType.equals('income') |
+                      t.amountType.equals('expense')) &
                   t.deletedAt.isNull(),
             )
             ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))

@@ -40,7 +40,7 @@ class SearchService {
 
     final results = <SearchResult>[
       for (final item in lifeItems)
-        if (_matches([item.title, item.description, item.itemType], normalized))
+        if (_matches([item.title, item.description], normalized))
           SearchResult(
             kind: SearchResultKind.lifeItem,
             id: item.id,

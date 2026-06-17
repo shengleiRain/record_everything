@@ -382,7 +382,6 @@ LifeItem _lifeItem({
   return LifeItem(
     id: id,
     title: title,
-    itemType: 'bill',
     amount: amount,
     amountType: amountType,
     dueTime: dueTime ?? now,

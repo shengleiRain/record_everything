@@ -812,7 +812,6 @@ class _ProjectFlowCard extends ConsumerWidget {
     final visual = _entryVisual(
       context,
       amountType: amountType,
-      itemType: item?.itemType,
       isBill: isBill,
       isSettled: isSettled,
       isOverdue: isOverdue,
@@ -848,7 +847,6 @@ class _ProjectFlowCard extends ConsumerWidget {
   _FlowVisual _entryVisual(
     BuildContext context, {
     required String amountType,
-    required String? itemType,
     required bool isBill,
     required bool isSettled,
     required bool isOverdue,
@@ -882,20 +880,10 @@ class _ProjectFlowCard extends ConsumerWidget {
         color: Colors.red.shade700,
       );
     }
-    return switch (itemType) {
-      'delivery' => const _FlowVisual(
-        icon: Icons.local_shipping_outlined,
-        color: Colors.teal,
-      ),
-      'milestone' => _FlowVisual(
-        icon: Icons.flag_outlined,
-        color: Colors.amber.shade800,
-      ),
-      _ => _FlowVisual(
-        icon: Icons.event_note_outlined,
-        color: Theme.of(context).colorScheme.primary,
-      ),
-    };
+    return _FlowVisual(
+      icon: Icons.event_note_outlined,
+      color: Theme.of(context).colorScheme.primary,
+    );
   }
 
   String? _trailingText({required int? amount, required String amountType}) {

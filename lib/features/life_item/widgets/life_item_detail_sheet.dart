@@ -9,7 +9,6 @@ import '../../../core/widgets/card_parts.dart';
 import '../../../core/widgets/sheet_action_layout.dart';
 import '../../../data/database/app_database.dart';
 import '../../../domain/enums/item_status.dart';
-import '../../../domain/enums/item_type.dart';
 import '../../../domain/enums/repeat_period.dart';
 import '../../../domain/models/repeat_rule.dart';
 import '../../bill/providers/bill_providers.dart';
@@ -49,7 +48,7 @@ Future<void> showLifeItemDetailSheet(
               children: [
                 _SheetHeader(
                   title: item.title,
-                  subtitle: ItemType.fromString(item.itemType).label,
+                  subtitle: item.amountType == 'none' ? '事项' : '账务事项',
                   icon: isOverdue
                       ? Icons.warning_amber_rounded
                       : status == ItemStatus.completed

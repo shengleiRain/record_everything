@@ -7,14 +7,12 @@ import '../../domain/enums/project_status.dart';
 class ProjectTemplateStepInput {
   const ProjectTemplateStepInput({
     required this.title,
-    required this.itemType,
     required this.amountType,
     required this.offsetDays,
     this.amount,
   });
 
   final String title;
-  final String itemType;
   final String amountType;
   final int offsetDays;
   final int? amount;
@@ -208,7 +206,6 @@ class ProjectRepository {
           title: step.title,
           dueTime: baseDate.add(Duration(days: step.offsetDays)),
           projectId: Value(project.id),
-          itemType: Value(step.itemType),
           amountType: Value(step.amountType),
           amount: Value(step.amount),
         ),
@@ -292,7 +289,6 @@ class ProjectRepository {
         ProjectTemplateStepsCompanion.insert(
           templateId: templateId,
           title: steps[index].title,
-          itemType: Value(steps[index].itemType),
           amountType: Value(steps[index].amountType),
           amount: Value(steps[index].amount),
           offsetDays: Value(steps[index].offsetDays),

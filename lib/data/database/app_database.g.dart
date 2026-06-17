@@ -565,18 +565,6 @@ class $LifeItemsTable extends LifeItems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _itemTypeMeta = const VerificationMeta(
-    'itemType',
-  );
-  @override
-  late final GeneratedColumn<String> itemType = GeneratedColumn<String>(
-    'item_type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('todo'),
-  );
   static const VerificationMeta _amountMeta = const VerificationMeta('amount');
   @override
   late final GeneratedColumn<int> amount = GeneratedColumn<int>(
@@ -693,7 +681,6 @@ class $LifeItemsTable extends LifeItems
     title,
     description,
     categoryId,
-    itemType,
     amount,
     amountType,
     dueTime,
@@ -741,12 +728,6 @@ class $LifeItemsTable extends LifeItems
       context.handle(
         _categoryIdMeta,
         categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
-      );
-    }
-    if (data.containsKey('item_type')) {
-      context.handle(
-        _itemTypeMeta,
-        itemType.isAcceptableOrUnknown(data['item_type']!, _itemTypeMeta),
       );
     }
     if (data.containsKey('amount')) {
@@ -836,10 +817,6 @@ class $LifeItemsTable extends LifeItems
         DriftSqlType.int,
         data['${effectivePrefix}category_id'],
       ),
-      itemType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}item_type'],
-      )!,
       amount: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}amount'],
@@ -894,7 +871,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
   final String title;
   final String? description;
   final int? categoryId;
-  final String itemType;
   final int? amount;
   final String amountType;
   final DateTime dueTime;
@@ -910,7 +886,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     required this.title,
     this.description,
     this.categoryId,
-    required this.itemType,
     this.amount,
     required this.amountType,
     required this.dueTime,
@@ -933,7 +908,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     if (!nullToAbsent || categoryId != null) {
       map['category_id'] = Variable<int>(categoryId);
     }
-    map['item_type'] = Variable<String>(itemType);
     if (!nullToAbsent || amount != null) {
       map['amount'] = Variable<int>(amount);
     }
@@ -967,7 +941,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       categoryId: categoryId == null && nullToAbsent
           ? const Value.absent()
           : Value(categoryId),
-      itemType: Value(itemType),
       amount: amount == null && nullToAbsent
           ? const Value.absent()
           : Value(amount),
@@ -1001,7 +974,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       title: serializer.fromJson<String>(json['title']),
       description: serializer.fromJson<String?>(json['description']),
       categoryId: serializer.fromJson<int?>(json['categoryId']),
-      itemType: serializer.fromJson<String>(json['itemType']),
       amount: serializer.fromJson<int?>(json['amount']),
       amountType: serializer.fromJson<String>(json['amountType']),
       dueTime: serializer.fromJson<DateTime>(json['dueTime']),
@@ -1022,7 +994,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       'title': serializer.toJson<String>(title),
       'description': serializer.toJson<String?>(description),
       'categoryId': serializer.toJson<int?>(categoryId),
-      'itemType': serializer.toJson<String>(itemType),
       'amount': serializer.toJson<int?>(amount),
       'amountType': serializer.toJson<String>(amountType),
       'dueTime': serializer.toJson<DateTime>(dueTime),
@@ -1041,7 +1012,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     String? title,
     Value<String?> description = const Value.absent(),
     Value<int?> categoryId = const Value.absent(),
-    String? itemType,
     Value<int?> amount = const Value.absent(),
     String? amountType,
     DateTime? dueTime,
@@ -1057,7 +1027,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     title: title ?? this.title,
     description: description.present ? description.value : this.description,
     categoryId: categoryId.present ? categoryId.value : this.categoryId,
-    itemType: itemType ?? this.itemType,
     amount: amount.present ? amount.value : this.amount,
     amountType: amountType ?? this.amountType,
     dueTime: dueTime ?? this.dueTime,
@@ -1079,7 +1048,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       categoryId: data.categoryId.present
           ? data.categoryId.value
           : this.categoryId,
-      itemType: data.itemType.present ? data.itemType.value : this.itemType,
       amount: data.amount.present ? data.amount.value : this.amount,
       amountType: data.amountType.present
           ? data.amountType.value
@@ -1106,7 +1074,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('categoryId: $categoryId, ')
-          ..write('itemType: $itemType, ')
           ..write('amount: $amount, ')
           ..write('amountType: $amountType, ')
           ..write('dueTime: $dueTime, ')
@@ -1127,7 +1094,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     title,
     description,
     categoryId,
-    itemType,
     amount,
     amountType,
     dueTime,
@@ -1147,7 +1113,6 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
           other.title == this.title &&
           other.description == this.description &&
           other.categoryId == this.categoryId &&
-          other.itemType == this.itemType &&
           other.amount == this.amount &&
           other.amountType == this.amountType &&
           other.dueTime == this.dueTime &&
@@ -1165,7 +1130,6 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
   final Value<String> title;
   final Value<String?> description;
   final Value<int?> categoryId;
-  final Value<String> itemType;
   final Value<int?> amount;
   final Value<String> amountType;
   final Value<DateTime> dueTime;
@@ -1181,7 +1145,6 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     this.title = const Value.absent(),
     this.description = const Value.absent(),
     this.categoryId = const Value.absent(),
-    this.itemType = const Value.absent(),
     this.amount = const Value.absent(),
     this.amountType = const Value.absent(),
     this.dueTime = const Value.absent(),
@@ -1198,7 +1161,6 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     required String title,
     this.description = const Value.absent(),
     this.categoryId = const Value.absent(),
-    this.itemType = const Value.absent(),
     this.amount = const Value.absent(),
     this.amountType = const Value.absent(),
     required DateTime dueTime,
@@ -1216,7 +1178,6 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     Expression<String>? title,
     Expression<String>? description,
     Expression<int>? categoryId,
-    Expression<String>? itemType,
     Expression<int>? amount,
     Expression<String>? amountType,
     Expression<DateTime>? dueTime,
@@ -1233,7 +1194,6 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
       if (title != null) 'title': title,
       if (description != null) 'description': description,
       if (categoryId != null) 'category_id': categoryId,
-      if (itemType != null) 'item_type': itemType,
       if (amount != null) 'amount': amount,
       if (amountType != null) 'amount_type': amountType,
       if (dueTime != null) 'due_time': dueTime,
@@ -1252,7 +1212,6 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     Value<String>? title,
     Value<String?>? description,
     Value<int?>? categoryId,
-    Value<String>? itemType,
     Value<int?>? amount,
     Value<String>? amountType,
     Value<DateTime>? dueTime,
@@ -1269,7 +1228,6 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
       title: title ?? this.title,
       description: description ?? this.description,
       categoryId: categoryId ?? this.categoryId,
-      itemType: itemType ?? this.itemType,
       amount: amount ?? this.amount,
       amountType: amountType ?? this.amountType,
       dueTime: dueTime ?? this.dueTime,
@@ -1297,9 +1255,6 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     }
     if (categoryId.present) {
       map['category_id'] = Variable<int>(categoryId.value);
-    }
-    if (itemType.present) {
-      map['item_type'] = Variable<String>(itemType.value);
     }
     if (amount.present) {
       map['amount'] = Variable<int>(amount.value);
@@ -1341,7 +1296,6 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
           ..write('title: $title, ')
           ..write('description: $description, ')
           ..write('categoryId: $categoryId, ')
-          ..write('itemType: $itemType, ')
           ..write('amount: $amount, ')
           ..write('amountType: $amountType, ')
           ..write('dueTime: $dueTime, ')
@@ -4667,18 +4621,6 @@ class $ProjectTemplateStepsTable extends ProjectTemplateSteps
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _itemTypeMeta = const VerificationMeta(
-    'itemType',
-  );
-  @override
-  late final GeneratedColumn<String> itemType = GeneratedColumn<String>(
-    'item_type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('todo'),
-  );
   static const VerificationMeta _amountTypeMeta = const VerificationMeta(
     'amountType',
   );
@@ -4741,7 +4683,6 @@ class $ProjectTemplateStepsTable extends ProjectTemplateSteps
     id,
     templateId,
     title,
-    itemType,
     amountType,
     amount,
     offsetDays,
@@ -4778,12 +4719,6 @@ class $ProjectTemplateStepsTable extends ProjectTemplateSteps
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
-    }
-    if (data.containsKey('item_type')) {
-      context.handle(
-        _itemTypeMeta,
-        itemType.isAcceptableOrUnknown(data['item_type']!, _itemTypeMeta),
-      );
     }
     if (data.containsKey('amount_type')) {
       context.handle(
@@ -4836,10 +4771,6 @@ class $ProjectTemplateStepsTable extends ProjectTemplateSteps
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
-      itemType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}item_type'],
-      )!,
       amountType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}amount_type'],
@@ -4874,7 +4805,6 @@ class ProjectTemplateStep extends DataClass
   final int id;
   final int templateId;
   final String title;
-  final String itemType;
   final String amountType;
   final int? amount;
   final int offsetDays;
@@ -4884,7 +4814,6 @@ class ProjectTemplateStep extends DataClass
     required this.id,
     required this.templateId,
     required this.title,
-    required this.itemType,
     required this.amountType,
     this.amount,
     required this.offsetDays,
@@ -4897,7 +4826,6 @@ class ProjectTemplateStep extends DataClass
     map['id'] = Variable<int>(id);
     map['template_id'] = Variable<int>(templateId);
     map['title'] = Variable<String>(title);
-    map['item_type'] = Variable<String>(itemType);
     map['amount_type'] = Variable<String>(amountType);
     if (!nullToAbsent || amount != null) {
       map['amount'] = Variable<int>(amount);
@@ -4913,7 +4841,6 @@ class ProjectTemplateStep extends DataClass
       id: Value(id),
       templateId: Value(templateId),
       title: Value(title),
-      itemType: Value(itemType),
       amountType: Value(amountType),
       amount: amount == null && nullToAbsent
           ? const Value.absent()
@@ -4933,7 +4860,6 @@ class ProjectTemplateStep extends DataClass
       id: serializer.fromJson<int>(json['id']),
       templateId: serializer.fromJson<int>(json['templateId']),
       title: serializer.fromJson<String>(json['title']),
-      itemType: serializer.fromJson<String>(json['itemType']),
       amountType: serializer.fromJson<String>(json['amountType']),
       amount: serializer.fromJson<int?>(json['amount']),
       offsetDays: serializer.fromJson<int>(json['offsetDays']),
@@ -4948,7 +4874,6 @@ class ProjectTemplateStep extends DataClass
       'id': serializer.toJson<int>(id),
       'templateId': serializer.toJson<int>(templateId),
       'title': serializer.toJson<String>(title),
-      'itemType': serializer.toJson<String>(itemType),
       'amountType': serializer.toJson<String>(amountType),
       'amount': serializer.toJson<int?>(amount),
       'offsetDays': serializer.toJson<int>(offsetDays),
@@ -4961,7 +4886,6 @@ class ProjectTemplateStep extends DataClass
     int? id,
     int? templateId,
     String? title,
-    String? itemType,
     String? amountType,
     Value<int?> amount = const Value.absent(),
     int? offsetDays,
@@ -4971,7 +4895,6 @@ class ProjectTemplateStep extends DataClass
     id: id ?? this.id,
     templateId: templateId ?? this.templateId,
     title: title ?? this.title,
-    itemType: itemType ?? this.itemType,
     amountType: amountType ?? this.amountType,
     amount: amount.present ? amount.value : this.amount,
     offsetDays: offsetDays ?? this.offsetDays,
@@ -4985,7 +4908,6 @@ class ProjectTemplateStep extends DataClass
           ? data.templateId.value
           : this.templateId,
       title: data.title.present ? data.title.value : this.title,
-      itemType: data.itemType.present ? data.itemType.value : this.itemType,
       amountType: data.amountType.present
           ? data.amountType.value
           : this.amountType,
@@ -5004,7 +4926,6 @@ class ProjectTemplateStep extends DataClass
           ..write('id: $id, ')
           ..write('templateId: $templateId, ')
           ..write('title: $title, ')
-          ..write('itemType: $itemType, ')
           ..write('amountType: $amountType, ')
           ..write('amount: $amount, ')
           ..write('offsetDays: $offsetDays, ')
@@ -5019,7 +4940,6 @@ class ProjectTemplateStep extends DataClass
     id,
     templateId,
     title,
-    itemType,
     amountType,
     amount,
     offsetDays,
@@ -5033,7 +4953,6 @@ class ProjectTemplateStep extends DataClass
           other.id == this.id &&
           other.templateId == this.templateId &&
           other.title == this.title &&
-          other.itemType == this.itemType &&
           other.amountType == this.amountType &&
           other.amount == this.amount &&
           other.offsetDays == this.offsetDays &&
@@ -5046,7 +4965,6 @@ class ProjectTemplateStepsCompanion
   final Value<int> id;
   final Value<int> templateId;
   final Value<String> title;
-  final Value<String> itemType;
   final Value<String> amountType;
   final Value<int?> amount;
   final Value<int> offsetDays;
@@ -5056,7 +4974,6 @@ class ProjectTemplateStepsCompanion
     this.id = const Value.absent(),
     this.templateId = const Value.absent(),
     this.title = const Value.absent(),
-    this.itemType = const Value.absent(),
     this.amountType = const Value.absent(),
     this.amount = const Value.absent(),
     this.offsetDays = const Value.absent(),
@@ -5067,7 +4984,6 @@ class ProjectTemplateStepsCompanion
     this.id = const Value.absent(),
     required int templateId,
     required String title,
-    this.itemType = const Value.absent(),
     this.amountType = const Value.absent(),
     this.amount = const Value.absent(),
     this.offsetDays = const Value.absent(),
@@ -5079,7 +4995,6 @@ class ProjectTemplateStepsCompanion
     Expression<int>? id,
     Expression<int>? templateId,
     Expression<String>? title,
-    Expression<String>? itemType,
     Expression<String>? amountType,
     Expression<int>? amount,
     Expression<int>? offsetDays,
@@ -5090,7 +5005,6 @@ class ProjectTemplateStepsCompanion
       if (id != null) 'id': id,
       if (templateId != null) 'template_id': templateId,
       if (title != null) 'title': title,
-      if (itemType != null) 'item_type': itemType,
       if (amountType != null) 'amount_type': amountType,
       if (amount != null) 'amount': amount,
       if (offsetDays != null) 'offset_days': offsetDays,
@@ -5103,7 +5017,6 @@ class ProjectTemplateStepsCompanion
     Value<int>? id,
     Value<int>? templateId,
     Value<String>? title,
-    Value<String>? itemType,
     Value<String>? amountType,
     Value<int?>? amount,
     Value<int>? offsetDays,
@@ -5114,7 +5027,6 @@ class ProjectTemplateStepsCompanion
       id: id ?? this.id,
       templateId: templateId ?? this.templateId,
       title: title ?? this.title,
-      itemType: itemType ?? this.itemType,
       amountType: amountType ?? this.amountType,
       amount: amount ?? this.amount,
       offsetDays: offsetDays ?? this.offsetDays,
@@ -5134,9 +5046,6 @@ class ProjectTemplateStepsCompanion
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
-    }
-    if (itemType.present) {
-      map['item_type'] = Variable<String>(itemType.value);
     }
     if (amountType.present) {
       map['amount_type'] = Variable<String>(amountType.value);
@@ -5162,7 +5071,6 @@ class ProjectTemplateStepsCompanion
           ..write('id: $id, ')
           ..write('templateId: $templateId, ')
           ..write('title: $title, ')
-          ..write('itemType: $itemType, ')
           ..write('amountType: $amountType, ')
           ..write('amount: $amount, ')
           ..write('offsetDays: $offsetDays, ')
@@ -5226,18 +5134,6 @@ class $ItemTemplatesTable extends ItemTemplates
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-  );
-  static const VerificationMeta _itemTypeMeta = const VerificationMeta(
-    'itemType',
-  );
-  @override
-  late final GeneratedColumn<String> itemType = GeneratedColumn<String>(
-    'item_type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('todo'),
   );
   static const VerificationMeta _amountTypeMeta = const VerificationMeta(
     'amountType',
@@ -5376,7 +5272,6 @@ class $ItemTemplatesTable extends ItemTemplates
     name,
     templateKey,
     categoryId,
-    itemType,
     amountType,
     amount,
     dueOffsetDays,
@@ -5425,12 +5320,6 @@ class $ItemTemplatesTable extends ItemTemplates
       context.handle(
         _categoryIdMeta,
         categoryId.isAcceptableOrUnknown(data['category_id']!, _categoryIdMeta),
-      );
-    }
-    if (data.containsKey('item_type')) {
-      context.handle(
-        _itemTypeMeta,
-        itemType.isAcceptableOrUnknown(data['item_type']!, _itemTypeMeta),
       );
     }
     if (data.containsKey('amount_type')) {
@@ -5530,10 +5419,6 @@ class $ItemTemplatesTable extends ItemTemplates
         DriftSqlType.int,
         data['${effectivePrefix}category_id'],
       ),
-      itemType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}item_type'],
-      )!,
       amountType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}amount_type'],
@@ -5592,7 +5477,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
   final String name;
   final String? templateKey;
   final int? categoryId;
-  final String itemType;
   final String amountType;
   final int? amount;
   final int dueOffsetDays;
@@ -5609,7 +5493,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
     required this.name,
     this.templateKey,
     this.categoryId,
-    required this.itemType,
     required this.amountType,
     this.amount,
     required this.dueOffsetDays,
@@ -5633,7 +5516,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
     if (!nullToAbsent || categoryId != null) {
       map['category_id'] = Variable<int>(categoryId);
     }
-    map['item_type'] = Variable<String>(itemType);
     map['amount_type'] = Variable<String>(amountType);
     if (!nullToAbsent || amount != null) {
       map['amount'] = Variable<int>(amount);
@@ -5666,7 +5548,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
       categoryId: categoryId == null && nullToAbsent
           ? const Value.absent()
           : Value(categoryId),
-      itemType: Value(itemType),
       amountType: Value(amountType),
       amount: amount == null && nullToAbsent
           ? const Value.absent()
@@ -5699,7 +5580,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
       name: serializer.fromJson<String>(json['name']),
       templateKey: serializer.fromJson<String?>(json['templateKey']),
       categoryId: serializer.fromJson<int?>(json['categoryId']),
-      itemType: serializer.fromJson<String>(json['itemType']),
       amountType: serializer.fromJson<String>(json['amountType']),
       amount: serializer.fromJson<int?>(json['amount']),
       dueOffsetDays: serializer.fromJson<int>(json['dueOffsetDays']),
@@ -5721,7 +5601,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
       'name': serializer.toJson<String>(name),
       'templateKey': serializer.toJson<String?>(templateKey),
       'categoryId': serializer.toJson<int?>(categoryId),
-      'itemType': serializer.toJson<String>(itemType),
       'amountType': serializer.toJson<String>(amountType),
       'amount': serializer.toJson<int?>(amount),
       'dueOffsetDays': serializer.toJson<int>(dueOffsetDays),
@@ -5741,7 +5620,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
     String? name,
     Value<String?> templateKey = const Value.absent(),
     Value<int?> categoryId = const Value.absent(),
-    String? itemType,
     String? amountType,
     Value<int?> amount = const Value.absent(),
     int? dueOffsetDays,
@@ -5758,7 +5636,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
     name: name ?? this.name,
     templateKey: templateKey.present ? templateKey.value : this.templateKey,
     categoryId: categoryId.present ? categoryId.value : this.categoryId,
-    itemType: itemType ?? this.itemType,
     amountType: amountType ?? this.amountType,
     amount: amount.present ? amount.value : this.amount,
     dueOffsetDays: dueOffsetDays ?? this.dueOffsetDays,
@@ -5783,7 +5660,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
       categoryId: data.categoryId.present
           ? data.categoryId.value
           : this.categoryId,
-      itemType: data.itemType.present ? data.itemType.value : this.itemType,
       amountType: data.amountType.present
           ? data.amountType.value
           : this.amountType,
@@ -5813,7 +5689,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
           ..write('name: $name, ')
           ..write('templateKey: $templateKey, ')
           ..write('categoryId: $categoryId, ')
-          ..write('itemType: $itemType, ')
           ..write('amountType: $amountType, ')
           ..write('amount: $amount, ')
           ..write('dueOffsetDays: $dueOffsetDays, ')
@@ -5835,7 +5710,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
     name,
     templateKey,
     categoryId,
-    itemType,
     amountType,
     amount,
     dueOffsetDays,
@@ -5856,7 +5730,6 @@ class ItemTemplate extends DataClass implements Insertable<ItemTemplate> {
           other.name == this.name &&
           other.templateKey == this.templateKey &&
           other.categoryId == this.categoryId &&
-          other.itemType == this.itemType &&
           other.amountType == this.amountType &&
           other.amount == this.amount &&
           other.dueOffsetDays == this.dueOffsetDays &&
@@ -5875,7 +5748,6 @@ class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
   final Value<String> name;
   final Value<String?> templateKey;
   final Value<int?> categoryId;
-  final Value<String> itemType;
   final Value<String> amountType;
   final Value<int?> amount;
   final Value<int> dueOffsetDays;
@@ -5892,7 +5764,6 @@ class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
     this.name = const Value.absent(),
     this.templateKey = const Value.absent(),
     this.categoryId = const Value.absent(),
-    this.itemType = const Value.absent(),
     this.amountType = const Value.absent(),
     this.amount = const Value.absent(),
     this.dueOffsetDays = const Value.absent(),
@@ -5910,7 +5781,6 @@ class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
     required String name,
     this.templateKey = const Value.absent(),
     this.categoryId = const Value.absent(),
-    this.itemType = const Value.absent(),
     this.amountType = const Value.absent(),
     this.amount = const Value.absent(),
     this.dueOffsetDays = const Value.absent(),
@@ -5928,7 +5798,6 @@ class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
     Expression<String>? name,
     Expression<String>? templateKey,
     Expression<int>? categoryId,
-    Expression<String>? itemType,
     Expression<String>? amountType,
     Expression<int>? amount,
     Expression<int>? dueOffsetDays,
@@ -5946,7 +5815,6 @@ class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
       if (name != null) 'name': name,
       if (templateKey != null) 'template_key': templateKey,
       if (categoryId != null) 'category_id': categoryId,
-      if (itemType != null) 'item_type': itemType,
       if (amountType != null) 'amount_type': amountType,
       if (amount != null) 'amount': amount,
       if (dueOffsetDays != null) 'due_offset_days': dueOffsetDays,
@@ -5967,7 +5835,6 @@ class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
     Value<String>? name,
     Value<String?>? templateKey,
     Value<int?>? categoryId,
-    Value<String>? itemType,
     Value<String>? amountType,
     Value<int?>? amount,
     Value<int>? dueOffsetDays,
@@ -5985,7 +5852,6 @@ class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
       name: name ?? this.name,
       templateKey: templateKey ?? this.templateKey,
       categoryId: categoryId ?? this.categoryId,
-      itemType: itemType ?? this.itemType,
       amountType: amountType ?? this.amountType,
       amount: amount ?? this.amount,
       dueOffsetDays: dueOffsetDays ?? this.dueOffsetDays,
@@ -6014,9 +5880,6 @@ class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
     }
     if (categoryId.present) {
       map['category_id'] = Variable<int>(categoryId.value);
-    }
-    if (itemType.present) {
-      map['item_type'] = Variable<String>(itemType.value);
     }
     if (amountType.present) {
       map['amount_type'] = Variable<String>(amountType.value);
@@ -6061,7 +5924,6 @@ class ItemTemplatesCompanion extends UpdateCompanion<ItemTemplate> {
           ..write('name: $name, ')
           ..write('templateKey: $templateKey, ')
           ..write('categoryId: $categoryId, ')
-          ..write('itemType: $itemType, ')
           ..write('amountType: $amountType, ')
           ..write('amount: $amount, ')
           ..write('dueOffsetDays: $dueOffsetDays, ')
@@ -6378,7 +6240,6 @@ typedef $$LifeItemsTableCreateCompanionBuilder =
       required String title,
       Value<String?> description,
       Value<int?> categoryId,
-      Value<String> itemType,
       Value<int?> amount,
       Value<String> amountType,
       required DateTime dueTime,
@@ -6396,7 +6257,6 @@ typedef $$LifeItemsTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String?> description,
       Value<int?> categoryId,
-      Value<String> itemType,
       Value<int?> amount,
       Value<String> amountType,
       Value<DateTime> dueTime,
@@ -6435,11 +6295,6 @@ class $$LifeItemsTableFilterComposer
 
   ColumnFilters<int> get categoryId => $composableBuilder(
     column: $table.categoryId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get itemType => $composableBuilder(
-    column: $table.itemType,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6523,11 +6378,6 @@ class $$LifeItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get itemType => $composableBuilder(
-    column: $table.itemType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<int> get amount => $composableBuilder(
     column: $table.amount,
     builder: (column) => ColumnOrderings(column),
@@ -6604,9 +6454,6 @@ class $$LifeItemsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get itemType =>
-      $composableBuilder(column: $table.itemType, builder: (column) => column);
-
   GeneratedColumn<int> get amount =>
       $composableBuilder(column: $table.amount, builder: (column) => column);
 
@@ -6676,7 +6523,6 @@ class $$LifeItemsTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String?> description = const Value.absent(),
                 Value<int?> categoryId = const Value.absent(),
-                Value<String> itemType = const Value.absent(),
                 Value<int?> amount = const Value.absent(),
                 Value<String> amountType = const Value.absent(),
                 Value<DateTime> dueTime = const Value.absent(),
@@ -6692,7 +6538,6 @@ class $$LifeItemsTableTableManager
                 title: title,
                 description: description,
                 categoryId: categoryId,
-                itemType: itemType,
                 amount: amount,
                 amountType: amountType,
                 dueTime: dueTime,
@@ -6710,7 +6555,6 @@ class $$LifeItemsTableTableManager
                 required String title,
                 Value<String?> description = const Value.absent(),
                 Value<int?> categoryId = const Value.absent(),
-                Value<String> itemType = const Value.absent(),
                 Value<int?> amount = const Value.absent(),
                 Value<String> amountType = const Value.absent(),
                 required DateTime dueTime,
@@ -6726,7 +6570,6 @@ class $$LifeItemsTableTableManager
                 title: title,
                 description: description,
                 categoryId: categoryId,
-                itemType: itemType,
                 amount: amount,
                 amountType: amountType,
                 dueTime: dueTime,
@@ -8386,7 +8229,6 @@ typedef $$ProjectTemplateStepsTableCreateCompanionBuilder =
       Value<int> id,
       required int templateId,
       required String title,
-      Value<String> itemType,
       Value<String> amountType,
       Value<int?> amount,
       Value<int> offsetDays,
@@ -8398,7 +8240,6 @@ typedef $$ProjectTemplateStepsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<int> templateId,
       Value<String> title,
-      Value<String> itemType,
       Value<String> amountType,
       Value<int?> amount,
       Value<int> offsetDays,
@@ -8427,11 +8268,6 @@ class $$ProjectTemplateStepsTableFilterComposer
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get itemType => $composableBuilder(
-    column: $table.itemType,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8485,11 +8321,6 @@ class $$ProjectTemplateStepsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get itemType => $composableBuilder(
-    column: $table.itemType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get amountType => $composableBuilder(
     column: $table.amountType,
     builder: (column) => ColumnOrderings(column),
@@ -8535,9 +8366,6 @@ class $$ProjectTemplateStepsTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
-
-  GeneratedColumn<String> get itemType =>
-      $composableBuilder(column: $table.itemType, builder: (column) => column);
 
   GeneratedColumn<String> get amountType => $composableBuilder(
     column: $table.amountType,
@@ -8605,7 +8433,6 @@ class $$ProjectTemplateStepsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> templateId = const Value.absent(),
                 Value<String> title = const Value.absent(),
-                Value<String> itemType = const Value.absent(),
                 Value<String> amountType = const Value.absent(),
                 Value<int?> amount = const Value.absent(),
                 Value<int> offsetDays = const Value.absent(),
@@ -8615,7 +8442,6 @@ class $$ProjectTemplateStepsTableTableManager
                 id: id,
                 templateId: templateId,
                 title: title,
-                itemType: itemType,
                 amountType: amountType,
                 amount: amount,
                 offsetDays: offsetDays,
@@ -8627,7 +8453,6 @@ class $$ProjectTemplateStepsTableTableManager
                 Value<int> id = const Value.absent(),
                 required int templateId,
                 required String title,
-                Value<String> itemType = const Value.absent(),
                 Value<String> amountType = const Value.absent(),
                 Value<int?> amount = const Value.absent(),
                 Value<int> offsetDays = const Value.absent(),
@@ -8637,7 +8462,6 @@ class $$ProjectTemplateStepsTableTableManager
                 id: id,
                 templateId: templateId,
                 title: title,
-                itemType: itemType,
                 amountType: amountType,
                 amount: amount,
                 offsetDays: offsetDays,
@@ -8679,7 +8503,6 @@ typedef $$ItemTemplatesTableCreateCompanionBuilder =
       required String name,
       Value<String?> templateKey,
       Value<int?> categoryId,
-      Value<String> itemType,
       Value<String> amountType,
       Value<int?> amount,
       Value<int> dueOffsetDays,
@@ -8698,7 +8521,6 @@ typedef $$ItemTemplatesTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String?> templateKey,
       Value<int?> categoryId,
-      Value<String> itemType,
       Value<String> amountType,
       Value<int?> amount,
       Value<int> dueOffsetDays,
@@ -8738,11 +8560,6 @@ class $$ItemTemplatesTableFilterComposer
 
   ColumnFilters<int> get categoryId => $composableBuilder(
     column: $table.categoryId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get itemType => $composableBuilder(
-    column: $table.itemType,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8831,11 +8648,6 @@ class $$ItemTemplatesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get itemType => $composableBuilder(
-    column: $table.itemType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get amountType => $composableBuilder(
     column: $table.amountType,
     builder: (column) => ColumnOrderings(column),
@@ -8917,9 +8729,6 @@ class $$ItemTemplatesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get itemType =>
-      $composableBuilder(column: $table.itemType, builder: (column) => column);
-
   GeneratedColumn<String> get amountType => $composableBuilder(
     column: $table.amountType,
     builder: (column) => column,
@@ -8997,7 +8806,6 @@ class $$ItemTemplatesTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> templateKey = const Value.absent(),
                 Value<int?> categoryId = const Value.absent(),
-                Value<String> itemType = const Value.absent(),
                 Value<String> amountType = const Value.absent(),
                 Value<int?> amount = const Value.absent(),
                 Value<int> dueOffsetDays = const Value.absent(),
@@ -9014,7 +8822,6 @@ class $$ItemTemplatesTableTableManager
                 name: name,
                 templateKey: templateKey,
                 categoryId: categoryId,
-                itemType: itemType,
                 amountType: amountType,
                 amount: amount,
                 dueOffsetDays: dueOffsetDays,
@@ -9033,7 +8840,6 @@ class $$ItemTemplatesTableTableManager
                 required String name,
                 Value<String?> templateKey = const Value.absent(),
                 Value<int?> categoryId = const Value.absent(),
-                Value<String> itemType = const Value.absent(),
                 Value<String> amountType = const Value.absent(),
                 Value<int?> amount = const Value.absent(),
                 Value<int> dueOffsetDays = const Value.absent(),
@@ -9050,7 +8856,6 @@ class $$ItemTemplatesTableTableManager
                 name: name,
                 templateKey: templateKey,
                 categoryId: categoryId,
-                itemType: itemType,
                 amountType: amountType,
                 amount: amount,
                 dueOffsetDays: dueOffsetDays,

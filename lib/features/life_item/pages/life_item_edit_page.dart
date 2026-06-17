@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
-import '../../../domain/enums/item_type.dart';
 import '../../../domain/enums/item_status.dart';
 import '../../../domain/enums/amount_type.dart';
 import '../../../domain/enums/repeat_period.dart';
@@ -31,7 +30,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   final _descController = TextEditingController();
   final _amountController = TextEditingController();
 
-  ItemType _itemType = ItemType.todo;
   AmountType _amountType = AmountType.none;
   RepeatPeriod _repeatPeriod = RepeatPeriod.daily;
   int _customRepeatDays = 30;
@@ -111,7 +109,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   void _loadFromMap(Map<String, dynamic> data) {
     _titleController.text = data['title'] as String? ?? '';
     _descController.text = data['description'] as String? ?? '';
-    _itemType = ItemType.fromString(data['itemType'] as String? ?? 'todo');
     _amountType = AmountType.fromString(
       data['amountType'] as String? ?? 'none',
     );
@@ -146,7 +143,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
   void _loadFromItem(LifeItem item) {
     _titleController.text = item.title;
     _descController.text = item.description ?? '';
-    _itemType = ItemType.fromString(item.itemType);
     _amountType = AmountType.fromString(item.amountType);
     if (item.amount != null) {
       _amountController.text = (item.amount! / 100).toStringAsFixed(2);
@@ -181,7 +177,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
       if (replaceTitle || _titleController.text.trim().isEmpty) {
         _titleController.text = template.name;
       }
-      _itemType = ItemType.fromString(template.itemType);
       _amountType = AmountType.fromString(template.amountType);
       if (template.amount != null) {
         _amountController.text = (template.amount! / 100).toStringAsFixed(2);
@@ -230,35 +225,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     return _repeatPeriod.value;
   }
 
-  _LifeItemQuickType? get _selectedQuickType => switch (_itemType) {
-    ItemType.todo => _LifeItemQuickType.todo,
-    ItemType.expiration => _LifeItemQuickType.expiration,
-    ItemType.bill => _LifeItemQuickType.bill,
-    ItemType.subscription => _LifeItemQuickType.subscription,
-    _ => null,
-  };
-
-  void _applyQuickType(_LifeItemQuickType type) {
-    setState(() {
-      switch (type) {
-        case _LifeItemQuickType.todo:
-          _itemType = ItemType.todo;
-          _amountType = AmountType.none;
-        case _LifeItemQuickType.expiration:
-          _itemType = ItemType.expiration;
-          _amountType = AmountType.none;
-        case _LifeItemQuickType.bill:
-          _itemType = ItemType.bill;
-          if (_amountType == AmountType.none) _amountType = AmountType.expense;
-        case _LifeItemQuickType.subscription:
-          _itemType = ItemType.subscription;
-          if (_amountType == AmountType.none) _amountType = AmountType.expense;
-          _hasRepeat = true;
-          _repeatPeriod = RepeatPeriod.monthly;
-      }
-    });
-  }
-
   void _save() {
     // 守卫：终态/已删除事项整页只读，禁止任何写入（防绕过 UI）。
     if (_isReadonly) {
@@ -284,7 +250,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                       ? null
                       : _descController.text.trim(),
                 ),
-                itemType: _itemType.value,
                 categoryId: Value(_selectedCategoryId),
                 projectId: Value(_projectId),
                 amount: Value(
@@ -310,7 +275,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
             'description': _descController.text.trim().isEmpty
                 ? null
                 : _descController.text.trim(),
-            'itemType': _itemType.value,
             'categoryId': _selectedCategoryId,
             'projectId': _projectId,
             'amount': _amountType != AmountType.none
@@ -347,6 +311,19 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
               ? '${_isEdit ? '事项' : '新建事项'}（只读）'
               : (_isEdit ? '编辑事项' : '新建事项'),
         ),
+        actions: [
+          if (!_isEdit)
+            IconButton(
+              tooltip: '选择模板',
+              onPressed: _openTemplatePicker,
+              icon: const Icon(Icons.auto_awesome_motion_outlined),
+            ),
+          IconButton(
+            tooltip: _isEdit ? '保存修改' : '创建事项',
+            onPressed: _save,
+            icon: const Icon(Icons.check_rounded),
+          ),
+        ],
       ),
       body: AbsorbPointer(
         // 终态/已删除时禁用整页交互，使所有字段只读。
@@ -356,19 +333,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (!_isEdit) ...[
-                _ItemTemplateSelector(
-                  selectedTemplateId: _selectedTemplateId,
-                  onSelected: (template) {
-                    if (template == null) {
-                      setState(() => _selectedTemplateId = null);
-                    } else {
-                      _applyItemTemplate(template);
-                    }
-                  },
-                ),
-                const SizedBox(height: 16),
-              ],
               SectionCard(
                 title: '事项内容',
                 child: Column(
@@ -387,36 +351,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                             _applyItemTemplate(template, replaceTitle: false),
                       ),
                     ],
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descController,
-                      decoration: const InputDecoration(labelText: '备注'),
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              SectionCard(
-                title: '类型与分类',
-                child: Column(
-                  children: [
-                    _QuickTypeSelector(
-                      selected: _selectedQuickType,
-                      onSelected: _applyQuickType,
-                    ),
-                    const SizedBox(height: 16),
-                    AppDropdownField<ItemType>(
-                      label: '事项类型',
-                      value: _itemType,
-                      options: ItemType.values
-                          .map(
-                            (t) => AppDropdownOption(value: t, label: t.label),
-                          )
-                          .toList(),
-                      onSelected: (v) =>
-                          setState(() => _itemType = v ?? _itemType),
-                    ),
                     const SizedBox(height: 16),
                     FutureBuilder(
                       future: ref
@@ -445,6 +379,12 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                               setState(() => _selectedCategoryId = v),
                         );
                       },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _descController,
+                      decoration: const InputDecoration(labelText: '备注'),
+                      maxLines: 3,
                     ),
                   ],
                 ),
@@ -571,12 +511,6 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
-              if (!_isReadonly)
-                FilledButton(
-                  onPressed: _save,
-                  child: Text(_isEdit ? '保存修改' : '创建事项'),
-                ),
             ],
           ),
         ),
@@ -634,69 +568,23 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage> {
     final minute = value.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
   }
-}
 
-class _ItemTemplateSelector extends ConsumerWidget {
-  const _ItemTemplateSelector({
-    required this.selectedTemplateId,
-    required this.onSelected,
-  });
-
-  final int? selectedTemplateId;
-  final ValueChanged<ItemTemplate?> onSelected;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final templatesAsync = ref.watch(itemTemplatesProvider);
-    return templatesAsync.when(
-      loading: () => const _ItemTemplateShell(
-        title: '事项模板',
-        subtitle: '正在加载模板...',
-        child: LinearProgressIndicator(),
-      ),
-      error: (error, _) => _ItemTemplateShell(
-        title: '事项模板',
-        subtitle: '模板加载失败',
-        child: Text('$error'),
-      ),
-      data: (templates) {
-        final selected = templates
-            .where((template) => template.id == selectedTemplateId)
-            .firstOrNull;
-        return _ItemTemplateShell(
-          title: selected?.name ?? '不使用模板',
-          subtitle: selected == null ? '手动设置类型、分类、日期和金额' : '已套用默认类型、分类、日期和提醒',
-          child: Row(
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => _openPicker(context, templates),
-                icon: const Icon(Icons.auto_awesome_motion_outlined),
-                label: Text(selected == null ? '选择模板' : '更换模板'),
-              ),
-              if (selected != null) ...[
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () => onSelected(null),
-                  child: const Text('清除'),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _openPicker(BuildContext context, List<ItemTemplate> templates) {
-    showModalBottomSheet<void>(
+  Future<void> _openTemplatePicker() async {
+    final templates = await ref.read(lifeItemRepoProvider).getTemplates();
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => _ItemTemplatePickerSheet(
         templates: templates,
-        selectedTemplateId: selectedTemplateId,
+        selectedTemplateId: _selectedTemplateId,
         onSelected: (template) {
           Navigator.of(sheetContext).pop();
-          onSelected(template);
+          if (template == null) {
+            setState(() => _selectedTemplateId = null);
+          } else {
+            _applyItemTemplate(template);
+          }
         },
       ),
     );
@@ -790,80 +678,6 @@ class _ItemTemplateRecommendations extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _ItemTemplateShell extends StatelessWidget {
-  const _ItemTemplateShell({
-    required this.title,
-    required this.subtitle,
-    required this.child,
-  });
-
-  final String title;
-  final String subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-        color: Theme.of(context).colorScheme.surface,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome_motion_outlined,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
-      ),
     );
   }
 }
@@ -988,7 +802,6 @@ class _ItemTemplateTile extends StatelessWidget {
                 Text(
                   [
                     if (categoryName != null) categoryName!,
-                    ItemType.fromString(template.itemType).label,
                     if (template.repeatRule != null) '重复',
                   ].join(' · '),
                   maxLines: 2,
@@ -1033,48 +846,6 @@ class _ItemTemplateOptionFrame extends StatelessWidget {
           ),
         ),
         child: Padding(padding: const EdgeInsets.all(12), child: child),
-      ),
-    );
-  }
-}
-
-enum _LifeItemQuickType {
-  todo('待办', Icons.check_circle_outline),
-  expiration('到期', Icons.event_available_outlined),
-  bill('账单', Icons.receipt_long_outlined),
-  subscription('订阅', Icons.autorenew);
-
-  const _LifeItemQuickType(this.label, this.icon);
-
-  final String label;
-  final IconData icon;
-}
-
-class _QuickTypeSelector extends StatelessWidget {
-  const _QuickTypeSelector({required this.selected, required this.onSelected});
-
-  final _LifeItemQuickType? selected;
-  final ValueChanged<_LifeItemQuickType> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        alignment: WrapAlignment.start,
-        children: _LifeItemQuickType.values
-            .map(
-              (type) => ChoiceChip(
-                selected: selected == type,
-                showCheckmark: false,
-                avatar: Icon(type.icon, size: 18),
-                label: Text(type.label),
-                onSelected: (_) => onSelected(type),
-              ),
-            )
-            .toList(),
       ),
     );
   }

@@ -5,7 +5,6 @@ import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/data/repositories/bill_record_repository.dart';
 import 'package:record_everything/data/repositories/life_item_repository.dart';
 import 'package:record_everything/data/repositories/project_repository.dart';
-import 'package:record_everything/domain/enums/item_type.dart';
 import 'package:record_everything/domain/enums/project_event_type.dart';
 import 'package:record_everything/core/constants/project_template_keys.dart';
 import 'package:record_everything/features/settings/services/backup_service.dart';
@@ -20,45 +19,44 @@ void main() {
 
     tearDown(() => db.close());
 
-    test(
-      'photography template creates typed payment and timeline items',
-      () async {
-        final repo = ProjectRepository(db);
-        final template = await repo.getTemplateByKey(
-          ProjectTemplateKeys.photographyOrder,
-        );
+    test('photography template creates payment and timeline items', () async {
+      final repo = ProjectRepository(db);
+      final template = await repo.getTemplateByKey(
+        ProjectTemplateKeys.photographyOrder,
+      );
 
-        final steps = (await repo.getTemplateSteps(template!.id))
-            .map(
-              (step) => ProjectTemplateStepInput(
-                title: step.title,
-                itemType: step.itemType,
-                amountType: step.amountType,
-                amount: step.amount,
-                offsetDays: step.offsetDays,
-              ),
-            )
-            .toList(growable: false);
+      final steps = (await repo.getTemplateSteps(template!.id))
+          .map(
+            (step) => ProjectTemplateStepInput(
+              title: step.title,
+              amountType: step.amountType,
+              amount: step.amount,
+              offsetDays: step.offsetDays,
+            ),
+          )
+          .toList(growable: false);
 
-        final project = await repo.createProjectFromTemplate(
-          template: template,
-          steps: steps,
-          title: '婚礼跟拍',
-          startDate: DateTime(2026, 7, 1),
-          participant: '张三',
-        );
+      final project = await repo.createProjectFromTemplate(
+        template: template,
+        steps: steps,
+        title: '婚礼跟拍',
+        startDate: DateTime(2026, 7, 1),
+        participant: '张三',
+      );
 
-        final items = await db.lifeItemDao.watchByProjectId(project.id).first;
-        final types = items.map((item) => item.itemType).toSet();
+      final items = await db.lifeItemDao.watchByProjectId(project.id).first;
 
-        expect(template.isDefault, isTrue);
-        expect(project.templateKey, ProjectTemplateKeys.photographyOrder);
-        expect(types, containsAll(['payment_due', 'milestone', 'delivery']));
-        expect(ItemType.fromString('payment_due'), ItemType.paymentDue);
-        expect(ItemType.fromString('milestone'), ItemType.milestone);
-        expect(ItemType.fromString('delivery'), ItemType.delivery);
-      },
-    );
+      expect(template.isDefault, isTrue);
+      expect(project.templateKey, ProjectTemplateKeys.photographyOrder);
+      expect(items.map((item) => item.title), [
+        '收定金',
+        '拍摄日提醒',
+        '选片/确认交付内容',
+        '修图交付',
+        '收尾款',
+      ]);
+      expect(items.where((item) => item.amountType == 'income'), hasLength(2));
+    });
 
     test('photography template edits affect generated project items', () async {
       final repo = ProjectRepository(db);
@@ -72,13 +70,11 @@ void main() {
         steps: const [
           ProjectTemplateStepInput(
             title: '确认档期',
-            itemType: 'milestone',
             amountType: 'none',
             offsetDays: -10,
           ),
           ProjectTemplateStepInput(
             title: '收预约款',
-            itemType: 'payment_due',
             amountType: 'income',
             amount: 100000,
             offsetDays: -7,
@@ -91,7 +87,6 @@ void main() {
           .map(
             (step) => ProjectTemplateStepInput(
               title: step.title,
-              itemType: step.itemType,
               amountType: step.amountType,
               amount: step.amount,
               offsetDays: step.offsetDays,
@@ -146,7 +141,6 @@ void main() {
 
         final item = await itemRepo.create(
           title: '收定金',
-          itemType: 'payment_due',
           amountType: 'income',
           amount: 120000,
           dueTime: DateTime(2026, 7, 1),
@@ -166,7 +160,7 @@ void main() {
         final updatedBill = await db.billRecordDao.getById(bill.id);
 
         expect(updatedItem.projectId, project.id);
-        expect(updatedItem.itemType, 'payment_due');
+        expect(updatedItem.amountType, 'income');
         expect(updatedBill.projectId, project.id);
       },
     );
@@ -182,13 +176,11 @@ void main() {
           steps: const [
             ProjectTemplateStepInput(
               title: '确认需求',
-              itemType: 'todo',
               amountType: 'none',
               offsetDays: 0,
             ),
             ProjectTemplateStepInput(
               title: '收预付款',
-              itemType: 'payment_due',
               amountType: 'income',
               amount: 100000,
               offsetDays: 1,
@@ -204,13 +196,11 @@ void main() {
           steps: const [
             ProjectTemplateStepInput(
               title: '签约确认',
-              itemType: 'milestone',
               amountType: 'none',
               offsetDays: 0,
             ),
             ProjectTemplateStepInput(
               title: '收尾款',
-              itemType: 'payment_due',
               amountType: 'income',
               amount: 200000,
               offsetDays: 14,
@@ -223,7 +213,6 @@ void main() {
             .map(
               (step) => ProjectTemplateStepInput(
                 title: step.title,
-                itemType: step.itemType,
                 amountType: step.amountType,
                 amount: step.amount,
                 offsetDays: step.offsetDays,
@@ -248,7 +237,7 @@ void main() {
         expect(project.note, '可编辑默认节点');
         expect(generatedItems, hasLength(2));
         expect(generatedItems.first.title, '签约确认');
-        expect(generatedItems.first.itemType, 'milestone');
+        expect(generatedItems.first.amountType, 'none');
         expect(generatedItems.last.title, '收尾款');
         expect(generatedItems.last.amountType, 'income');
         expect(generatedItems.last.amount, 200000);
@@ -300,13 +289,11 @@ void main() {
           steps: const [
             ProjectTemplateStepInput(
               title: '建立沟通',
-              itemType: 'todo',
               amountType: 'none',
               offsetDays: 0,
             ),
             ProjectTemplateStepInput(
               title: '回款',
-              itemType: 'payment_due',
               amountType: 'income',
               amount: 60000,
               offsetDays: 7,

@@ -4,7 +4,6 @@ class ProjectTemplateSteps extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get templateId => integer()();
   TextColumn get title => text().withLength(min: 1, max: 120)();
-  TextColumn get itemType => text().withDefault(const Constant('todo'))();
   TextColumn get amountType => text().withDefault(const Constant('none'))();
   IntColumn get amount => integer().nullable()();
   IntColumn get offsetDays => integer().withDefault(const Constant(0))();

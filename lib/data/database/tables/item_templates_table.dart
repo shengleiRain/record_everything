@@ -5,7 +5,6 @@ class ItemTemplates extends Table {
   TextColumn get name => text().withLength(min: 1, max: 80)();
   TextColumn get templateKey => text().nullable()();
   IntColumn get categoryId => integer().nullable()();
-  TextColumn get itemType => text().withDefault(const Constant('todo'))();
   TextColumn get amountType => text().withDefault(const Constant('none'))();
   IntColumn get amount => integer().nullable()();
   IntColumn get dueOffsetDays => integer().withDefault(const Constant(1))();

@@ -94,7 +94,6 @@ void main() {
         final zeroItem = await itemRepo.create(
           title: '免费补拍',
           projectId: project.id,
-          itemType: 'payment_due',
           amountType: 'income',
           dueTime: DateTime(2026, 8, 1),
         );
@@ -109,7 +108,6 @@ void main() {
         final noAmountItem = await itemRepo.create(
           title: '内部沟通',
           projectId: project.id,
-          itemType: 'todo',
           dueTime: DateTime(2026, 8, 3),
         );
 
@@ -144,7 +142,6 @@ void main() {
         final completedIncome = await itemRepo.create(
           title: '收定金',
           projectId: project.id,
-          itemType: 'payment_due',
           amountType: 'income',
           amount: 300000,
           dueTime: DateTime(2026, 8, 4),
@@ -183,7 +180,6 @@ void main() {
       final pendingIncome = await itemRepo.create(
         title: '收尾款',
         projectId: project.id,
-        itemType: 'payment_due',
         amountType: 'income',
         amount: 12880000,
         dueTime: DateTime(2026, 8, 10),
@@ -191,7 +187,6 @@ void main() {
       final settledIncome = await itemRepo.create(
         title: '收定金',
         projectId: project.id,
-        itemType: 'payment_due',
         amountType: 'income',
         amount: 2000000,
         dueTime: DateTime(2026, 8),
@@ -207,7 +202,6 @@ void main() {
       await itemRepo.create(
         title: '采购道具',
         projectId: project.id,
-        itemType: 'bill',
         amountType: 'expense',
         amount: 68000,
         dueTime: DateTime(2026, 8, 3),
@@ -244,7 +238,6 @@ Future<_ProjectFlowSeed> _seedProjectFlow({
   final paymentItem = await itemRepo.create(
     title: '收定金',
     projectId: project.id,
-    itemType: 'payment_due',
     amountType: 'income',
     amount: 2000000,
     dueTime: DateTime(2026, 6, 17),
@@ -261,7 +254,6 @@ Future<_ProjectFlowSeed> _seedProjectFlow({
   await itemRepo.create(
     title: '拍摄日提醒',
     projectId: project.id,
-    itemType: 'milestone',
     dueTime: DateTime(2026, 7),
   );
   final independentBill = await billRepo.create(

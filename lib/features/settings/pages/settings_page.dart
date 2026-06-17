@@ -26,7 +26,7 @@ class SettingsPage extends ConsumerWidget {
               _SettingsRowData(
                 icon: '类',
                 title: '分类管理',
-                subtitle: '支出、收入、事项类型',
+                subtitle: '支出、收入、事项分类',
                 onTap: () => context.push('/settings/categories'),
               ),
               _SettingsRowData(

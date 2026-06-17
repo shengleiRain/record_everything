@@ -9,7 +9,6 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../../data/repositories/project_repository.dart';
 import '../../../domain/enums/amount_type.dart';
-import '../../../domain/enums/item_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../providers/project_providers.dart';
 
@@ -833,7 +832,6 @@ class _StepTab extends StatelessWidget {
 class _StepDraft {
   _StepDraft({
     required String title,
-    this.itemType = ItemType.todo,
     this.amountType = AmountType.none,
     int? amount,
     int offsetDays = 0,
@@ -849,7 +847,6 @@ class _StepDraft {
   factory _StepDraft.fromStep(ProjectTemplateStep step) {
     return _StepDraft(
       title: step.title,
-      itemType: ItemType.fromString(step.itemType),
       amountType: AmountType.fromString(step.amountType),
       amount: step.amount,
       offsetDays: step.offsetDays,
@@ -860,13 +857,11 @@ class _StepDraft {
   final TextEditingController titleController;
   final TextEditingController amountController;
   final TextEditingController offsetDaysController;
-  ItemType itemType;
   AmountType amountType;
 
   ProjectTemplateStepInput toInput() {
     return ProjectTemplateStepInput(
       title: titleController.text.trim(),
-      itemType: itemType.value,
       amountType: amountType.value,
       offsetDays: int.tryParse(offsetDaysController.text.trim()) ?? 0,
       amount: amountType == AmountType.none
@@ -918,21 +913,6 @@ class _StepDraftCard extends StatelessWidget {
                     validator: (value) => value == null || value.trim().isEmpty
                         ? '请输入节点标题'
                         : null,
-                  ),
-                  const SizedBox(height: 12),
-                  AppDropdownField<ItemType>(
-                    label: '节点类型',
-                    value: draft.itemType,
-                    options: ItemType.values
-                        .map(
-                          (type) =>
-                              AppDropdownOption(value: type, label: type.label),
-                        )
-                        .toList(),
-                    onSelected: (value) {
-                      draft.itemType = value ?? draft.itemType;
-                      onChanged();
-                    },
                   ),
                   const SizedBox(height: 12),
                   AppDropdownField<AmountType>(

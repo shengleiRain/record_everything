@@ -128,7 +128,6 @@ class ProjectNotifier extends Notifier<void> {
             .map(
               (step) => ProjectTemplateStepInput(
                 title: step.title,
-                itemType: step.itemType,
                 amountType: step.amountType,
                 amount: step.amount,
                 offsetDays: step.offsetDays,
