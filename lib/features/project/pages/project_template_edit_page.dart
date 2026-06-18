@@ -25,6 +25,8 @@ const double _stepPageBottomInset = 16;
 const double _stepPageBottomDragExtent = 56;
 const double _stepCardContentMinExtent = 430;
 
+enum _StepDateAnchor { keyDate, createdDate }
+
 class ProjectTemplateEditPage extends ConsumerStatefulWidget {
   const ProjectTemplateEditPage({super.key});
 
@@ -35,7 +37,9 @@ class ProjectTemplateEditPage extends ConsumerStatefulWidget {
 
 class _ProjectTemplateEditPageState
     extends ConsumerState<ProjectTemplateEditPage>
-    with FormSaveMixin<ProjectTemplateEditPage>, DirtyGuardMixin<ProjectTemplateEditPage> {
+    with
+        FormSaveMixin<ProjectTemplateEditPage>,
+        DirtyGuardMixin<ProjectTemplateEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _noteController = TextEditingController();
@@ -102,7 +106,10 @@ class _ProjectTemplateEditPageState
       }
       _stepEditor.selectedIndex = 0;
     });
-    _stepEditor.syncStepPage(notifyListeners: () => setState(() {}), animate: false);
+    _stepEditor.syncStepPage(
+      notifyListeners: () => setState(() {}),
+      animate: false,
+    );
   }
 
   bool get _canSave => !_isEdit || _template != null;
@@ -113,13 +120,15 @@ class _ProjectTemplateEditPageState
       'note': _noteController.text,
       'categoryId': _categoryId,
       'steps': _stepEditor.steps
-          .map((draft) => {
-                'title': draft.titleController.text,
-                'amount': draft.amountController.text,
-                'amountType': draft.amountType.value,
-                'offsetDays':
-                    int.tryParse(draft.offsetDaysController.text.trim()) ?? 0,
-              })
+          .map(
+            (draft) => {
+              'title': draft.titleController.text,
+              'amount': draft.amountController.text,
+              'amountType': draft.amountType.value,
+              'dateAnchor': draft.dateAnchor.name,
+              'offsetDays': draft.offsetDays,
+            },
+          )
           .toList(growable: false),
     };
   }
@@ -133,17 +142,24 @@ class _ProjectTemplateEditPageState
         old.dispose();
       }
       final stepList = draft['steps'] as List? ?? const [];
-      final drafts = stepList.map<Object>((raw) {
-        final step = raw as Map<String, dynamic>;
-        return _StepDraft(
-          title: step['title'] as String? ?? '',
-          amountType: AmountType.fromString(
-            step['amountType'] as String? ?? 'none',
-          ),
-          amount: _parseAmountCents(step['amount'] as String?),
-          offsetDays: step['offsetDays'] as int? ?? 0,
-        );
-      }).cast<_StepDraft>().toList();
+      final drafts = stepList
+          .map<Object>((raw) {
+            final step = raw as Map<String, dynamic>;
+            return _StepDraft(
+              title: step['title'] as String? ?? '',
+              amountType: AmountType.fromString(
+                step['amountType'] as String? ?? 'none',
+              ),
+              amount: _parseAmountCents(step['amount'] as String?),
+              dateAnchor: _StepDateAnchor.values.firstWhere(
+                (anchor) => anchor.name == step['dateAnchor'],
+                orElse: () => _StepDateAnchor.keyDate,
+              ),
+              offsetDays: step['offsetDays'] as int? ?? 0,
+            );
+          })
+          .cast<_StepDraft>()
+          .toList();
       _stepEditor.steps
         ..clear()
         ..addAll(drafts);
@@ -270,170 +286,159 @@ class _ProjectTemplateEditPageState
         body: Form(
           key: _formKey,
           child: CustomScrollView(
-          key: const ValueKey('project-template-scroll-view'),
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              sliver: SliverToBoxAdapter(
-                child: _TemplateInfoSection(
-                  categoryId: _categoryId,
-                  nameController: _nameController,
-                  noteController: _noteController,
-                  onCategorySelected: (value) => setState(() {
-                    _categoryId = value;
+            key: const ValueKey('project-template-scroll-view'),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                sliver: SliverToBoxAdapter(
+                  child: _TemplateInfoSection(
+                    categoryId: _categoryId,
+                    nameController: _nameController,
+                    noteController: _noteController,
+                    onCategorySelected: (value) => setState(() {
+                      _categoryId = value;
+                      markDirtyAndPersist(_collectTemplateDraft);
+                    }),
+                  ),
+                ),
+              ),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: StepTabHeader<_StepDraft>(
+                  scrollController: _stepEditor.tabScrollController,
+                  steps: _stepEditor.steps,
+                  selectedIndex: currentStepIndex,
+                  onReorder: (oldIndex, newIndex) {
+                    _stepEditor.reorderStep(
+                      oldIndex,
+                      newIndex,
+                      notifyListeners: () => setState(() {}),
+                    );
                     markDirtyAndPersist(_collectTemplateDraft);
-                  }),
-                ),
-              ),
-            ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: StepTabHeader<_StepDraft>(
-                scrollController: _stepEditor.tabScrollController,
-                steps: _stepEditor.steps,
-                selectedIndex: currentStepIndex,
-                onReorder: (oldIndex, newIndex) {
-                  _stepEditor.reorderStep(
-                    oldIndex,
-                    newIndex,
+                  },
+                  onSelected: (index) => _stepEditor.selectStep(
+                    index,
                     notifyListeners: () => setState(() {}),
-                  );
-                  markDirtyAndPersist(_collectTemplateDraft);
-                },
-                onSelected: (index) => _stepEditor.selectStep(
-                  index,
-                  notifyListeners: () => setState(() {}),
+                  ),
+                  onAdd: _addStep,
+                  keyPrefix: 'project-template',
                 ),
-                onAdd: _addStep,
-                keyPrefix: 'project-template',
               ),
-            ),
-            SliverLayoutBuilder(
-              builder: (context, constraints) {
-                final workspaceHeight =
-                    constraints.viewportMainAxisExtent + keyboardInset;
-                final minHeight = workspaceHeight - StepTabHeader.extent;
-                final contentHeight =
-                    _stepPageTopInset +
-                    _stepCardContentMinExtent +
-                    _stepPageBottomDragExtent +
-                    bottomPadding;
-                final pageHeight = minHeight < contentHeight
-                    ? contentHeight
-                    : minHeight;
-                return SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: pageHeight < 0 ? 0 : pageHeight,
-                    child: _stepEditor.steps.isEmpty
-                        ? const SizedBox.shrink()
-                        : PageView.builder(
-                            key: const ValueKey(
-                              'project-template-step-page-view',
-                            ),
-                            controller: _stepEditor.pageController,
-                            itemCount: _stepEditor.steps.length,
-                            onPageChanged: (index) =>
-                                _stepEditor.handlePageChanged(
-                                  index,
-                                  notifyListeners: () => setState(() {}),
-                                ),
-                            itemBuilder: (context, index) {
-                              return ColoredBox(
-                                color: Colors.transparent,
-                                child: LayoutBuilder(
-                                  builder: (context, pageConstraints) {
-                                    final cardMinHeight =
-                                        pageConstraints.maxHeight -
-                                        _stepPageTopInset -
-                                        _stepPageBottomDragExtent -
-                                        bottomPadding;
-                                    return Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        16,
-                                        _stepPageTopInset,
-                                        16,
-                                        bottomPadding,
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Align(
-                                            alignment: Alignment.topCenter,
-                                            child: ConstrainedBox(
-                                              key: ValueKey(
-                                                'project-template-step-card-frame-$index',
-                                              ),
-                                              constraints: BoxConstraints(
-                                                maxWidth: 560,
-                                                minHeight: cardMinHeight < 0
-                                                    ? 0
-                                                    : cardMinHeight,
-                                              ),
-                                              child: StepDraftCard<_StepDraft>(
+              SliverLayoutBuilder(
+                builder: (context, constraints) {
+                  final workspaceHeight =
+                      constraints.viewportMainAxisExtent + keyboardInset;
+                  final minHeight = workspaceHeight - StepTabHeader.extent;
+                  final contentHeight =
+                      _stepPageTopInset +
+                      _stepCardContentMinExtent +
+                      _stepPageBottomDragExtent +
+                      bottomPadding;
+                  final pageHeight = minHeight < contentHeight
+                      ? contentHeight
+                      : minHeight;
+                  return SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: pageHeight < 0 ? 0 : pageHeight,
+                      child: _stepEditor.steps.isEmpty
+                          ? const SizedBox.shrink()
+                          : PageView.builder(
+                              key: const ValueKey(
+                                'project-template-step-page-view',
+                              ),
+                              controller: _stepEditor.pageController,
+                              itemCount: _stepEditor.steps.length,
+                              onPageChanged: (index) =>
+                                  _stepEditor.handlePageChanged(
+                                    index,
+                                    notifyListeners: () => setState(() {}),
+                                  ),
+                              itemBuilder: (context, index) {
+                                return ColoredBox(
+                                  color: Colors.transparent,
+                                  child: LayoutBuilder(
+                                    builder: (context, pageConstraints) {
+                                      final cardMinHeight =
+                                          pageConstraints.maxHeight -
+                                          _stepPageTopInset -
+                                          _stepPageBottomDragExtent -
+                                          bottomPadding;
+                                      return Padding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          16,
+                                          _stepPageTopInset,
+                                          16,
+                                          bottomPadding,
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Align(
+                                              alignment: Alignment.topCenter,
+                                              child: ConstrainedBox(
                                                 key: ValueKey(
-                                                  'project-template-step-card-${_stepEditor.steps[index].localId}',
+                                                  'project-template-step-card-frame-$index',
                                                 ),
-                                                draft: _stepEditor.steps[index],
-                                                amountLabel: '默认金额',
-                                                titleFieldKey: const ValueKey(
-                                                  'project-template-step-title-field',
+                                                constraints: BoxConstraints(
+                                                  maxWidth: 560,
+                                                  minHeight: cardMinHeight < 0
+                                                      ? 0
+                                                      : cardMinHeight,
                                                 ),
-                                                amountFieldKey: const ValueKey(
-                                                  'project-template-step-amount-field',
-                                                ),
-                                                deleteButtonKey: const ValueKey(
-                                                  'project-template-delete-step',
-                                                ),
-                                                onChanged: () {
-                                                  setState(() {});
-                                                  markDirtyAndPersist(
-                                                    _collectTemplateDraft,
-                                                  );
-                                                },
-                                                onDelete: _deleteCurrentStep,
-                                                extraSlot: (draft) => TextFormField(
-                                                  key: const ValueKey(
-                                                    'project-template-step-offset-field',
+                                                child: StepDraftCard<_StepDraft>(
+                                                  key: ValueKey(
+                                                    'project-template-step-card-${_stepEditor.steps[index].localId}',
                                                   ),
-                                                  controller:
-                                                      draft.offsetDaysController,
-                                                  keyboardType:
-                                                      const TextInputType.numberWithOptions(
-                                                        signed: true,
-                                                      ),
-                                                  decoration:
-                                                      const InputDecoration(
-                                                        labelText: '相对关键日期偏移天数',
-                                                        helperText:
-                                                            '0 表示关键日期当天，-7 表示提前 7 天，14 表示之后 14 天',
-                                                        helperMaxLines: 3,
-                                                      ),
-                                                  onChanged: (_) =>
-                                                      markDirtyAndPersist(
-                                                    _collectTemplateDraft,
+                                                  draft:
+                                                      _stepEditor.steps[index],
+                                                  amountLabel: '默认金额',
+                                                  titleFieldKey: const ValueKey(
+                                                    'project-template-step-title-field',
                                                   ),
+                                                  amountFieldKey: const ValueKey(
+                                                    'project-template-step-amount-field',
+                                                  ),
+                                                  deleteButtonKey: const ValueKey(
+                                                    'project-template-delete-step',
+                                                  ),
+                                                  onChanged: () {
+                                                    setState(() {});
+                                                    markDirtyAndPersist(
+                                                      _collectTemplateDraft,
+                                                    );
+                                                  },
+                                                  onDelete: _deleteCurrentStep,
+                                                  extraSlot: (draft) =>
+                                                      _TemplateStepDateRuleField(
+                                                        draft: draft,
+                                                        onChanged: () {
+                                                          setState(() {});
+                                                          markDirtyAndPersist(
+                                                            _collectTemplateDraft,
+                                                          );
+                                                        },
+                                                      ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(
-                                            height: _stepPageBottomDragExtent,
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                );
-              },
-            ),
-          ],
+                                            const SizedBox(
+                                              height: _stepPageBottomDragExtent,
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -499,29 +504,103 @@ class _TemplateInfoSection extends ConsumerWidget {
   }
 }
 
-/// Template-page-specific draft: adds a relative `offsetDays` controller.
+class _TemplateStepDateRuleField extends StatelessWidget {
+  const _TemplateStepDateRuleField({
+    required this.draft,
+    required this.onChanged,
+  });
+
+  final _StepDraft draft;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isKeyDate = draft.dateAnchor == _StepDateAnchor.keyDate;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SegmentedButton<_StepDateAnchor>(
+            segments: const [
+              ButtonSegment(
+                value: _StepDateAnchor.keyDate,
+                label: Text(
+                  '相对关键日期',
+                  key: ValueKey('project-template-date-anchor-key'),
+                ),
+                icon: Icon(Icons.event_available_outlined),
+              ),
+              ButtonSegment(
+                value: _StepDateAnchor.createdDate,
+                label: Text(
+                  '相对创建日期',
+                  key: ValueKey('project-template-date-anchor-created'),
+                ),
+                icon: Icon(Icons.today_outlined),
+              ),
+            ],
+            selected: {draft.dateAnchor},
+            onSelectionChanged: (selection) {
+              draft.dateAnchor = selection.single;
+              onChanged();
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          key: const ValueKey('project-template-step-offset-field'),
+          controller: draft.offsetDaysController,
+          keyboardType: const TextInputType.numberWithOptions(signed: true),
+          decoration: InputDecoration(
+            labelText: isKeyDate ? '关键日期偏移天数' : '创建日期偏移天数',
+            helperText: isKeyDate
+                ? '0 表示关键日期当天，-7 表示提前 7 天，14 表示之后 14 天'
+                : '0 表示创建当天，7 表示创建后 7 天，-1 表示创建前 1 天',
+            helperMaxLines: 3,
+          ),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return '请输入偏移天数';
+            return int.tryParse(text) == null ? '请输入整数天数' : null;
+          },
+          onChanged: (_) => onChanged(),
+        ),
+      ],
+    );
+  }
+}
+
+/// Template-page-specific draft: adds a relative date rule controller.
 base class _StepDraft extends StepDraft {
   _StepDraft({
     required String title,
     AmountType amountType = AmountType.none,
     int? amount,
+    this.dateAnchor = _StepDateAnchor.keyDate,
     int offsetDays = 0,
-  })  : localId = StepDraftIdGenerator.nextId(),
-        _amountType = amountType,
-        offsetDaysController = TextEditingController(text: '$offsetDays'),
-        super.internal(
-          titleController: TextEditingController(text: title),
-          amountController: TextEditingController(
-            text: amount == null ? '' : (amount / 100).toStringAsFixed(2),
-          ),
-        );
+  }) : localId = StepDraftIdGenerator.nextId(),
+       _amountType = amountType,
+       offsetDaysController = TextEditingController(text: '$offsetDays'),
+       super.internal(
+         titleController: TextEditingController(text: title),
+         amountController: TextEditingController(
+           text: amount == null ? '' : (amount / 100).toStringAsFixed(2),
+         ),
+       );
 
   factory _StepDraft.fromStep(ProjectTemplateStep step) {
     return _StepDraft(
       title: step.title,
       amountType: AmountType.fromString(step.amountType),
       amount: step.amount,
-      offsetDays: step.offsetDays,
+      dateAnchor: step.createdDateOffsetDays == null
+          ? _StepDateAnchor.keyDate
+          : _StepDateAnchor.createdDate,
+      offsetDays:
+          step.createdDateOffsetDays ??
+          step.keyDateOffsetDays ??
+          step.offsetDays,
     );
   }
 
@@ -530,12 +609,15 @@ base class _StepDraft extends StepDraft {
 
   final TextEditingController offsetDaysController;
   AmountType _amountType;
+  _StepDateAnchor dateAnchor;
 
   @override
   AmountType get amountType => _amountType;
 
   @override
   set amountType(AmountType value) => _amountType = value;
+
+  int get offsetDays => int.tryParse(offsetDaysController.text.trim()) ?? 0;
 
   @override
   int? get amount => amountType == AmountType.none
@@ -546,7 +628,12 @@ base class _StepDraft extends StepDraft {
     return ProjectTemplateStepInput(
       title: titleController.text.trim(),
       amountType: amountType.value,
-      offsetDays: int.tryParse(offsetDaysController.text.trim()) ?? 0,
+      keyDateOffsetDays: dateAnchor == _StepDateAnchor.keyDate
+          ? offsetDays
+          : null,
+      createdDateOffsetDays: dateAnchor == _StepDateAnchor.createdDate
+          ? offsetDays
+          : null,
       amount: amount,
     );
   }

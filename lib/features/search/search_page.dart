@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/card_parts.dart';
@@ -146,26 +147,10 @@ class _SearchResultRow extends ConsumerWidget {
                                   ?.copyWith(fontWeight: FontWeight.w800),
                             ),
                             const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                ProjectNameChip(projectId: result.projectId),
-                                Flexible(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      result.subtitle,
-                                      maxLines: 1,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            ProjectNameLine(projectId: result.projectId),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: _metaLine(context),
                             ),
                           ],
                         ),
@@ -223,6 +208,46 @@ class _SearchResultRow extends ConsumerWidget {
     ];
 
     return SwipeActionReveal(actions: actions, child: row);
+  }
+
+  Widget _metaLine(BuildContext context) {
+    final style = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary);
+    final bill = result.billRecord;
+    if (bill != null) {
+      final note = bill.note?.trim();
+      final time = DateFormat('HH:mm').format(bill.billTime);
+      return Row(
+        children: [
+          if (note != null && note.isNotEmpty) ...[
+            Flexible(
+              child: Text(
+                note,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: style,
+              ),
+            ),
+            Text(' · ', maxLines: 1, style: style),
+          ],
+          Text(
+            time,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.visible,
+            style: style,
+          ),
+        ],
+      );
+    }
+    return Text(
+      result.subtitle,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: style,
+    );
   }
 
   void _open(BuildContext context, WidgetRef ref) {

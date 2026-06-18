@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   static QueryExecutor openConnection() {
     return driftDatabase(name: 'life_items.db');
@@ -120,6 +120,25 @@ class AppDatabase extends _$AppDatabase {
       if (from < 8) {
         // 事项类型已从新 schema 中移除。用户确认无需兼容旧数据，
         // 因此这里不做旧表改写或数据迁移。
+      }
+      if (from < 9) {
+        await m.addColumn(
+          projectTemplateSteps,
+          projectTemplateSteps.keyDateOffsetDays,
+        );
+        await m.addColumn(
+          projectTemplateSteps,
+          projectTemplateSteps.createdDateOffsetDays,
+        );
+        await customStatement(
+          'UPDATE project_template_steps '
+          'SET key_date_offset_days = offset_days '
+          'WHERE key_date_offset_days IS NULL '
+          'AND created_date_offset_days IS NULL',
+        );
+        await m.addColumn(lifeItems, lifeItems.projectDateAnchor);
+        await m.addColumn(lifeItems, lifeItems.projectDateOffsetDays);
+        await m.addColumn(lifeItems, lifeItems.projectDateManuallyEdited);
       }
     },
   );
@@ -292,24 +311,28 @@ class AppDatabase extends _$AppDatabase {
         title: '收定金',
         amountType: const Value('income'),
         offsetDays: const Value(-7),
+        keyDateOffsetDays: const Value(-7),
         sortOrder: const Value(0),
       ),
       ProjectTemplateStepsCompanion.insert(
         templateId: template.id,
         title: '拍摄日提醒',
         offsetDays: const Value(0),
+        keyDateOffsetDays: const Value(0),
         sortOrder: const Value(1),
       ),
       ProjectTemplateStepsCompanion.insert(
         templateId: template.id,
         title: '选片/确认交付内容',
         offsetDays: const Value(3),
+        keyDateOffsetDays: const Value(3),
         sortOrder: const Value(2),
       ),
       ProjectTemplateStepsCompanion.insert(
         templateId: template.id,
         title: '修图交付',
         offsetDays: const Value(14),
+        keyDateOffsetDays: const Value(14),
         sortOrder: const Value(3),
       ),
       ProjectTemplateStepsCompanion.insert(
@@ -317,6 +340,7 @@ class AppDatabase extends _$AppDatabase {
         title: '收尾款',
         amountType: const Value('income'),
         offsetDays: const Value(14),
+        keyDateOffsetDays: const Value(14),
         sortOrder: const Value(4),
       ),
     ];

@@ -4,18 +4,80 @@ import '../database/daos/bill_record_dao.dart';
 import '../../domain/enums/project_event_type.dart';
 import '../../domain/enums/project_status.dart';
 
+const String projectDateAnchorKeyDate = 'keyDate';
+const String projectDateAnchorCreatedDate = 'createdDate';
+
 class ProjectTemplateStepInput {
   const ProjectTemplateStepInput({
     required this.title,
     required this.amountType,
-    required this.offsetDays,
     this.amount,
-  });
+    int? offsetDays,
+    int? keyDateOffsetDays,
+    this.createdDateOffsetDays,
+    this.absoluteDueTime,
+  }) : assert(
+         (keyDateOffsetDays == null ? 0 : 1) +
+                 (createdDateOffsetDays == null ? 0 : 1) +
+                 (absoluteDueTime == null ? 0 : 1) <=
+             1,
+         'Only one date rule can be set for a project step.',
+       ),
+       keyDateOffsetDays =
+           keyDateOffsetDays ??
+           (createdDateOffsetDays == null && absoluteDueTime == null
+               ? (offsetDays ?? 0)
+               : null);
+
+  factory ProjectTemplateStepInput.fromTemplateStep(ProjectTemplateStep step) {
+    final createdOffset = step.createdDateOffsetDays;
+    return ProjectTemplateStepInput(
+      title: step.title,
+      amountType: step.amountType,
+      amount: step.amount,
+      keyDateOffsetDays: createdOffset == null
+          ? (step.keyDateOffsetDays ?? step.offsetDays)
+          : null,
+      createdDateOffsetDays: createdOffset,
+    );
+  }
 
   final String title;
   final String amountType;
-  final int offsetDays;
+  final int? keyDateOffsetDays;
+  final int? createdDateOffsetDays;
+  final DateTime? absoluteDueTime;
   final int? amount;
+
+  int get offsetDays => keyDateOffsetDays ?? createdDateOffsetDays ?? 0;
+
+  String? get projectDateAnchor {
+    if (keyDateOffsetDays != null) return projectDateAnchorKeyDate;
+    if (createdDateOffsetDays != null) return projectDateAnchorCreatedDate;
+    return null;
+  }
+
+  int? get projectDateOffsetDays => keyDateOffsetDays ?? createdDateOffsetDays;
+
+  DateTime resolveDueTime({
+    required DateTime? keyDate,
+    required DateTime createdAt,
+  }) {
+    final absolute = absoluteDueTime;
+    if (absolute != null) return _dateOnly(absolute);
+    final keyOffset = keyDateOffsetDays;
+    if (keyOffset != null) {
+      return _dateOnly(keyDate ?? createdAt).add(Duration(days: keyOffset));
+    }
+    final createdOffset = createdDateOffsetDays;
+    if (createdOffset != null) {
+      return _dateOnly(createdAt).add(Duration(days: createdOffset));
+    }
+    return _dateOnly(keyDate ?? createdAt);
+  }
+
+  static DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
 }
 
 class ProjectRepository {
@@ -90,15 +152,16 @@ class ProjectRepository {
       templateKey: templateKey,
       note: note,
     );
-    await _createProjectLifeItems(
-      projectId: project.id,
-      steps: steps,
-      baseDate: startDate ?? DateTime.now(),
-    );
+    await _createProjectLifeItems(project: project, steps: steps);
     return project;
   }
 
   Future<void> updateProject(Project project) async {
+    final previous = await _db.projectDao.getById(project.id);
+    final shouldRecalculateKeyDateItems = !_sameDate(
+      previous.startDate,
+      project.startDate,
+    );
     await _db.projectDao.updateOne(
       ProjectsCompanion(
         id: Value(project.id),
@@ -116,6 +179,9 @@ class ProjectRepository {
       ),
     );
     await _markCategoryUsed(project.categoryId);
+    if (shouldRecalculateKeyDateItems) {
+      await _recalculateKeyDateLifeItems(project);
+    }
   }
 
   Future<Project> changeStatus(Project project, ProjectStatus next) async {
@@ -230,11 +296,7 @@ class ProjectRepository {
       note: _mergeTemplateNote(template.note, note),
     );
 
-    await _createProjectLifeItems(
-      projectId: project.id,
-      steps: steps,
-      baseDate: startDate ?? DateTime.now(),
-    );
+    await _createProjectLifeItems(project: project, steps: steps);
     return project;
   }
 
@@ -316,27 +378,78 @@ class ProjectRepository {
           amountType: Value(steps[index].amountType),
           amount: Value(steps[index].amount),
           offsetDays: Value(steps[index].offsetDays),
+          keyDateOffsetDays: Value(steps[index].keyDateOffsetDays),
+          createdDateOffsetDays: Value(steps[index].createdDateOffsetDays),
           sortOrder: Value(index),
         ),
     ]);
   }
 
   Future<void> _createProjectLifeItems({
-    required int projectId,
+    required Project project,
     required List<ProjectTemplateStepInput> steps,
-    required DateTime baseDate,
   }) async {
     for (final step in steps) {
       await _db.lifeItemDao.insertOne(
         LifeItemsCompanion.insert(
           title: step.title,
-          dueTime: baseDate.add(Duration(days: step.offsetDays)),
-          projectId: Value(projectId),
+          dueTime: step.resolveDueTime(
+            keyDate: project.startDate,
+            createdAt: project.createdAt,
+          ),
+          projectId: Value(project.id),
           amountType: Value(step.amountType),
           amount: Value(step.amount),
+          projectDateAnchor: Value(step.projectDateAnchor),
+          projectDateOffsetDays: Value(step.projectDateOffsetDays),
+          projectDateManuallyEdited: Value(step.projectDateAnchor == null),
         ),
       );
     }
+  }
+
+  Future<void> _recalculateKeyDateLifeItems(Project project) async {
+    final keyDate = project.startDate;
+    if (keyDate == null) return;
+    final items = await _db.lifeItemDao.getByProjectId(project.id);
+    final now = DateTime.now();
+    for (final item in items) {
+      if (item.projectDateAnchor != projectDateAnchorKeyDate) continue;
+      if (item.projectDateManuallyEdited) continue;
+      final offset = item.projectDateOffsetDays;
+      if (offset == null) continue;
+      final dueTime = ProjectTemplateStepInput._dateOnly(
+        keyDate,
+      ).add(Duration(days: offset));
+      await _db.lifeItemDao.updateOne(
+        LifeItemsCompanion(
+          id: Value(item.id),
+          title: Value(item.title),
+          description: Value(item.description),
+          categoryId: Value(item.categoryId),
+          projectId: Value(item.projectId),
+          amount: Value(item.amount),
+          amountType: Value(item.amountType),
+          dueTime: Value(dueTime),
+          remindTime: Value(item.remindTime),
+          repeatRule: Value(item.repeatRule),
+          status: Value(item.status),
+          createdAt: Value(item.createdAt),
+          updatedAt: Value(now),
+          projectDateAnchor: Value(item.projectDateAnchor),
+          projectDateOffsetDays: Value(item.projectDateOffsetDays),
+          projectDateManuallyEdited: Value(item.projectDateManuallyEdited),
+          deletedAt: Value(item.deletedAt),
+        ),
+      );
+    }
+  }
+
+  bool _sameDate(DateTime? first, DateTime? second) {
+    if (first == null || second == null) return first == second;
+    return first.year == second.year &&
+        first.month == second.month &&
+        first.day == second.day;
   }
 
   String? _mergeTemplateNote(String? templateNote, String? projectNote) {

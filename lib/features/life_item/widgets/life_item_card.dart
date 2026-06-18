@@ -111,7 +111,11 @@ class LifeItemCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 5),
+                            ProjectNameLine(
+                              projectId: item.projectId,
+                              padding: const EdgeInsets.only(top: 4),
+                            ),
+                            const SizedBox(height: 4),
                             _subtitleLine(
                               context,
                               dateText: subtitleDate,
@@ -184,13 +188,6 @@ class LifeItemCard extends StatelessWidget {
 
     return Row(
       children: [
-        Flexible(
-          fit: FlexFit.loose,
-          child: ProjectNameChip.compactCard(
-            projectId: item.projectId,
-            trailingGap: 4,
-          ),
-        ),
         Text(
           dateText,
           maxLines: 1,

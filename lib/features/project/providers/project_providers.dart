@@ -139,14 +139,7 @@ class ProjectNotifier extends Notifier<void> {
     final resolvedSteps =
         steps ??
         (await _repo.getTemplateSteps(templateId))
-            .map(
-              (step) => ProjectTemplateStepInput(
-                title: step.title,
-                amountType: step.amountType,
-                amount: step.amount,
-                offsetDays: step.offsetDays,
-              ),
-            )
+            .map(ProjectTemplateStepInput.fromTemplateStep)
             .toList(growable: false);
     return _repo.createProjectFromTemplate(
       template: template,

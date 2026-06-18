@@ -60,7 +60,7 @@ class BackupService {
     }
 
     final data = {
-      'version': 5,
+      'version': 6,
       'exportedAt': DateTime.now().toIso8601String(),
       'categories': categories.map(_categoryToMap).toList(),
       'itemTemplates': itemTemplates.map(_itemTemplateToMap).toList(),
@@ -216,6 +216,15 @@ class BackupService {
         if (mappedTemplateId == null) continue;
         final title = _requiredString(map, 'title');
         final sortOrder = _optionalInt(map, 'sortOrder') ?? 0;
+        final createdDateOffsetDays = _optionalInt(
+          map,
+          'createdDateOffsetDays',
+        );
+        final keyDateOffsetDays = createdDateOffsetDays == null
+            ? (_optionalInt(map, 'keyDateOffsetDays') ??
+                  _optionalInt(map, 'offsetDays') ??
+                  0)
+            : _optionalInt(map, 'keyDateOffsetDays');
         final existingStep =
             (await _db.projectTemplateDao.getSteps(mappedTemplateId))
                 .where(
@@ -231,7 +240,9 @@ class BackupService {
                 title: title,
                 amountType: Value(_optionalString(map, 'amountType') ?? 'none'),
                 amount: Value(_optionalInt(map, 'amount')),
-                offsetDays: Value(_optionalInt(map, 'offsetDays') ?? 0),
+                offsetDays: Value(keyDateOffsetDays ?? 0),
+                keyDateOffsetDays: Value(keyDateOffsetDays),
+                createdDateOffsetDays: Value(createdDateOffsetDays),
                 sortOrder: Value(sortOrder),
                 createdAt: Value(
                   _optionalDate(map, 'createdAt') ?? DateTime.now(),
@@ -306,6 +317,13 @@ class BackupService {
             remindTime: Value(_optionalDate(map, 'remindTime')),
             repeatRule: Value(_optionalString(map, 'repeatRule')),
             status: Value(_optionalString(map, 'status') ?? 'pending'),
+            projectDateAnchor: Value(_optionalString(map, 'projectDateAnchor')),
+            projectDateOffsetDays: Value(
+              _optionalInt(map, 'projectDateOffsetDays'),
+            ),
+            projectDateManuallyEdited: Value(
+              _optionalBool(map, 'projectDateManuallyEdited') ?? false,
+            ),
             createdAt: Value(_optionalDate(map, 'createdAt') ?? dueTime),
             updatedAt: Value(
               _optionalDate(map, 'updatedAt') ??
@@ -418,7 +436,8 @@ class BackupService {
             rawVersion != 2 &&
             rawVersion != 3 &&
             rawVersion != 4 &&
-            rawVersion != 5)) {
+            rawVersion != 5 &&
+            rawVersion != 6)) {
       throw const BackupFormatException('备份版本不受支持');
     }
     final version = rawVersion;
@@ -548,6 +567,9 @@ Map<String, Object?> _lifeItemToMap(LifeItem item) => {
   'remindTime': item.remindTime?.toIso8601String(),
   'repeatRule': item.repeatRule,
   'status': item.status,
+  'projectDateAnchor': item.projectDateAnchor,
+  'projectDateOffsetDays': item.projectDateOffsetDays,
+  'projectDateManuallyEdited': item.projectDateManuallyEdited,
   'createdAt': item.createdAt.toIso8601String(),
   'updatedAt': item.updatedAt.toIso8601String(),
 };
@@ -612,6 +634,8 @@ Map<String, Object?> _projectTemplateStepToMap(ProjectTemplateStep step) => {
   'amountType': step.amountType,
   'amount': step.amount,
   'offsetDays': step.offsetDays,
+  'keyDateOffsetDays': step.keyDateOffsetDays,
+  'createdDateOffsetDays': step.createdDateOffsetDays,
   'sortOrder': step.sortOrder,
   'createdAt': step.createdAt.toIso8601String(),
 };

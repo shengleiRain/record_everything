@@ -18,6 +18,7 @@ void main() {
           remindTime: null,
           repeatRule: null,
           status: 'pending',
+          projectDateManuallyEdited: false,
           createdAt: DateTime(2026, 6, 1),
           updatedAt: DateTime(2026, 6, 1),
         ),

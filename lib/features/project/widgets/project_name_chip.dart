@@ -117,3 +117,52 @@ class ProjectNameChip extends ConsumerWidget {
     );
   }
 }
+
+class ProjectNameLine extends ConsumerWidget {
+  const ProjectNameLine({
+    super.key,
+    required this.projectId,
+    this.padding = EdgeInsets.zero,
+  });
+
+  final int? projectId;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final id = projectId;
+    if (id == null) return const SizedBox.shrink();
+
+    final project = ref.watch(projectByIdProvider(id)).valueOrNull;
+    if (project == null || project.deletedAt != null) {
+      return const SizedBox.shrink();
+    }
+
+    final style = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Colors.blue,
+      fontWeight: FontWeight.w700,
+    );
+
+    return Padding(
+      padding: padding,
+      child: InkWell(
+        onTap: () => context.push('/projects/$id'),
+        borderRadius: BorderRadius.circular(4),
+        child: Row(
+          children: [
+            const Icon(Icons.folder_outlined, size: 13, color: Colors.blue),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                project.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: style,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

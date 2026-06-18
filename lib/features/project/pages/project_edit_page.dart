@@ -153,10 +153,17 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
         .read(projectRepoProvider)
         .getTemplateSteps(template.id);
     if (!mounted || _selectedTemplateId != template.id) return;
-    final baseDate = _startDate ?? DateTime.now();
+    final keyDate = _startDate ?? DateTime.now();
+    final createdDatePreview = DateTime.now();
     _replaceStepDrafts(
       steps
-          .map((step) => _ProjectStepDraft.fromStep(step, baseDate: baseDate))
+          .map(
+            (step) => _ProjectStepDraft.fromStep(
+              step,
+              keyDate: keyDate,
+              createdDate: createdDatePreview,
+            ),
+          )
           .toList(),
     );
   }
@@ -226,10 +233,9 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   }
 
   List<ProjectTemplateStepInput> _enabledStepInputs() {
-    final baseDate = _startDate ?? DateTime.now();
     return _stepEditor.steps
         .where((draft) => draft.titleController.text.trim().isNotEmpty)
-        .map((draft) => draft.toInput(baseDate: baseDate))
+        .map((draft) => draft.toInput())
         .toList(growable: false);
   }
 
@@ -257,6 +263,9 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
               'amount': draft.amountController.text,
               'amountType': draft.amountType.value,
               'dueDate': draft.dueDate.toIso8601String(),
+              'projectDateAnchor': draft.projectDateAnchor,
+              'projectDateOffsetDays': draft.projectDateOffsetDays,
+              'projectDateManuallyEdited': draft.projectDateManuallyEdited,
             },
           )
           .toList(growable: false),
@@ -291,10 +300,13 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                 step['amountType'] as String? ?? 'none',
               ),
               amount: _parseAmountCents(step['amount'] as String?),
-              baseDate: baseDate,
               dueDate:
                   DateTime.tryParse(step['dueDate'] as String? ?? '') ??
                   baseDate,
+              projectDateAnchor: step['projectDateAnchor'] as String?,
+              projectDateOffsetDays: step['projectDateOffsetDays'] as int?,
+              projectDateManuallyEdited:
+                  step['projectDateManuallyEdited'] as bool? ?? false,
             );
           })
           .cast<_ProjectStepDraft>()
@@ -435,7 +447,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   void _addStep() {
     final baseDate = _startDate ?? DateTime.now();
     _stepEditor.addStep(
-      _ProjectStepDraft(title: '新节点', baseDate: baseDate, dueDate: baseDate),
+      _ProjectStepDraft(title: '新节点', dueDate: baseDate),
       notifyListeners: () => setState(() {}),
     );
     markDirtyAndPersist(_collectProjectDraft);
@@ -1045,11 +1057,16 @@ base class _ProjectStepDraft extends StepDraft {
     required String title,
     AmountType amountType = AmountType.none,
     int? amount,
-    required DateTime baseDate,
     required DateTime dueDate,
+    String? projectDateAnchor,
+    int? projectDateOffsetDays,
+    bool projectDateManuallyEdited = false,
   }) : localId = StepDraftIdGenerator.nextId(),
        _amountType = amountType,
        _dueDate = dueDate,
+       _projectDateAnchor = projectDateAnchor,
+       _projectDateOffsetDays = projectDateOffsetDays,
+       _projectDateManuallyEdited = projectDateManuallyEdited,
        super.internal(
          titleController: TextEditingController(text: title),
          amountController: TextEditingController(
@@ -1059,15 +1076,28 @@ base class _ProjectStepDraft extends StepDraft {
 
   factory _ProjectStepDraft.fromStep(
     ProjectTemplateStep step, {
-    required DateTime baseDate,
+    required DateTime keyDate,
+    required DateTime createdDate,
   }) {
-    final dueDate = baseDate.add(Duration(days: step.offsetDays));
+    final createdOffset = step.createdDateOffsetDays;
+    final keyOffset = createdOffset == null
+        ? (step.keyDateOffsetDays ?? step.offsetDays)
+        : null;
+    final anchor = createdOffset == null
+        ? projectDateAnchorKeyDate
+        : projectDateAnchorCreatedDate;
+    final offset = keyOffset ?? createdOffset ?? 0;
+    final baseDate = anchor == projectDateAnchorCreatedDate
+        ? createdDate
+        : keyDate;
+    final dueDate = _dateOnly(baseDate).add(Duration(days: offset));
     return _ProjectStepDraft(
       title: step.title,
       amountType: AmountType.fromString(step.amountType),
       amount: step.amount,
-      baseDate: baseDate,
       dueDate: dueDate,
+      projectDateAnchor: anchor,
+      projectDateOffsetDays: offset,
     );
   }
 
@@ -1083,16 +1113,29 @@ base class _ProjectStepDraft extends StepDraft {
   set amountType(AmountType value) => _amountType = value;
 
   DateTime _dueDate;
+  String? _projectDateAnchor;
+  int? _projectDateOffsetDays;
+  bool _projectDateManuallyEdited;
 
   DateTime get dueDate => _dueDate;
 
-  void updateDueDate(DateTime baseDate) {
-    // 保持原有的相对天数，更新到期日
-    // 这里不需要改变，因为用户可以直接选择日期
+  String? get projectDateAnchor => _projectDateAnchor;
+
+  int? get projectDateOffsetDays => _projectDateOffsetDays;
+
+  bool get projectDateManuallyEdited => _projectDateManuallyEdited;
+
+  void updateDueDate(DateTime keyDate) {
+    if (_projectDateAnchor != projectDateAnchorKeyDate) return;
+    if (_projectDateManuallyEdited) return;
+    final offset = _projectDateOffsetDays;
+    if (offset == null) return;
+    _dueDate = _dateOnly(keyDate).add(Duration(days: offset));
   }
 
   void setDueDate(DateTime date) {
-    _dueDate = date;
+    _dueDate = _dateOnly(date);
+    _projectDateManuallyEdited = true;
   }
 
   @override
@@ -1100,20 +1143,35 @@ base class _ProjectStepDraft extends StepDraft {
       ? null
       : MoneyFormatter.parse(amountController.text);
 
-  ProjectTemplateStepInput toInput({required DateTime baseDate}) {
+  ProjectTemplateStepInput toInput() {
+    if (!_projectDateManuallyEdited &&
+        _projectDateAnchor == projectDateAnchorKeyDate) {
+      return ProjectTemplateStepInput(
+        title: titleController.text.trim(),
+        amountType: amountType.value,
+        keyDateOffsetDays: _projectDateOffsetDays ?? 0,
+        amount: amount,
+      );
+    }
+    if (!_projectDateManuallyEdited &&
+        _projectDateAnchor == projectDateAnchorCreatedDate) {
+      return ProjectTemplateStepInput(
+        title: titleController.text.trim(),
+        amountType: amountType.value,
+        createdDateOffsetDays: _projectDateOffsetDays ?? 0,
+        amount: amount,
+      );
+    }
     return ProjectTemplateStepInput(
       title: titleController.text.trim(),
       amountType: amountType.value,
-      offsetDays: _calendarDayOffset(baseDate, _dueDate),
+      absoluteDueTime: _dueDate,
       amount: amount,
     );
   }
 
-  int _calendarDayOffset(DateTime baseDate, DateTime dueDate) {
-    final baseDay = DateTime(baseDate.year, baseDate.month, baseDate.day);
-    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
-    return dueDay.difference(baseDay).inDays;
-  }
+  static DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
   @override
   void dispose() {

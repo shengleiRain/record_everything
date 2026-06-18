@@ -173,6 +173,12 @@ class LifeItemDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
           .watch();
 
+  Future<List<LifeItem>> getByProjectId(int projectId) =>
+      (select(lifeItems)
+            ..where((t) => t.projectId.equals(projectId) & t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm.asc(t.dueTime)]))
+          .get();
+
   Stream<List<LifeItem>> watchPaymentDueByProjectId(int projectId) =>
       (select(lifeItems)
             ..where(

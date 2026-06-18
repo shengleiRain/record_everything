@@ -387,6 +387,7 @@ LifeItem _lifeItem({
     dueTime: dueTime ?? now,
     repeatRule: repeatRule,
     status: status,
+    projectDateManuallyEdited: false,
     createdAt: now,
     updatedAt: updatedAt ?? now,
   );

@@ -54,6 +54,9 @@ class LifeItemRepository {
     DateTime? remindTime,
     String? repeatRule,
     String status = 'pending',
+    String? projectDateAnchor,
+    int? projectDateOffsetDays,
+    bool projectDateManuallyEdited = false,
   }) async {
     final item = await _db.lifeItemDao.insertOne(
       LifeItemsCompanion.insert(
@@ -67,6 +70,9 @@ class LifeItemRepository {
         remindTime: Value(remindTime),
         repeatRule: Value(repeatRule),
         status: Value(status),
+        projectDateAnchor: Value(projectDateAnchor),
+        projectDateOffsetDays: Value(projectDateOffsetDays),
+        projectDateManuallyEdited: Value(projectDateManuallyEdited),
       ),
     );
     await _markCategoryUsed(categoryId);
@@ -74,6 +80,12 @@ class LifeItemRepository {
   }
 
   Future<LifeItem> updateItem(LifeItem item) async {
+    final previous = await _db.lifeItemDao.getById(item.id);
+    final projectDateManuallyEdited =
+        item.projectDateManuallyEdited ||
+        previous.projectDateManuallyEdited ||
+        (previous.projectDateAnchor != null &&
+            !_sameDateTime(previous.dueTime, item.dueTime));
     await _db.lifeItemDao.updateOne(
       LifeItemsCompanion(
         id: Value(item.id),
@@ -89,6 +101,9 @@ class LifeItemRepository {
         status: Value(item.status),
         createdAt: Value(item.createdAt),
         updatedAt: Value(DateTime.now()),
+        projectDateAnchor: Value(item.projectDateAnchor),
+        projectDateOffsetDays: Value(item.projectDateOffsetDays),
+        projectDateManuallyEdited: Value(projectDateManuallyEdited),
       ),
     );
     await _markCategoryUsed(item.categoryId);
@@ -123,6 +138,9 @@ class LifeItemRepository {
         status: Value(updated.status),
         createdAt: Value(updated.createdAt),
         updatedAt: Value(updated.updatedAt),
+        projectDateAnchor: Value(updated.projectDateAnchor),
+        projectDateOffsetDays: Value(updated.projectDateOffsetDays),
+        projectDateManuallyEdited: Value(updated.projectDateManuallyEdited),
       ),
     );
     await _markCategoryUsed(updated.categoryId);
@@ -152,6 +170,9 @@ class LifeItemRepository {
         status: Value(updated.status),
         createdAt: Value(updated.createdAt),
         updatedAt: Value(updated.updatedAt),
+        projectDateAnchor: Value(updated.projectDateAnchor),
+        projectDateOffsetDays: Value(updated.projectDateOffsetDays),
+        projectDateManuallyEdited: Value(updated.projectDateManuallyEdited),
       ),
     );
     await _markCategoryUsed(updated.categoryId);
@@ -178,6 +199,9 @@ class LifeItemRepository {
         status: Value(updated.status),
         createdAt: Value(updated.createdAt),
         updatedAt: Value(updated.updatedAt),
+        projectDateAnchor: Value(updated.projectDateAnchor),
+        projectDateOffsetDays: Value(updated.projectDateOffsetDays),
+        projectDateManuallyEdited: Value(updated.projectDateManuallyEdited),
       ),
     );
     await _markCategoryUsed(updated.categoryId);
@@ -205,6 +229,12 @@ class LifeItemRepository {
         status: Value(updated.status),
         createdAt: Value(updated.createdAt),
         updatedAt: Value(updated.updatedAt),
+        projectDateAnchor: Value(updated.projectDateAnchor),
+        projectDateOffsetDays: Value(updated.projectDateOffsetDays),
+        projectDateManuallyEdited: Value(
+          updated.projectDateManuallyEdited ||
+              updated.projectDateAnchor != null,
+        ),
       ),
     );
     await _markCategoryUsed(updated.categoryId);
@@ -251,5 +281,9 @@ class LifeItemRepository {
         'Invalid item status transition: ${previous.value} -> ${next.value}',
       );
     }
+  }
+
+  bool _sameDateTime(DateTime first, DateTime second) {
+    return first.isAtSameMomentAs(second);
   }
 }

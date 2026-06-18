@@ -7,6 +7,7 @@ import '../../../data/database/database_provider.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../life_item/providers/life_item_providers.dart';
 import '../../project/providers/project_providers.dart';
+import '../../project/widgets/project_name_chip.dart';
 
 class RecycleBinPage extends ConsumerStatefulWidget {
   const RecycleBinPage({super.key});
@@ -27,19 +28,14 @@ class _RecycleBinPageState extends ConsumerState<RecycleBinPage> {
 
   Future<void> _load() async {
     final db = ref.read(databaseProvider);
-    final projects =
-        await (db.select(db.projects)
-              ..where((t) => t.deletedAt.isNotNull()))
-            .get();
+    final projects = await (db.select(
+      db.projects,
+    )..where((t) => t.deletedAt.isNotNull())).get();
     final items = await db.lifeItemDao.getDeleted();
     final bills = await db.billRecordDao.getDeleted();
     if (!mounted) return;
     setState(() {
-      _data = _RecycleBinData(
-        items: items,
-        bills: bills,
-        projects: projects,
-      );
+      _data = _RecycleBinData(items: items, bills: bills, projects: projects);
       _loading = false;
     });
   }
@@ -56,54 +52,47 @@ class _RecycleBinPageState extends ConsumerState<RecycleBinPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _data.isEmpty
-              ? const Center(child: Text('回收站为空'))
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: [
-                    if (_data.projects.isNotEmpty) ...[
-                      _SectionHeader(
-                        title: '项目',
-                        count: _data.projects.length,
-                      ),
-                      for (final project in _data.projects)
-                        _RecycleBinTile(
-                          icon: Icons.folder_outlined,
-                          title: project.title,
-                          subtitle: '项目',
-                          onRestore: () => _restoreProject(project),
-                          onDelete: () => _permanentDeleteProject(project),
-                        ),
-                    ],
-                    if (_data.items.isNotEmpty) ...[
-                      _SectionHeader(
-                        title: '事项',
-                        count: _data.items.length,
-                      ),
-                      for (final item in _data.items)
-                        _RecycleBinTile(
-                          icon: Icons.event_note,
-                          title: item.title,
-                          subtitle: '事项',
-                          onRestore: () => _restoreItem(item),
-                          onDelete: () => _permanentDeleteItem(item),
-                        ),
-                    ],
-                    if (_data.bills.isNotEmpty) ...[
-                      _SectionHeader(
-                        title: '账单',
-                        count: _data.bills.length,
-                      ),
-                      for (final bill in _data.bills)
-                        _RecycleBinTile(
-                          icon: Icons.receipt_long,
-                          title: bill.title,
-                          subtitle: '账单',
-                          onRestore: () => _restoreBill(bill),
-                          onDelete: () => _permanentDeleteBill(bill),
-                        ),
-                    ],
-                  ],
-                ),
+          ? const Center(child: Text('回收站为空'))
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                if (_data.projects.isNotEmpty) ...[
+                  _SectionHeader(title: '项目', count: _data.projects.length),
+                  for (final project in _data.projects)
+                    _RecycleBinTile(
+                      icon: Icons.folder_outlined,
+                      title: project.title,
+                      subtitle: '项目',
+                      onRestore: () => _restoreProject(project),
+                      onDelete: () => _permanentDeleteProject(project),
+                    ),
+                ],
+                if (_data.items.isNotEmpty) ...[
+                  _SectionHeader(title: '事项', count: _data.items.length),
+                  for (final item in _data.items)
+                    _RecycleBinTile(
+                      icon: Icons.event_note,
+                      title: item.title,
+                      subtitle: '事项',
+                      projectId: item.projectId,
+                      onRestore: () => _restoreItem(item),
+                      onDelete: () => _permanentDeleteItem(item),
+                    ),
+                ],
+                if (_data.bills.isNotEmpty) ...[
+                  _SectionHeader(title: '账单', count: _data.bills.length),
+                  for (final bill in _data.bills)
+                    _RecycleBinTile(
+                      icon: Icons.receipt_long,
+                      title: bill.title,
+                      subtitle: '账单',
+                      projectId: bill.projectId,
+                      onRestore: () => _restoreBill(bill),
+                      onDelete: () => _permanentDeleteBill(bill),
+                    ),
+                ],
+              ],
+            ),
     );
   }
 
@@ -197,9 +186,7 @@ class _RecycleBinPageState extends ConsumerState<RecycleBinPage> {
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.overdue,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.overdue),
             onPressed: () {
               Navigator.of(dialogContext).pop();
               onConfirm();
@@ -240,9 +227,9 @@ class _SectionHeader extends StatelessWidget {
             ),
             child: Text(
               '$count',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary),
             ),
           ),
         ],
@@ -256,6 +243,7 @@ class _RecycleBinTile extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.projectId,
     required this.onRestore,
     required this.onDelete,
   });
@@ -263,6 +251,7 @@ class _RecycleBinTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final int? projectId;
   final VoidCallback onRestore;
   final VoidCallback onDelete;
 
@@ -293,19 +282,20 @@ class _RecycleBinTile extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  ProjectNameLine(
+                    projectId: projectId,
+                    padding: const EdgeInsets.only(top: 3),
+                  ),
                   Text(
                     subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textHint,
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: AppColors.textHint),
                   ),
                 ],
               ),
             ),
-            TextButton(
-              onPressed: onRestore,
-              child: const Text('恢复'),
-            ),
+            TextButton(onPressed: onRestore, child: const Text('恢复')),
             IconButton(
               tooltip: '永久删除',
               icon: Icon(
@@ -330,9 +320,9 @@ class _RecycleBinData {
   });
 
   const _RecycleBinData.empty()
-      : items = const [],
-        bills = const [],
-        projects = const [];
+    : items = const [],
+      bills = const [],
+      projects = const [];
 
   final List<LifeItem> items;
   final List<BillRecord> bills;

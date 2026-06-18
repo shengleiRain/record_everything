@@ -15,5 +15,9 @@ class LifeItems extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   IntColumn get projectId => integer().nullable()();
+  TextColumn get projectDateAnchor => text().nullable()();
+  IntColumn get projectDateOffsetDays => integer().nullable()();
+  BoolColumn get projectDateManuallyEdited =>
+      boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
 }

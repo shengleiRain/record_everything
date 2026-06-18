@@ -110,7 +110,11 @@ class _BillRow extends StatelessWidget {
                               style: Theme.of(context).textTheme.titleSmall
                                   ?.copyWith(fontWeight: FontWeight.w800),
                             ),
-                            const SizedBox(height: 5),
+                            ProjectNameLine(
+                              projectId: bill.projectId,
+                              padding: const EdgeInsets.only(top: 4),
+                            ),
+                            const SizedBox(height: 4),
                             _subtitleLine(
                               context,
                               noteText: noteText,
@@ -150,13 +154,6 @@ class _BillRow extends StatelessWidget {
 
     return Row(
       children: [
-        Flexible(
-          fit: FlexFit.loose,
-          child: ProjectNameChip.compactCard(
-            projectId: bill.projectId,
-            trailingGap: 4,
-          ),
-        ),
         if (noteText != null)
           Flexible(
             child: Text(

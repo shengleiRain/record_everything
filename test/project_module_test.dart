@@ -74,17 +74,17 @@ void main() {
             .create(
               title: '无模板项目',
               startDate: DateTime(2026, 7, 1),
-              steps: const [
+              steps: [
                 ProjectTemplateStepInput(
                   title: '确认需求',
                   amountType: 'none',
-                  offsetDays: 0,
+                  absoluteDueTime: DateTime(2026, 7, 1),
                 ),
                 ProjectTemplateStepInput(
                   title: '收首款',
                   amountType: 'income',
                   amount: 120000,
-                  offsetDays: 2,
+                  absoluteDueTime: DateTime(2026, 7, 3),
                 ),
               ],
             );
@@ -96,6 +96,121 @@ void main() {
         expect(items.last.dueTime, DateTime(2026, 7, 3));
         expect(items.last.amountType, 'income');
         expect(items.last.amount, 120000);
+        expect(items.first.projectDateAnchor, null);
+        expect(items.last.projectDateAnchor, null);
+      },
+    );
+
+    test('template steps support key-date and creation-date offsets', () async {
+      final repo = ProjectRepository(db);
+      final template = await repo.createProjectTemplate(
+        name: '双基准模板',
+        steps: const [
+          ProjectTemplateStepInput(
+            title: '关键日期后',
+            amountType: 'none',
+            keyDateOffsetDays: 2,
+          ),
+          ProjectTemplateStepInput(
+            title: '创建日期后',
+            amountType: 'none',
+            createdDateOffsetDays: 5,
+          ),
+        ],
+      );
+
+      final savedSteps = await repo.getTemplateSteps(template.id);
+      expect(savedSteps.first.keyDateOffsetDays, 2);
+      expect(savedSteps.first.createdDateOffsetDays, null);
+      expect(savedSteps.last.keyDateOffsetDays, null);
+      expect(savedSteps.last.createdDateOffsetDays, 5);
+
+      final project = await repo.createProjectFromTemplate(
+        template: template,
+        steps: savedSteps
+            .map(ProjectTemplateStepInput.fromTemplateStep)
+            .toList(growable: false),
+        title: '使用双基准模板',
+        startDate: DateTime(2026, 8, 1),
+      );
+      final items = await db.lifeItemDao.watchByProjectId(project.id).first;
+      final createdDate = DateTime(
+        project.createdAt.year,
+        project.createdAt.month,
+        project.createdAt.day,
+      );
+
+      expect(items.map((item) => item.title), ['创建日期后', '关键日期后']);
+      final createdItem = items.firstWhere((item) => item.title == '创建日期后');
+      final keyItem = items.firstWhere((item) => item.title == '关键日期后');
+      expect(keyItem.dueTime, DateTime(2026, 8, 3));
+      expect(createdItem.dueTime, createdDate.add(const Duration(days: 5)));
+      expect(keyItem.projectDateAnchor, 'keyDate');
+      expect(keyItem.projectDateOffsetDays, 2);
+      expect(keyItem.projectDateManuallyEdited, isFalse);
+      expect(createdItem.projectDateAnchor, 'createdDate');
+      expect(createdItem.projectDateOffsetDays, 5);
+    });
+
+    test(
+      'project key date changes recalculate template items until manually edited',
+      () async {
+        final repo = ProjectRepository(db);
+        final itemRepo = LifeItemRepository(db);
+        final template = await repo.createProjectTemplate(
+          name: '关键日期联动模板',
+          steps: const [
+            ProjectTemplateStepInput(
+              title: '拍摄日后确认',
+              amountType: 'none',
+              keyDateOffsetDays: 2,
+            ),
+            ProjectTemplateStepInput(
+              title: '建档后回访',
+              amountType: 'none',
+              createdDateOffsetDays: 3,
+            ),
+          ],
+        );
+
+        final savedSteps = await repo.getTemplateSteps(template.id);
+        final project = await repo.createProjectFromTemplate(
+          template: template,
+          steps: savedSteps
+              .map(ProjectTemplateStepInput.fromTemplateStep)
+              .toList(growable: false),
+          title: '联动项目',
+          startDate: DateTime(2026, 8, 1),
+        );
+
+        await repo.updateProject(
+          project.copyWith(startDate: Value(DateTime(2026, 8, 10))),
+        );
+        final movedItems = await db.lifeItemDao
+            .watchByProjectId(project.id)
+            .first;
+        final keyItem = movedItems.singleWhere(
+          (item) => item.title == '拍摄日后确认',
+        );
+        final createdItem = movedItems.singleWhere(
+          (item) => item.title == '建档后回访',
+        );
+
+        expect(keyItem.dueTime, DateTime(2026, 8, 12));
+        expect(createdItem.dueTime, isNot(DateTime(2026, 8, 13)));
+
+        await itemRepo.updateItem(
+          keyItem.copyWith(dueTime: DateTime(2026, 9, 1)),
+        );
+        final manuallyMoved = await db.lifeItemDao.getById(keyItem.id);
+        expect(manuallyMoved.projectDateManuallyEdited, isTrue);
+
+        await repo.updateProject(
+          project.copyWith(startDate: Value(DateTime(2026, 8, 20))),
+        );
+        final finalKeyItem = await db.lifeItemDao.getById(keyItem.id);
+
+        expect(finalKeyItem.dueTime, DateTime(2026, 9, 1));
       },
     );
 

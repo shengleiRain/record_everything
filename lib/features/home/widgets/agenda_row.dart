@@ -72,28 +72,11 @@ class AgendaRow extends StatelessWidget {
                                 ),
                           ),
                           const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              ProjectNameChip(projectId: _projectId),
-                              if (_metaText.isNotEmpty)
-                                Flexible(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      _metaText,
-                                      maxLines: 1,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                            ],
+                          ProjectNameLine(
+                            projectId: _projectId,
+                            padding: const EdgeInsets.only(top: 2),
                           ),
+                          _metaLine(context),
                         ],
                       ),
                     ),
@@ -233,5 +216,54 @@ class AgendaRow extends StatelessWidget {
       case AgendaItemKind.project:
         return '';
     }
+  }
+
+  Widget _metaLine(BuildContext context) {
+    final style = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary);
+    if (item.kind == AgendaItemKind.billRecord) {
+      final bill = item.billRecord;
+      if (bill == null) return const SizedBox.shrink();
+      final time = DateFormat('HH:mm').format(bill.billTime);
+      final note = bill.note?.trim();
+      return Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Row(
+          children: [
+            if (note != null && note.isNotEmpty) ...[
+              Flexible(
+                child: Text(
+                  note,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: style,
+                ),
+              ),
+              Text(' · ', maxLines: 1, style: style),
+            ],
+            Text(
+              time,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.visible,
+              style: style,
+            ),
+          ],
+        ),
+      );
+    }
+    final metaText = _metaText;
+    if (metaText.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        metaText,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      ),
+    );
   }
 }

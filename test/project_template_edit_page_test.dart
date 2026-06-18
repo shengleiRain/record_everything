@@ -94,6 +94,37 @@ void main() {
     expect(find.text('模板信息').hitTestable(), findsOneWidget);
   });
 
+  testWidgets('template node offset switches between key and creation date', (
+    tester,
+  ) async {
+    await _setMobileViewport(tester, const Size(390, 844));
+    await _pumpTemplateEditor(tester);
+
+    expect(find.text('相对关键日期'), findsOneWidget);
+    expect(find.text('相对创建日期'), findsOneWidget);
+
+    var offsetInput = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const ValueKey('project-template-step-offset-field')),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(offsetInput.decoration?.labelText, '关键日期偏移天数');
+
+    await tester.tap(
+      find.byKey(const ValueKey('project-template-date-anchor-created')),
+    );
+    await tester.pumpAndSettle();
+
+    offsetInput = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const ValueKey('project-template-step-offset-field')),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(offsetInput.decoration?.labelText, '创建日期偏移天数');
+  });
+
   testWidgets('node content fills the remaining viewport below pinned tabs', (
     tester,
   ) async {

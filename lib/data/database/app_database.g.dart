@@ -664,6 +664,43 @@ class $LifeItemsTable extends LifeItems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _projectDateAnchorMeta = const VerificationMeta(
+    'projectDateAnchor',
+  );
+  @override
+  late final GeneratedColumn<String> projectDateAnchor =
+      GeneratedColumn<String>(
+        'project_date_anchor',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _projectDateOffsetDaysMeta =
+      const VerificationMeta('projectDateOffsetDays');
+  @override
+  late final GeneratedColumn<int> projectDateOffsetDays = GeneratedColumn<int>(
+    'project_date_offset_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _projectDateManuallyEditedMeta =
+      const VerificationMeta('projectDateManuallyEdited');
+  @override
+  late final GeneratedColumn<bool> projectDateManuallyEdited =
+      GeneratedColumn<bool>(
+        'project_date_manually_edited',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("project_date_manually_edited" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
   static const VerificationMeta _deletedAtMeta = const VerificationMeta(
     'deletedAt',
   );
@@ -690,6 +727,9 @@ class $LifeItemsTable extends LifeItems
     createdAt,
     updatedAt,
     projectId,
+    projectDateAnchor,
+    projectDateOffsetDays,
+    projectDateManuallyEdited,
     deletedAt,
   ];
   @override
@@ -786,6 +826,33 @@ class $LifeItemsTable extends LifeItems
         projectId.isAcceptableOrUnknown(data['project_id']!, _projectIdMeta),
       );
     }
+    if (data.containsKey('project_date_anchor')) {
+      context.handle(
+        _projectDateAnchorMeta,
+        projectDateAnchor.isAcceptableOrUnknown(
+          data['project_date_anchor']!,
+          _projectDateAnchorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('project_date_offset_days')) {
+      context.handle(
+        _projectDateOffsetDaysMeta,
+        projectDateOffsetDays.isAcceptableOrUnknown(
+          data['project_date_offset_days']!,
+          _projectDateOffsetDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('project_date_manually_edited')) {
+      context.handle(
+        _projectDateManuallyEditedMeta,
+        projectDateManuallyEdited.isAcceptableOrUnknown(
+          data['project_date_manually_edited']!,
+          _projectDateManuallyEditedMeta,
+        ),
+      );
+    }
     if (data.containsKey('deleted_at')) {
       context.handle(
         _deletedAtMeta,
@@ -853,6 +920,18 @@ class $LifeItemsTable extends LifeItems
         DriftSqlType.int,
         data['${effectivePrefix}project_id'],
       ),
+      projectDateAnchor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}project_date_anchor'],
+      ),
+      projectDateOffsetDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}project_date_offset_days'],
+      ),
+      projectDateManuallyEdited: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}project_date_manually_edited'],
+      )!,
       deletedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}deleted_at'],
@@ -880,6 +959,9 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
   final DateTime createdAt;
   final DateTime updatedAt;
   final int? projectId;
+  final String? projectDateAnchor;
+  final int? projectDateOffsetDays;
+  final bool projectDateManuallyEdited;
   final DateTime? deletedAt;
   const LifeItem({
     required this.id,
@@ -895,6 +977,9 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     required this.createdAt,
     required this.updatedAt,
     this.projectId,
+    this.projectDateAnchor,
+    this.projectDateOffsetDays,
+    required this.projectDateManuallyEdited,
     this.deletedAt,
   });
   @override
@@ -925,6 +1010,15 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     if (!nullToAbsent || projectId != null) {
       map['project_id'] = Variable<int>(projectId);
     }
+    if (!nullToAbsent || projectDateAnchor != null) {
+      map['project_date_anchor'] = Variable<String>(projectDateAnchor);
+    }
+    if (!nullToAbsent || projectDateOffsetDays != null) {
+      map['project_date_offset_days'] = Variable<int>(projectDateOffsetDays);
+    }
+    map['project_date_manually_edited'] = Variable<bool>(
+      projectDateManuallyEdited,
+    );
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
@@ -958,6 +1052,13 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       projectId: projectId == null && nullToAbsent
           ? const Value.absent()
           : Value(projectId),
+      projectDateAnchor: projectDateAnchor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(projectDateAnchor),
+      projectDateOffsetDays: projectDateOffsetDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(projectDateOffsetDays),
+      projectDateManuallyEdited: Value(projectDateManuallyEdited),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(deletedAt),
@@ -983,6 +1084,15 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       projectId: serializer.fromJson<int?>(json['projectId']),
+      projectDateAnchor: serializer.fromJson<String?>(
+        json['projectDateAnchor'],
+      ),
+      projectDateOffsetDays: serializer.fromJson<int?>(
+        json['projectDateOffsetDays'],
+      ),
+      projectDateManuallyEdited: serializer.fromJson<bool>(
+        json['projectDateManuallyEdited'],
+      ),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
@@ -1003,6 +1113,11 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'projectId': serializer.toJson<int?>(projectId),
+      'projectDateAnchor': serializer.toJson<String?>(projectDateAnchor),
+      'projectDateOffsetDays': serializer.toJson<int?>(projectDateOffsetDays),
+      'projectDateManuallyEdited': serializer.toJson<bool>(
+        projectDateManuallyEdited,
+      ),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
@@ -1021,6 +1136,9 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<int?> projectId = const Value.absent(),
+    Value<String?> projectDateAnchor = const Value.absent(),
+    Value<int?> projectDateOffsetDays = const Value.absent(),
+    bool? projectDateManuallyEdited,
     Value<DateTime?> deletedAt = const Value.absent(),
   }) => LifeItem(
     id: id ?? this.id,
@@ -1036,6 +1154,14 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     projectId: projectId.present ? projectId.value : this.projectId,
+    projectDateAnchor: projectDateAnchor.present
+        ? projectDateAnchor.value
+        : this.projectDateAnchor,
+    projectDateOffsetDays: projectDateOffsetDays.present
+        ? projectDateOffsetDays.value
+        : this.projectDateOffsetDays,
+    projectDateManuallyEdited:
+        projectDateManuallyEdited ?? this.projectDateManuallyEdited,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   LifeItem copyWithCompanion(LifeItemsCompanion data) {
@@ -1063,6 +1189,15 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       projectId: data.projectId.present ? data.projectId.value : this.projectId,
+      projectDateAnchor: data.projectDateAnchor.present
+          ? data.projectDateAnchor.value
+          : this.projectDateAnchor,
+      projectDateOffsetDays: data.projectDateOffsetDays.present
+          ? data.projectDateOffsetDays.value
+          : this.projectDateOffsetDays,
+      projectDateManuallyEdited: data.projectDateManuallyEdited.present
+          ? data.projectDateManuallyEdited.value
+          : this.projectDateManuallyEdited,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
@@ -1083,6 +1218,9 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('projectId: $projectId, ')
+          ..write('projectDateAnchor: $projectDateAnchor, ')
+          ..write('projectDateOffsetDays: $projectDateOffsetDays, ')
+          ..write('projectDateManuallyEdited: $projectDateManuallyEdited, ')
           ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
@@ -1103,6 +1241,9 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
     createdAt,
     updatedAt,
     projectId,
+    projectDateAnchor,
+    projectDateOffsetDays,
+    projectDateManuallyEdited,
     deletedAt,
   );
   @override
@@ -1122,6 +1263,9 @@ class LifeItem extends DataClass implements Insertable<LifeItem> {
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.projectId == this.projectId &&
+          other.projectDateAnchor == this.projectDateAnchor &&
+          other.projectDateOffsetDays == this.projectDateOffsetDays &&
+          other.projectDateManuallyEdited == this.projectDateManuallyEdited &&
           other.deletedAt == this.deletedAt);
 }
 
@@ -1139,6 +1283,9 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int?> projectId;
+  final Value<String?> projectDateAnchor;
+  final Value<int?> projectDateOffsetDays;
+  final Value<bool> projectDateManuallyEdited;
   final Value<DateTime?> deletedAt;
   const LifeItemsCompanion({
     this.id = const Value.absent(),
@@ -1154,6 +1301,9 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.projectId = const Value.absent(),
+    this.projectDateAnchor = const Value.absent(),
+    this.projectDateOffsetDays = const Value.absent(),
+    this.projectDateManuallyEdited = const Value.absent(),
     this.deletedAt = const Value.absent(),
   });
   LifeItemsCompanion.insert({
@@ -1170,6 +1320,9 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.projectId = const Value.absent(),
+    this.projectDateAnchor = const Value.absent(),
+    this.projectDateOffsetDays = const Value.absent(),
+    this.projectDateManuallyEdited = const Value.absent(),
     this.deletedAt = const Value.absent(),
   }) : title = Value(title),
        dueTime = Value(dueTime);
@@ -1187,6 +1340,9 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? projectId,
+    Expression<String>? projectDateAnchor,
+    Expression<int>? projectDateOffsetDays,
+    Expression<bool>? projectDateManuallyEdited,
     Expression<DateTime>? deletedAt,
   }) {
     return RawValuesInsertable({
@@ -1203,6 +1359,11 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (projectId != null) 'project_id': projectId,
+      if (projectDateAnchor != null) 'project_date_anchor': projectDateAnchor,
+      if (projectDateOffsetDays != null)
+        'project_date_offset_days': projectDateOffsetDays,
+      if (projectDateManuallyEdited != null)
+        'project_date_manually_edited': projectDateManuallyEdited,
       if (deletedAt != null) 'deleted_at': deletedAt,
     });
   }
@@ -1221,6 +1382,9 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int?>? projectId,
+    Value<String?>? projectDateAnchor,
+    Value<int?>? projectDateOffsetDays,
+    Value<bool>? projectDateManuallyEdited,
     Value<DateTime?>? deletedAt,
   }) {
     return LifeItemsCompanion(
@@ -1237,6 +1401,11 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       projectId: projectId ?? this.projectId,
+      projectDateAnchor: projectDateAnchor ?? this.projectDateAnchor,
+      projectDateOffsetDays:
+          projectDateOffsetDays ?? this.projectDateOffsetDays,
+      projectDateManuallyEdited:
+          projectDateManuallyEdited ?? this.projectDateManuallyEdited,
       deletedAt: deletedAt ?? this.deletedAt,
     );
   }
@@ -1283,6 +1452,19 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
     if (projectId.present) {
       map['project_id'] = Variable<int>(projectId.value);
     }
+    if (projectDateAnchor.present) {
+      map['project_date_anchor'] = Variable<String>(projectDateAnchor.value);
+    }
+    if (projectDateOffsetDays.present) {
+      map['project_date_offset_days'] = Variable<int>(
+        projectDateOffsetDays.value,
+      );
+    }
+    if (projectDateManuallyEdited.present) {
+      map['project_date_manually_edited'] = Variable<bool>(
+        projectDateManuallyEdited.value,
+      );
+    }
     if (deletedAt.present) {
       map['deleted_at'] = Variable<DateTime>(deletedAt.value);
     }
@@ -1305,6 +1487,9 @@ class LifeItemsCompanion extends UpdateCompanion<LifeItem> {
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('projectId: $projectId, ')
+          ..write('projectDateAnchor: $projectDateAnchor, ')
+          ..write('projectDateOffsetDays: $projectDateOffsetDays, ')
+          ..write('projectDateManuallyEdited: $projectDateManuallyEdited, ')
           ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
@@ -4654,6 +4839,27 @@ class $ProjectTemplateStepsTable extends ProjectTemplateSteps
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _keyDateOffsetDaysMeta = const VerificationMeta(
+    'keyDateOffsetDays',
+  );
+  @override
+  late final GeneratedColumn<int> keyDateOffsetDays = GeneratedColumn<int>(
+    'key_date_offset_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdDateOffsetDaysMeta =
+      const VerificationMeta('createdDateOffsetDays');
+  @override
+  late final GeneratedColumn<int> createdDateOffsetDays = GeneratedColumn<int>(
+    'created_date_offset_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _sortOrderMeta = const VerificationMeta(
     'sortOrder',
   );
@@ -4686,6 +4892,8 @@ class $ProjectTemplateStepsTable extends ProjectTemplateSteps
     amountType,
     amount,
     offsetDays,
+    keyDateOffsetDays,
+    createdDateOffsetDays,
     sortOrder,
     createdAt,
   ];
@@ -4738,6 +4946,24 @@ class $ProjectTemplateStepsTable extends ProjectTemplateSteps
         offsetDays.isAcceptableOrUnknown(data['offset_days']!, _offsetDaysMeta),
       );
     }
+    if (data.containsKey('key_date_offset_days')) {
+      context.handle(
+        _keyDateOffsetDaysMeta,
+        keyDateOffsetDays.isAcceptableOrUnknown(
+          data['key_date_offset_days']!,
+          _keyDateOffsetDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_date_offset_days')) {
+      context.handle(
+        _createdDateOffsetDaysMeta,
+        createdDateOffsetDays.isAcceptableOrUnknown(
+          data['created_date_offset_days']!,
+          _createdDateOffsetDaysMeta,
+        ),
+      );
+    }
     if (data.containsKey('sort_order')) {
       context.handle(
         _sortOrderMeta,
@@ -4783,6 +5009,14 @@ class $ProjectTemplateStepsTable extends ProjectTemplateSteps
         DriftSqlType.int,
         data['${effectivePrefix}offset_days'],
       )!,
+      keyDateOffsetDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}key_date_offset_days'],
+      ),
+      createdDateOffsetDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_date_offset_days'],
+      ),
       sortOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
@@ -4808,6 +5042,8 @@ class ProjectTemplateStep extends DataClass
   final String amountType;
   final int? amount;
   final int offsetDays;
+  final int? keyDateOffsetDays;
+  final int? createdDateOffsetDays;
   final int sortOrder;
   final DateTime createdAt;
   const ProjectTemplateStep({
@@ -4817,6 +5053,8 @@ class ProjectTemplateStep extends DataClass
     required this.amountType,
     this.amount,
     required this.offsetDays,
+    this.keyDateOffsetDays,
+    this.createdDateOffsetDays,
     required this.sortOrder,
     required this.createdAt,
   });
@@ -4831,6 +5069,12 @@ class ProjectTemplateStep extends DataClass
       map['amount'] = Variable<int>(amount);
     }
     map['offset_days'] = Variable<int>(offsetDays);
+    if (!nullToAbsent || keyDateOffsetDays != null) {
+      map['key_date_offset_days'] = Variable<int>(keyDateOffsetDays);
+    }
+    if (!nullToAbsent || createdDateOffsetDays != null) {
+      map['created_date_offset_days'] = Variable<int>(createdDateOffsetDays);
+    }
     map['sort_order'] = Variable<int>(sortOrder);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -4846,6 +5090,12 @@ class ProjectTemplateStep extends DataClass
           ? const Value.absent()
           : Value(amount),
       offsetDays: Value(offsetDays),
+      keyDateOffsetDays: keyDateOffsetDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(keyDateOffsetDays),
+      createdDateOffsetDays: createdDateOffsetDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdDateOffsetDays),
       sortOrder: Value(sortOrder),
       createdAt: Value(createdAt),
     );
@@ -4863,6 +5113,10 @@ class ProjectTemplateStep extends DataClass
       amountType: serializer.fromJson<String>(json['amountType']),
       amount: serializer.fromJson<int?>(json['amount']),
       offsetDays: serializer.fromJson<int>(json['offsetDays']),
+      keyDateOffsetDays: serializer.fromJson<int?>(json['keyDateOffsetDays']),
+      createdDateOffsetDays: serializer.fromJson<int?>(
+        json['createdDateOffsetDays'],
+      ),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -4877,6 +5131,8 @@ class ProjectTemplateStep extends DataClass
       'amountType': serializer.toJson<String>(amountType),
       'amount': serializer.toJson<int?>(amount),
       'offsetDays': serializer.toJson<int>(offsetDays),
+      'keyDateOffsetDays': serializer.toJson<int?>(keyDateOffsetDays),
+      'createdDateOffsetDays': serializer.toJson<int?>(createdDateOffsetDays),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -4889,6 +5145,8 @@ class ProjectTemplateStep extends DataClass
     String? amountType,
     Value<int?> amount = const Value.absent(),
     int? offsetDays,
+    Value<int?> keyDateOffsetDays = const Value.absent(),
+    Value<int?> createdDateOffsetDays = const Value.absent(),
     int? sortOrder,
     DateTime? createdAt,
   }) => ProjectTemplateStep(
@@ -4898,6 +5156,12 @@ class ProjectTemplateStep extends DataClass
     amountType: amountType ?? this.amountType,
     amount: amount.present ? amount.value : this.amount,
     offsetDays: offsetDays ?? this.offsetDays,
+    keyDateOffsetDays: keyDateOffsetDays.present
+        ? keyDateOffsetDays.value
+        : this.keyDateOffsetDays,
+    createdDateOffsetDays: createdDateOffsetDays.present
+        ? createdDateOffsetDays.value
+        : this.createdDateOffsetDays,
     sortOrder: sortOrder ?? this.sortOrder,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -4915,6 +5179,12 @@ class ProjectTemplateStep extends DataClass
       offsetDays: data.offsetDays.present
           ? data.offsetDays.value
           : this.offsetDays,
+      keyDateOffsetDays: data.keyDateOffsetDays.present
+          ? data.keyDateOffsetDays.value
+          : this.keyDateOffsetDays,
+      createdDateOffsetDays: data.createdDateOffsetDays.present
+          ? data.createdDateOffsetDays.value
+          : this.createdDateOffsetDays,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -4929,6 +5199,8 @@ class ProjectTemplateStep extends DataClass
           ..write('amountType: $amountType, ')
           ..write('amount: $amount, ')
           ..write('offsetDays: $offsetDays, ')
+          ..write('keyDateOffsetDays: $keyDateOffsetDays, ')
+          ..write('createdDateOffsetDays: $createdDateOffsetDays, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -4943,6 +5215,8 @@ class ProjectTemplateStep extends DataClass
     amountType,
     amount,
     offsetDays,
+    keyDateOffsetDays,
+    createdDateOffsetDays,
     sortOrder,
     createdAt,
   );
@@ -4956,6 +5230,8 @@ class ProjectTemplateStep extends DataClass
           other.amountType == this.amountType &&
           other.amount == this.amount &&
           other.offsetDays == this.offsetDays &&
+          other.keyDateOffsetDays == this.keyDateOffsetDays &&
+          other.createdDateOffsetDays == this.createdDateOffsetDays &&
           other.sortOrder == this.sortOrder &&
           other.createdAt == this.createdAt);
 }
@@ -4968,6 +5244,8 @@ class ProjectTemplateStepsCompanion
   final Value<String> amountType;
   final Value<int?> amount;
   final Value<int> offsetDays;
+  final Value<int?> keyDateOffsetDays;
+  final Value<int?> createdDateOffsetDays;
   final Value<int> sortOrder;
   final Value<DateTime> createdAt;
   const ProjectTemplateStepsCompanion({
@@ -4977,6 +5255,8 @@ class ProjectTemplateStepsCompanion
     this.amountType = const Value.absent(),
     this.amount = const Value.absent(),
     this.offsetDays = const Value.absent(),
+    this.keyDateOffsetDays = const Value.absent(),
+    this.createdDateOffsetDays = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -4987,6 +5267,8 @@ class ProjectTemplateStepsCompanion
     this.amountType = const Value.absent(),
     this.amount = const Value.absent(),
     this.offsetDays = const Value.absent(),
+    this.keyDateOffsetDays = const Value.absent(),
+    this.createdDateOffsetDays = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : templateId = Value(templateId),
@@ -4998,6 +5280,8 @@ class ProjectTemplateStepsCompanion
     Expression<String>? amountType,
     Expression<int>? amount,
     Expression<int>? offsetDays,
+    Expression<int>? keyDateOffsetDays,
+    Expression<int>? createdDateOffsetDays,
     Expression<int>? sortOrder,
     Expression<DateTime>? createdAt,
   }) {
@@ -5008,6 +5292,9 @@ class ProjectTemplateStepsCompanion
       if (amountType != null) 'amount_type': amountType,
       if (amount != null) 'amount': amount,
       if (offsetDays != null) 'offset_days': offsetDays,
+      if (keyDateOffsetDays != null) 'key_date_offset_days': keyDateOffsetDays,
+      if (createdDateOffsetDays != null)
+        'created_date_offset_days': createdDateOffsetDays,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -5020,6 +5307,8 @@ class ProjectTemplateStepsCompanion
     Value<String>? amountType,
     Value<int?>? amount,
     Value<int>? offsetDays,
+    Value<int?>? keyDateOffsetDays,
+    Value<int?>? createdDateOffsetDays,
     Value<int>? sortOrder,
     Value<DateTime>? createdAt,
   }) {
@@ -5030,6 +5319,9 @@ class ProjectTemplateStepsCompanion
       amountType: amountType ?? this.amountType,
       amount: amount ?? this.amount,
       offsetDays: offsetDays ?? this.offsetDays,
+      keyDateOffsetDays: keyDateOffsetDays ?? this.keyDateOffsetDays,
+      createdDateOffsetDays:
+          createdDateOffsetDays ?? this.createdDateOffsetDays,
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -5056,6 +5348,14 @@ class ProjectTemplateStepsCompanion
     if (offsetDays.present) {
       map['offset_days'] = Variable<int>(offsetDays.value);
     }
+    if (keyDateOffsetDays.present) {
+      map['key_date_offset_days'] = Variable<int>(keyDateOffsetDays.value);
+    }
+    if (createdDateOffsetDays.present) {
+      map['created_date_offset_days'] = Variable<int>(
+        createdDateOffsetDays.value,
+      );
+    }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
@@ -5074,6 +5374,8 @@ class ProjectTemplateStepsCompanion
           ..write('amountType: $amountType, ')
           ..write('amount: $amount, ')
           ..write('offsetDays: $offsetDays, ')
+          ..write('keyDateOffsetDays: $keyDateOffsetDays, ')
+          ..write('createdDateOffsetDays: $createdDateOffsetDays, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -6249,6 +6551,9 @@ typedef $$LifeItemsTableCreateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int?> projectId,
+      Value<String?> projectDateAnchor,
+      Value<int?> projectDateOffsetDays,
+      Value<bool> projectDateManuallyEdited,
       Value<DateTime?> deletedAt,
     });
 typedef $$LifeItemsTableUpdateCompanionBuilder =
@@ -6266,6 +6571,9 @@ typedef $$LifeItemsTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int?> projectId,
+      Value<String?> projectDateAnchor,
+      Value<int?> projectDateOffsetDays,
+      Value<bool> projectDateManuallyEdited,
       Value<DateTime?> deletedAt,
     });
 
@@ -6340,6 +6648,21 @@ class $$LifeItemsTableFilterComposer
 
   ColumnFilters<int> get projectId => $composableBuilder(
     column: $table.projectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get projectDateAnchor => $composableBuilder(
+    column: $table.projectDateAnchor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get projectDateOffsetDays => $composableBuilder(
+    column: $table.projectDateOffsetDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get projectDateManuallyEdited => $composableBuilder(
+    column: $table.projectDateManuallyEdited,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6423,6 +6746,21 @@ class $$LifeItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get projectDateAnchor => $composableBuilder(
+    column: $table.projectDateAnchor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get projectDateOffsetDays => $composableBuilder(
+    column: $table.projectDateOffsetDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get projectDateManuallyEdited => $composableBuilder(
+    column: $table.projectDateManuallyEdited,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
     column: $table.deletedAt,
     builder: (column) => ColumnOrderings(column),
@@ -6487,6 +6825,21 @@ class $$LifeItemsTableAnnotationComposer
   GeneratedColumn<int> get projectId =>
       $composableBuilder(column: $table.projectId, builder: (column) => column);
 
+  GeneratedColumn<String> get projectDateAnchor => $composableBuilder(
+    column: $table.projectDateAnchor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get projectDateOffsetDays => $composableBuilder(
+    column: $table.projectDateOffsetDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get projectDateManuallyEdited => $composableBuilder(
+    column: $table.projectDateManuallyEdited,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get deletedAt =>
       $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 }
@@ -6532,6 +6885,9 @@ class $$LifeItemsTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int?> projectId = const Value.absent(),
+                Value<String?> projectDateAnchor = const Value.absent(),
+                Value<int?> projectDateOffsetDays = const Value.absent(),
+                Value<bool> projectDateManuallyEdited = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
               }) => LifeItemsCompanion(
                 id: id,
@@ -6547,6 +6903,9 @@ class $$LifeItemsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 projectId: projectId,
+                projectDateAnchor: projectDateAnchor,
+                projectDateOffsetDays: projectDateOffsetDays,
+                projectDateManuallyEdited: projectDateManuallyEdited,
                 deletedAt: deletedAt,
               ),
           createCompanionCallback:
@@ -6564,6 +6923,9 @@ class $$LifeItemsTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int?> projectId = const Value.absent(),
+                Value<String?> projectDateAnchor = const Value.absent(),
+                Value<int?> projectDateOffsetDays = const Value.absent(),
+                Value<bool> projectDateManuallyEdited = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
               }) => LifeItemsCompanion.insert(
                 id: id,
@@ -6579,6 +6941,9 @@ class $$LifeItemsTableTableManager
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 projectId: projectId,
+                projectDateAnchor: projectDateAnchor,
+                projectDateOffsetDays: projectDateOffsetDays,
+                projectDateManuallyEdited: projectDateManuallyEdited,
                 deletedAt: deletedAt,
               ),
           withReferenceMapper: (p0) => p0
@@ -8232,6 +8597,8 @@ typedef $$ProjectTemplateStepsTableCreateCompanionBuilder =
       Value<String> amountType,
       Value<int?> amount,
       Value<int> offsetDays,
+      Value<int?> keyDateOffsetDays,
+      Value<int?> createdDateOffsetDays,
       Value<int> sortOrder,
       Value<DateTime> createdAt,
     });
@@ -8243,6 +8610,8 @@ typedef $$ProjectTemplateStepsTableUpdateCompanionBuilder =
       Value<String> amountType,
       Value<int?> amount,
       Value<int> offsetDays,
+      Value<int?> keyDateOffsetDays,
+      Value<int?> createdDateOffsetDays,
       Value<int> sortOrder,
       Value<DateTime> createdAt,
     });
@@ -8283,6 +8652,16 @@ class $$ProjectTemplateStepsTableFilterComposer
 
   ColumnFilters<int> get offsetDays => $composableBuilder(
     column: $table.offsetDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get keyDateOffsetDays => $composableBuilder(
+    column: $table.keyDateOffsetDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdDateOffsetDays => $composableBuilder(
+    column: $table.createdDateOffsetDays,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8336,6 +8715,16 @@ class $$ProjectTemplateStepsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get keyDateOffsetDays => $composableBuilder(
+    column: $table.keyDateOffsetDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdDateOffsetDays => $composableBuilder(
+    column: $table.createdDateOffsetDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
@@ -8377,6 +8766,16 @@ class $$ProjectTemplateStepsTableAnnotationComposer
 
   GeneratedColumn<int> get offsetDays => $composableBuilder(
     column: $table.offsetDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get keyDateOffsetDays => $composableBuilder(
+    column: $table.keyDateOffsetDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdDateOffsetDays => $composableBuilder(
+    column: $table.createdDateOffsetDays,
     builder: (column) => column,
   );
 
@@ -8436,6 +8835,8 @@ class $$ProjectTemplateStepsTableTableManager
                 Value<String> amountType = const Value.absent(),
                 Value<int?> amount = const Value.absent(),
                 Value<int> offsetDays = const Value.absent(),
+                Value<int?> keyDateOffsetDays = const Value.absent(),
+                Value<int?> createdDateOffsetDays = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ProjectTemplateStepsCompanion(
@@ -8445,6 +8846,8 @@ class $$ProjectTemplateStepsTableTableManager
                 amountType: amountType,
                 amount: amount,
                 offsetDays: offsetDays,
+                keyDateOffsetDays: keyDateOffsetDays,
+                createdDateOffsetDays: createdDateOffsetDays,
                 sortOrder: sortOrder,
                 createdAt: createdAt,
               ),
@@ -8456,6 +8859,8 @@ class $$ProjectTemplateStepsTableTableManager
                 Value<String> amountType = const Value.absent(),
                 Value<int?> amount = const Value.absent(),
                 Value<int> offsetDays = const Value.absent(),
+                Value<int?> keyDateOffsetDays = const Value.absent(),
+                Value<int?> createdDateOffsetDays = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ProjectTemplateStepsCompanion.insert(
@@ -8465,6 +8870,8 @@ class $$ProjectTemplateStepsTableTableManager
                 amountType: amountType,
                 amount: amount,
                 offsetDays: offsetDays,
+                keyDateOffsetDays: keyDateOffsetDays,
+                createdDateOffsetDays: createdDateOffsetDays,
                 sortOrder: sortOrder,
                 createdAt: createdAt,
               ),
