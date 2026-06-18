@@ -68,11 +68,7 @@ class _BillRow extends StatelessWidget {
     final time = DateFormat('HH:mm').format(bill.billTime);
     final linkedToItem = bill.lifeItemId != null;
     final note = bill.note?.trim();
-    // Subtitle segments keep only meaningful content: note (if any) + time.
-    final metaSegments = <String>[
-      if (note != null && note.isNotEmpty) note,
-      time,
-    ];
+    final noteText = note != null && note.isNotEmpty ? note : null;
 
     return Material(
       color: AppColors.surface,
@@ -115,29 +111,10 @@ class _BillRow extends StatelessWidget {
                                   ?.copyWith(fontWeight: FontWeight.w800),
                             ),
                             const SizedBox(height: 5),
-                            Row(
-                              children: [
-                                ProjectNameChip(projectId: bill.projectId),
-                                if (metaSegments.isNotEmpty) ...[
-                                  Flexible(
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        metaSegments.join(' · '),
-                                        maxLines: 1,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: AppColors.textSecondary,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
+                            _subtitleLine(
+                              context,
+                              noteText: noteText,
+                              timeText: time,
                             ),
                           ],
                         ),
@@ -158,6 +135,47 @@ class _BillRow extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _subtitleLine(
+    BuildContext context, {
+    required String timeText,
+    required String? noteText,
+  }) {
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: AppColors.textSecondary,
+      fontWeight: FontWeight.w500,
+    );
+
+    return Row(
+      children: [
+        Flexible(
+          fit: FlexFit.loose,
+          child: ProjectNameChip.compactCard(
+            projectId: bill.projectId,
+            trailingGap: 4,
+          ),
+        ),
+        if (noteText != null)
+          Flexible(
+            child: Text(
+              noteText,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: textStyle,
+            ),
+          ),
+        if (noteText != null) Text(' · ', maxLines: 1, style: textStyle),
+        Text(
+          timeText,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          style: textStyle,
+        ),
+      ],
     );
   }
 }

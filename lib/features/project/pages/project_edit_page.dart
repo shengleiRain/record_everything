@@ -226,9 +226,10 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   }
 
   List<ProjectTemplateStepInput> _enabledStepInputs() {
+    final baseDate = _startDate ?? DateTime.now();
     return _stepEditor.steps
         .where((draft) => draft.titleController.text.trim().isNotEmpty)
-        .map((draft) => draft.toInput())
+        .map((draft) => draft.toInput(baseDate: baseDate))
         .toList(growable: false);
   }
 
@@ -394,6 +395,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       } else {
         await notifier.create(
           title: _titleController.text.trim(),
+          steps: _enabledStepInputs(),
           categoryId: _selectedCategoryId,
           participant: _participantController.text.trim().isEmpty
               ? null
@@ -1098,13 +1100,19 @@ base class _ProjectStepDraft extends StepDraft {
       ? null
       : MoneyFormatter.parse(amountController.text);
 
-  ProjectTemplateStepInput toInput() {
+  ProjectTemplateStepInput toInput({required DateTime baseDate}) {
     return ProjectTemplateStepInput(
       title: titleController.text.trim(),
       amountType: amountType.value,
-      offsetDays: 0, // 不再使用相对天数
+      offsetDays: _calendarDayOffset(baseDate, _dueDate),
       amount: amount,
     );
+  }
+
+  int _calendarDayOffset(DateTime baseDate, DateTime dueDate) {
+    final baseDay = DateTime(baseDate.year, baseDate.month, baseDate.day);
+    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return dueDay.difference(baseDay).inDays;
   }
 
   @override

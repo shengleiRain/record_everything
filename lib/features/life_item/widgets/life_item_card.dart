@@ -41,13 +41,18 @@ class LifeItemCard extends StatelessWidget {
     final amountText = item.amount != null && item.amountType != 'none'
         ? MoneyFormatter.format(item.amount)
         : null;
-    final subtitle = [
-      if (status == ItemStatus.completed || status == ItemStatus.cancelled)
-        DateFormatter.formatDateTime(item.updatedAt)
-      else
-        DateFormatter.formatDateWithRelative(item.dueTime),
+    final subtitleDate =
+        status == ItemStatus.completed || status == ItemStatus.cancelled
+        ? DateFormatter.formatDateTime(item.updatedAt)
+        : DateFormatter.formatDate(item.dueTime);
+    final relativeDueDate = DateFormatter.formatRelative(item.dueTime);
+    final subtitleExtras = <String>[
+      if (status == ItemStatus.pending &&
+          relativeDueDate !=
+              DateFormatter.formatDate(item.dueTime).substring(5))
+        relativeDueDate,
       if (status == ItemStatus.pending && item.repeatRule != null) '重复',
-    ].join(' · ');
+    ];
 
     final statusLabel = switch (status) {
       ItemStatus.completed => '已完成',
@@ -107,27 +112,10 @@ class LifeItemCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 5),
-                            Row(
-                              children: [
-                                ProjectNameChip(projectId: item.projectId),
-                                Flexible(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      subtitle,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            _subtitleLine(
+                              context,
+                              dateText: subtitleDate,
+                              trailingSegments: subtitleExtras,
                             ),
                           ],
                         ),
@@ -183,6 +171,45 @@ class LifeItemCard extends StatelessWidget {
 
     if (actions.isEmpty) return row;
     return SwipeActionReveal(actions: actions, child: row);
+  }
+
+  Widget _subtitleLine(
+    BuildContext context, {
+    required String dateText,
+    required List<String> trailingSegments,
+  }) {
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary);
+
+    return Row(
+      children: [
+        Flexible(
+          fit: FlexFit.loose,
+          child: ProjectNameChip.compactCard(
+            projectId: item.projectId,
+            trailingGap: 4,
+          ),
+        ),
+        Text(
+          dateText,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          style: textStyle,
+        ),
+        if (trailingSegments.isNotEmpty)
+          Flexible(
+            child: Text(
+              ' · ${trailingSegments.join(' · ')}',
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: textStyle,
+            ),
+          ),
+      ],
+    );
   }
 
   IconData _leadingIcon(bool isOverdue, bool isCompleted) {

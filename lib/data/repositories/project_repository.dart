@@ -67,6 +67,37 @@ class ProjectRepository {
     return project;
   }
 
+  Future<Project> createProjectWithSteps({
+    required String title,
+    required List<ProjectTemplateStepInput> steps,
+    int? categoryId,
+    String? participant,
+    String projectStatus = 'active',
+    DateTime? startDate,
+    DateTime? endDate,
+    int? totalAmount,
+    String? templateKey,
+    String? note,
+  }) async {
+    final project = await createProject(
+      title: title,
+      categoryId: categoryId,
+      participant: participant,
+      projectStatus: projectStatus,
+      startDate: startDate,
+      endDate: endDate,
+      totalAmount: totalAmount,
+      templateKey: templateKey,
+      note: note,
+    );
+    await _createProjectLifeItems(
+      projectId: project.id,
+      steps: steps,
+      baseDate: startDate ?? DateTime.now(),
+    );
+    return project;
+  }
+
   Future<void> updateProject(Project project) async {
     await _db.projectDao.updateOne(
       ProjectsCompanion(
@@ -199,18 +230,11 @@ class ProjectRepository {
       note: _mergeTemplateNote(template.note, note),
     );
 
-    final baseDate = startDate ?? DateTime.now();
-    for (final step in steps) {
-      await _db.lifeItemDao.insertOne(
-        LifeItemsCompanion.insert(
-          title: step.title,
-          dueTime: baseDate.add(Duration(days: step.offsetDays)),
-          projectId: Value(project.id),
-          amountType: Value(step.amountType),
-          amount: Value(step.amount),
-        ),
-      );
-    }
+    await _createProjectLifeItems(
+      projectId: project.id,
+      steps: steps,
+      baseDate: startDate ?? DateTime.now(),
+    );
     return project;
   }
 
@@ -295,6 +319,24 @@ class ProjectRepository {
           sortOrder: Value(index),
         ),
     ]);
+  }
+
+  Future<void> _createProjectLifeItems({
+    required int projectId,
+    required List<ProjectTemplateStepInput> steps,
+    required DateTime baseDate,
+  }) async {
+    for (final step in steps) {
+      await _db.lifeItemDao.insertOne(
+        LifeItemsCompanion.insert(
+          title: step.title,
+          dueTime: baseDate.add(Duration(days: step.offsetDays)),
+          projectId: Value(projectId),
+          amountType: Value(step.amountType),
+          amount: Value(step.amount),
+        ),
+      );
+    }
   }
 
   String? _mergeTemplateNote(String? templateNote, String? projectNote) {

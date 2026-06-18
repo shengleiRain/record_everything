@@ -97,7 +97,21 @@ class ProjectNotifier extends Notifier<void> {
     DateTime? endDate,
     String? templateKey,
     String? note,
+    List<ProjectTemplateStepInput>? steps,
   }) {
+    if (steps != null && steps.isNotEmpty) {
+      return _repo.createProjectWithSteps(
+        title: title,
+        steps: steps,
+        categoryId: categoryId,
+        participant: participant,
+        projectStatus: projectStatus,
+        startDate: startDate,
+        endDate: endDate,
+        templateKey: templateKey,
+        note: note,
+      );
+    }
     return _repo.createProject(
       title: title,
       categoryId: categoryId,

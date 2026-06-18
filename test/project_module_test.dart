@@ -1,12 +1,15 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/data/database/app_database.dart';
+import 'package:record_everything/data/database/database_provider.dart';
 import 'package:record_everything/data/repositories/bill_record_repository.dart';
 import 'package:record_everything/data/repositories/life_item_repository.dart';
 import 'package:record_everything/data/repositories/project_repository.dart';
 import 'package:record_everything/domain/enums/project_event_type.dart';
 import 'package:record_everything/core/constants/project_template_keys.dart';
+import 'package:record_everything/features/project/providers/project_providers.dart';
 import 'package:record_everything/features/settings/services/backup_service.dart';
 
 void main() {
@@ -57,6 +60,44 @@ void main() {
       ]);
       expect(items.where((item) => item.amountType == 'income'), hasLength(2));
     });
+
+    test(
+      'manual project steps are saved when no template is selected',
+      () async {
+        final container = ProviderContainer(
+          overrides: [databaseProvider.overrideWithValue(db)],
+        );
+        addTearDown(container.dispose);
+
+        final project = await container
+            .read(projectNotifierProvider.notifier)
+            .create(
+              title: '无模板项目',
+              startDate: DateTime(2026, 7, 1),
+              steps: const [
+                ProjectTemplateStepInput(
+                  title: '确认需求',
+                  amountType: 'none',
+                  offsetDays: 0,
+                ),
+                ProjectTemplateStepInput(
+                  title: '收首款',
+                  amountType: 'income',
+                  amount: 120000,
+                  offsetDays: 2,
+                ),
+              ],
+            );
+
+        final items = await db.lifeItemDao.watchByProjectId(project.id).first;
+
+        expect(items.map((item) => item.title), ['确认需求', '收首款']);
+        expect(items.first.dueTime, DateTime(2026, 7, 1));
+        expect(items.last.dueTime, DateTime(2026, 7, 3));
+        expect(items.last.amountType, 'income');
+        expect(items.last.amount, 120000);
+      },
+    );
 
     test('photography template edits affect generated project items', () async {
       final repo = ProjectRepository(db);
