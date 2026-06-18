@@ -33,7 +33,7 @@ class BillEditPage extends ConsumerStatefulWidget {
 
 class _BillEditPageState extends ConsumerState<BillEditPage>
     with FormSaveMixin<BillEditPage>, DirtyGuardMixin<BillEditPage> {
-  static const String _draftType = 'bill';
+  static const String _draftEntityType = 'bill';
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _amountController = TextEditingController();
@@ -49,15 +49,27 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
   int? _editId;
   bool _loaded = false;
   bool _isReadonly = false;
+  bool _isHydratingForm = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController.addListener(_onAmountChanged);
+  }
+
+  void _onAmountChanged() {
+    if (_isHydratingForm || _isReadonly) return;
+    _markDirtyAndPersist();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_loaded) return;
-    attachDraft(_draftStore, _draftType);
     final state = GoRouterState.of(context);
     final extra = state.extra;
     if (extra is Map) {
+      _isHydratingForm = true;
       _projectId = extra['projectId'] as int?;
       _lifeItemId = extra['lifeItemId'] as int?;
       final title = extra['title'];
@@ -76,12 +88,19 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
       if (billTime is DateTime) {
         _billTime = billTime;
       }
+      _isHydratingForm = false;
     }
     final idStr = state.pathParameters['id'];
     if (idStr != null && idStr != 'new') {
       _isEdit = true;
       _editId = int.tryParse(idStr);
-      _loadBill();
+    }
+    final draftType = _isEdit && _editId != null
+        ? FormDraftStore.editDraftKey(_draftEntityType, _editId!)
+        : FormDraftStore.newDraftKey(_draftEntityType);
+    attachDraft(_draftStore, draftType, collect: _collectDraft, noun: '账单');
+    if (_isEdit) {
+      _loadBill(offerDraftAfterLoad: true);
     } else {
       // New bill: offer to restore a recent unsaved draft.
       WidgetsBinding.instance.addPostFrameCallback(
@@ -92,6 +111,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
   }
 
   void _applyDraft(Map<String, dynamic> draft) {
+    _isHydratingForm = true;
     setState(() {
       _titleController.text = (draft['title'] as String?) ?? '';
       _amountController.text = (draft['amount'] as String?) ?? '';
@@ -99,14 +119,13 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
       _amountType = BillAmountType.fromString(
         (draft['amountType'] as String?) ?? 'expense',
       );
-      _billTime = DateTime.tryParse(
-            (draft['billTime'] as String?) ?? '',
-          ) ??
+      _billTime =
+          DateTime.tryParse((draft['billTime'] as String?) ?? '') ??
           DateTime.now();
       _selectedCategoryId = draft['categoryId'] as int?;
       _projectId = draft['projectId'] as int?;
     });
-    markDirty();
+    _isHydratingForm = false;
   }
 
   void _markDirtyAndPersist() {
@@ -125,11 +144,12 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
     };
   }
 
-  Future<void> _loadBill() async {
+  Future<void> _loadBill({bool offerDraftAfterLoad = false}) async {
     if (_editId == null) return;
     final db = ref.read(databaseProvider);
     final bill = await db.billRecordDao.getById(_editId!);
     if (!mounted) return;
+    _isHydratingForm = true;
     setState(() {
       _titleController.text = bill.title;
       _amountController.text = (bill.amount / 100).toStringAsFixed(2);
@@ -141,10 +161,17 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
       _noteController.text = bill.note ?? '';
       _isReadonly = bill.deletedAt != null;
     });
+    _isHydratingForm = false;
+    if (offerDraftAfterLoad && !_isReadonly) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => maybeRestoreDraft(_applyDraft, noun: '账单'),
+      );
+    }
   }
 
   @override
   void dispose() {
+    _amountController.removeListener(_onAmountChanged);
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
@@ -165,8 +192,9 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
         ),
       );
     }
-    final categoryType =
-        _amountType == BillAmountType.income ? 'income' : 'expense';
+    final categoryType = _amountType == BillAmountType.income
+        ? 'income'
+        : 'expense';
     final categories =
         ref.watch(categoriesByTypeProvider(categoryType)).valueOrNull ??
         const <Category>[];
@@ -219,95 +247,98 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                       maxLines: 2,
                       onChanged: (_) => _markDirtyAndPersist(),
                     ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            SectionCard(
-              title: '金额与分类',
-              child: Column(
-                children: [
-                  AppDropdownField<BillAmountType>(
-                    label: '类型',
-                    value: _amountType,
-                    options: BillAmountType.values
-                        .map((t) => AppDropdownOption(value: t, label: t.label))
-                        .toList(),
-                    onSelected: (v) => setState(() {
-                      _amountType = v ?? _amountType;
-                      _selectedCategoryId = null;
-                      _markDirtyAndPersist();
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-                  MoneyTextFormField(
-                    controller: _amountController,
-                    isRequired: true,
-                  ),
-                  const SizedBox(height: 16),
-                  if (categories.isNotEmpty)
-                    AppDropdownField<int>(
-                      label: '分类',
-                      value: categories.any((c) => c.id == _selectedCategoryId)
-                          ? _selectedCategoryId
-                          : null,
-                      options: categories
+              const SizedBox(height: 16),
+              SectionCard(
+                title: '金额与分类',
+                child: Column(
+                  children: [
+                    AppDropdownField<BillAmountType>(
+                      label: '类型',
+                      value: _amountType,
+                      options: BillAmountType.values
                           .map(
-                            (c) =>
-                                AppDropdownOption(value: c.id, label: c.name),
+                            (t) => AppDropdownOption(value: t, label: t.label),
                           )
                           .toList(),
                       onSelected: (v) => setState(() {
-                        _selectedCategoryId = v;
+                        _amountType = v ?? _amountType;
+                        _selectedCategoryId = null;
                         _markDirtyAndPersist();
                       }),
                     ),
-                ],
+                    const SizedBox(height: 16),
+                    MoneyTextFormField(
+                      controller: _amountController,
+                      isRequired: true,
+                    ),
+                    const SizedBox(height: 16),
+                    if (categories.isNotEmpty)
+                      AppDropdownField<int>(
+                        label: '分类',
+                        value:
+                            categories.any((c) => c.id == _selectedCategoryId)
+                            ? _selectedCategoryId
+                            : null,
+                        options: categories
+                            .map(
+                              (c) =>
+                                  AppDropdownOption(value: c.id, label: c.name),
+                            )
+                            .toList(),
+                        onSelected: (v) => setState(() {
+                          _selectedCategoryId = v;
+                          _markDirtyAndPersist();
+                        }),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            SectionCard(
-              title: '账单时间',
-              child: Column(
-                children: [
-                  ProjectPickerField(
-                    value: _projectId,
-                    onChanged: (v) => setState(() {
-                      _projectId = v;
-                      _markDirtyAndPersist();
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-                  DateField(
-                    key: const ValueKey('bill-date-field'),
-                    label: '日期',
-                    initialValue: _billTime,
-                    onPick: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: _billTime,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2030),
-                      );
-                      if (picked != null && mounted) {
-                        setState(() => _billTime = picked);
+              const SizedBox(height: 16),
+              SectionCard(
+                title: '账单时间',
+                child: Column(
+                  children: [
+                    ProjectPickerField(
+                      value: _projectId,
+                      onChanged: (v) => setState(() {
+                        _projectId = v;
                         _markDirtyAndPersist();
-                      }
-                      return picked;
-                    },
-                  ),
-                ],
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    DateField(
+                      key: const ValueKey('bill-date-field'),
+                      label: '日期',
+                      initialValue: _billTime,
+                      onPick: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _billTime,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null && mounted) {
+                          setState(() => _billTime = picked);
+                          _markDirtyAndPersist();
+                        }
+                        return picked;
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            SavingButton(
-              onPressed: _save,
-              isSaving: isSaving,
-              label: _isEdit ? '保存修改' : '创建账单',
-            ),
-          ],
+              const SizedBox(height: 32),
+              SavingButton(
+                onPressed: _save,
+                isSaving: isSaving,
+                label: _isEdit ? '保存修改' : '创建账单',
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -323,11 +354,14 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
     final notifier = ref.read(billNotifierProvider.notifier);
 
     if (_isEdit && _editId != null) {
-      final bill = await ref.read(databaseProvider).billRecordDao.getById(
-        _editId!,
-      );
+      final bill = await ref
+          .read(databaseProvider)
+          .billRecordDao
+          .getById(_editId!);
       await runSave(() async {
-        await ref.read(billRepoProvider).updateRecord(
+        await ref
+            .read(billRepoProvider)
+            .updateRecord(
               bill.copyWith(
                 title: _titleController.text.trim(),
                 amount: MoneyFormatter.parse(_amountController.text) ?? 0,
@@ -340,6 +374,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
               ),
             );
         markClean();
+        await clearDraft();
         if (mounted) context.pop();
       });
     } else {
@@ -358,7 +393,9 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
         );
         final lifeItemId = _lifeItemId;
         if (lifeItemId != null) {
-          await ref.read(lifeItemNotifierProvider.notifier).complete(lifeItemId);
+          await ref
+              .read(lifeItemNotifierProvider.notifier)
+              .complete(lifeItemId);
         }
         markClean();
         await clearDraft();

@@ -34,10 +34,7 @@ GoRouter _buildRouter() {
   );
 }
 
-Future<AppDatabase> _pumpApp(
-  WidgetTester tester,
-  GoRouter router,
-) async {
+Future<AppDatabase> _pumpApp(WidgetTester tester, GoRouter router) async {
   final database = AppDatabase.forTesting(NativeDatabase.memory());
   await tester.pumpWidget(
     ProviderScope(
@@ -92,16 +89,14 @@ void main() {
           .maybePop();
       await tester.pumpAndSettle();
 
-      expect(find.text('放弃未保存的修改？'), findsOneWidget,
-          reason: '编辑后返回必须弹出未保存修改提示');
+      expect(find.text('保存草稿并离开？'), findsOneWidget, reason: '编辑后返回必须弹出保存草稿提示');
 
-      // Confirm discard -> the page is actually left.
-      await tester.tap(find.text('放弃修改'));
+      // Confirm saving the draft -> the page is actually left.
+      await tester.tap(find.text('保存草稿并离开'));
       await tester.pumpAndSettle();
 
-      expect(find.text('放弃未保存的修改？'), findsNothing);
-      expect(find.text('项目模板列表'), findsOneWidget,
-          reason: '确认放弃后必须返回列表页');
+      expect(find.text('保存草稿并离开？'), findsNothing);
+      expect(find.text('项目模板列表'), findsOneWidget, reason: '确认放弃后必须返回列表页');
     },
   );
 }

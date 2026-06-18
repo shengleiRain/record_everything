@@ -38,7 +38,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   final _descController = TextEditingController();
   final _amountController = TextEditingController();
   final FormDraftStore _draftStore = FormDraftStore();
-  static const String _draftType = 'life_item';
+  static const String _draftEntityType = 'life_item';
 
   AmountType _amountType = AmountType.none;
   RepeatPeriod _repeatPeriod = RepeatPeriod.daily;
@@ -56,6 +56,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
+  bool _isHydratingForm = false;
 
   /// 终态（已完成/已取消/已归档）或已软删除的事项，编辑页整页只读，
   /// 状态只能通过详情页的「重新打开」按钮变更。
@@ -70,17 +71,17 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   }
 
   void _onDescChanged() {
-    if (_isEdit) return;
+    if (_isHydratingForm || _isReadonly) return;
     markDirtyAndPersist(_collectDraft);
   }
 
   void _onAmountChanged() {
-    if (_isEdit) return;
+    if (_isHydratingForm || _isReadonly) return;
     markDirtyAndPersist(_collectDraft);
   }
 
   void _onTitleChanged() {
-    if (_isEdit) return;
+    if (_isHydratingForm || _isReadonly) return;
     final next = _titleController.text;
     if (next == _titleInput) return;
     setState(() => _titleInput = next);
@@ -88,19 +89,15 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
     // Debounce the template recommendation query so we don't hit the DB on
     // every keystroke.
     _recommendDebounce?.cancel();
-    _recommendDebounce = Timer(
-      const Duration(milliseconds: 250),
-      () {
-        if (mounted) setState(() => _recommendTitle = next);
-      },
-    );
+    _recommendDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) setState(() => _recommendTitle = next);
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_loaded) return;
-    attachDraft(_draftStore, _draftType);
     final state = GoRouterState.of(context);
     final extra = state.extra;
     if (extra != null && extra is Map<String, dynamic>) {
@@ -110,7 +107,9 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       if (extra.containsKey('id')) {
         _isEdit = true;
         _editId = extra['id'] as int?;
+        _isHydratingForm = true;
         _loadFromMap(extra);
+        _isHydratingForm = false;
       }
     }
     if (!_isEdit) {
@@ -118,14 +117,27 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       if (idStr != null && idStr != 'new') {
         _isEdit = true;
         _editId = int.tryParse(idStr);
-        _loadFromDatabase();
       }
     }
     // Also check extra for projectId when navigating from project detail
     if (!_isEdit && extra is Map && extra['projectId'] != null) {
       _projectId = extra['projectId'] as int?;
     }
-    if (!_isEdit) {
+    final draftType = _isEdit && _editId != null
+        ? FormDraftStore.editDraftKey(_draftEntityType, _editId!)
+        : FormDraftStore.newDraftKey(_draftEntityType);
+    attachDraft(_draftStore, draftType, collect: _collectDraft, noun: '事项');
+    if (_isEdit) {
+      if (extra == null ||
+          extra is! Map<String, dynamic> ||
+          !extra.containsKey('id')) {
+        _loadFromDatabase(offerDraftAfterLoad: true);
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => maybeRestoreDraft(_applyLifeItemDraft, noun: '事项'),
+        );
+      }
+    } else {
       // New item: offer to restore a recent unsaved draft (draft takes
       // precedence over pre-filled values, same as the bill page).
       WidgetsBinding.instance.addPostFrameCallback(
@@ -135,17 +147,24 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
     _loaded = true;
   }
 
-  Future<void> _loadFromDatabase() async {
+  Future<void> _loadFromDatabase({bool offerDraftAfterLoad = false}) async {
     final id = _editId;
     if (id == null) return;
     final item = await ref.read(databaseProvider).lifeItemDao.getById(id);
     if (!mounted) return;
     final status = ItemStatus.fromString(item.status);
+    _isHydratingForm = true;
     setState(() {
       _loadFromItem(item);
       _projectId = item.projectId;
       _isReadonly = status.isFinal || item.deletedAt != null;
     });
+    _isHydratingForm = false;
+    if (offerDraftAfterLoad && !_isReadonly) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => maybeRestoreDraft(_applyLifeItemDraft, noun: '事项'),
+      );
+    }
   }
 
   void _loadFromMap(Map<String, dynamic> data) {
@@ -288,6 +307,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   }
 
   void _applyLifeItemDraft(Map<String, dynamic> draft) {
+    _isHydratingForm = true;
     setState(() {
       _titleController.text = draft['title'] as String? ?? '';
       _descController.text = draft['description'] as String? ?? '';
@@ -295,9 +315,8 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       _amountType = AmountType.fromString(
         draft['amountType'] as String? ?? 'none',
       );
-      _dueDate = DateTime.tryParse(
-            draft['dueDate'] as String? ?? '',
-          ) ??
+      _dueDate =
+          DateTime.tryParse(draft['dueDate'] as String? ?? '') ??
           DateTime.now().add(const Duration(days: 1));
       _selectedCategoryId = draft['categoryId'] as int?;
       _projectId = draft['projectId'] as int?;
@@ -319,6 +338,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       _customRepeatDays =
           draft['customRepeatDays'] as int? ?? _customRepeatDays;
     });
+    _isHydratingForm = false;
   }
 
   Future<void> _save() async {
@@ -333,9 +353,10 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
     final notifier = ref.read(lifeItemNotifierProvider.notifier);
 
     if (_isEdit && _editId != null) {
-      final item = await ref.read(databaseProvider).lifeItemDao.getById(
-        _editId!,
-      );
+      final item = await ref
+          .read(databaseProvider)
+          .lifeItemDao
+          .getById(_editId!);
       await runSave(() async {
         await notifier.update(
           item.copyWith(
@@ -360,6 +381,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
           ),
         );
         markClean();
+        await clearDraft();
         if (mounted) context.pop();
       });
     } else {
@@ -431,204 +453,207 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
           ],
         ),
         body: AbsorbPointer(
-        // 终态/已删除时禁用整页交互，使所有字段只读。
-        absorbing: _isReadonly,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              SectionCard(
-                title: '事项内容',
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(labelText: '标题 *'),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? '请输入标题' : null,
-                    ),
-                    if (!_isEdit) ...[
-                      _ItemTemplateRecommendations(
-                        title: _recommendTitle,
-                        selectedTemplateId: _selectedTemplateId,
-                        onApply: (template) =>
-                            _applyItemTemplate(template, replaceTitle: false),
+          // 终态/已删除时禁用整页交互，使所有字段只读。
+          absorbing: _isReadonly,
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                SectionCard(
+                  title: '事项内容',
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(labelText: '标题 *'),
+                        validator: (v) =>
+                            (v == null || v.trim().isEmpty) ? '请输入标题' : null,
                       ),
-                    ],
-                    const SizedBox(height: 16),
-                    Builder(
-                      builder: (context) {
-                        final cats = ref
-                                .watch(categoriesByTypeProvider('item'))
-                                .valueOrNull ??
-                            const <Category>[];
-                        if (cats.isEmpty) return const SizedBox.shrink();
-                        final validValue =
-                            cats.any((c) => c.id == _selectedCategoryId)
-                            ? _selectedCategoryId
-                            : null;
-                        return AppDropdownField<int>(
-                          label: '分类',
-                          value: validValue,
-                          options: cats
-                              .map(
-                                (c) => AppDropdownOption(
-                                  value: c.id,
-                                  label: c.name,
-                                ),
-                              )
-                              .toList(),
-                          onSelected: (v) => setState(() {
-                            _selectedCategoryId = v;
-                            markDirtyAndPersist(_collectDraft);
-                          }),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descController,
-                      decoration: const InputDecoration(labelText: '备注'),
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              SectionCard(
-                title: '时间与金额',
-                child: Column(
-                  children: [
-                    ProjectPickerField(
-                      value: _projectId,
-                      onChanged: (v) => setState(() {
-                        _projectId = v;
-                        markDirtyAndPersist(_collectDraft);
-                      }),
-                    ),
-                    const SizedBox(height: 16),
-                    DateField(
-                      key: const ValueKey('life-item-date-field'),
-                      label: '日期',
-                      initialValue: _dueDate,
-                      onPick: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _dueDate,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2035),
-                        );
-                        if (picked != null && mounted) {
-                          setState(() => _dueDate = picked);
-                          markDirtyAndPersist(_collectDraft);
-                        }
-                        return picked;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    AppDropdownField<ReminderPreset>(
-                      label: '提醒',
-                      value: _reminderPreset,
-                      options: ReminderPreset.values
-                          .map(
-                            (p) => AppDropdownOption(value: p, label: p.label),
-                          )
-                          .toList(),
-                      onSelected: (v) => setState(
-                        () {
-                          _reminderPreset = v ?? _reminderPreset;
-                          markDirtyAndPersist(_collectDraft);
+                      if (!_isEdit) ...[
+                        _ItemTemplateRecommendations(
+                          title: _recommendTitle,
+                          selectedTemplateId: _selectedTemplateId,
+                          onApply: (template) =>
+                              _applyItemTemplate(template, replaceTitle: false),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      Builder(
+                        builder: (context) {
+                          final cats =
+                              ref
+                                  .watch(categoriesByTypeProvider('item'))
+                                  .valueOrNull ??
+                              const <Category>[];
+                          if (cats.isEmpty) return const SizedBox.shrink();
+                          final validValue =
+                              cats.any((c) => c.id == _selectedCategoryId)
+                              ? _selectedCategoryId
+                              : null;
+                          return AppDropdownField<int>(
+                            label: '分类',
+                            value: validValue,
+                            options: cats
+                                .map(
+                                  (c) => AppDropdownOption(
+                                    value: c.id,
+                                    label: c.name,
+                                  ),
+                                )
+                                .toList(),
+                            onSelected: (v) => setState(() {
+                              _selectedCategoryId = v;
+                              markDirtyAndPersist(_collectDraft);
+                            }),
+                          );
                         },
                       ),
-                    ),
-                    if (_reminderPreset == ReminderPreset.custom) ...[
                       const SizedBox(height: 16),
-                      DateField(
-                        label: '提醒日期',
-                        initialValue: _customReminderTime ?? _dueDate,
-                        onPick: _pickCustomReminderDate,
-                      ),
-                      const SizedBox(height: 16),
-                      DateField(
-                        label: '提醒时间',
-                        initialValue: _customReminderTime ?? _dueDate,
-                        formatter: _formatTime,
-                        suffixIcon: Icons.access_time,
-                        onPick: _pickCustomReminderTime,
+                      TextFormField(
+                        controller: _descController,
+                        decoration: const InputDecoration(labelText: '备注'),
+                        maxLines: 3,
                       ),
                     ],
-                    const SizedBox(height: 16),
-                    AppDropdownField<AmountType>(
-                      label: '金额类型',
-                      value: _amountType,
-                      options: AmountType.values
-                          .map(
-                            (t) => AppDropdownOption(value: t, label: t.label),
-                          )
-                          .toList(),
-                      onSelected: (v) => setState(() {
-                        _amountType = v ?? _amountType;
-                        markDirtyAndPersist(_collectDraft);
-                      }),
-                    ),
-                    if (_amountType != AmountType.none) ...[
-                      const SizedBox(height: 16),
-                      MoneyTextFormField(controller: _amountController),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              SectionCard(
-                title: '重复规则',
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      value: _hasRepeat,
-                      title: const Text('重复'),
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (v) => setState(() {
-                        _hasRepeat = v;
-                        markDirtyAndPersist(_collectDraft);
-                      }),
-                    ),
-                    if (_hasRepeat) ...[
-                      const SizedBox(height: 8),
-                      AppDropdownField<RepeatPeriod>(
-                        label: '重复频率',
-                        value: _repeatPeriod,
-                        options: RepeatPeriod.values
+                const SizedBox(height: 16),
+                SectionCard(
+                  title: '时间与金额',
+                  child: Column(
+                    children: [
+                      ProjectPickerField(
+                        value: _projectId,
+                        onChanged: (v) => setState(() {
+                          _projectId = v;
+                          markDirtyAndPersist(_collectDraft);
+                        }),
+                      ),
+                      const SizedBox(height: 16),
+                      DateField(
+                        key: const ValueKey('life-item-date-field'),
+                        label: '日期',
+                        initialValue: _dueDate,
+                        onPick: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _dueDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2035),
+                          );
+                          if (picked != null && mounted) {
+                            setState(() => _dueDate = picked);
+                            markDirtyAndPersist(_collectDraft);
+                          }
+                          return picked;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      AppDropdownField<ReminderPreset>(
+                        label: '提醒',
+                        value: _reminderPreset,
+                        options: ReminderPreset.values
                             .map(
                               (p) =>
                                   AppDropdownOption(value: p, label: p.label),
                             )
                             .toList(),
                         onSelected: (v) => setState(() {
-                          _repeatPeriod = v ?? _repeatPeriod;
+                          _reminderPreset = v ?? _reminderPreset;
                           markDirtyAndPersist(_collectDraft);
                         }),
                       ),
-                      if (_repeatPeriod == RepeatPeriod.custom) ...[
+                      if (_reminderPreset == ReminderPreset.custom) ...[
                         const SizedBox(height: 16),
-                        TextFormField(
-                          initialValue: _customRepeatDays.toString(),
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: '每 N 天'),
-                          onChanged: (v) {
-                            _customRepeatDays = int.tryParse(v) ?? 30;
-                            markDirtyAndPersist(_collectDraft);
-                          },
+                        DateField(
+                          label: '提醒日期',
+                          initialValue: _customReminderTime ?? _dueDate,
+                          onPick: _pickCustomReminderDate,
+                        ),
+                        const SizedBox(height: 16),
+                        DateField(
+                          label: '提醒时间',
+                          initialValue: _customReminderTime ?? _dueDate,
+                          formatter: _formatTime,
+                          suffixIcon: Icons.access_time,
+                          onPick: _pickCustomReminderTime,
                         ),
                       ],
+                      const SizedBox(height: 16),
+                      AppDropdownField<AmountType>(
+                        label: '金额类型',
+                        value: _amountType,
+                        options: AmountType.values
+                            .map(
+                              (t) =>
+                                  AppDropdownOption(value: t, label: t.label),
+                            )
+                            .toList(),
+                        onSelected: (v) => setState(() {
+                          _amountType = v ?? _amountType;
+                          markDirtyAndPersist(_collectDraft);
+                        }),
+                      ),
+                      if (_amountType != AmountType.none) ...[
+                        const SizedBox(height: 16),
+                        MoneyTextFormField(controller: _amountController),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                SectionCard(
+                  title: '重复规则',
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        value: _hasRepeat,
+                        title: const Text('重复'),
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (v) => setState(() {
+                          _hasRepeat = v;
+                          markDirtyAndPersist(_collectDraft);
+                        }),
+                      ),
+                      if (_hasRepeat) ...[
+                        const SizedBox(height: 8),
+                        AppDropdownField<RepeatPeriod>(
+                          label: '重复频率',
+                          value: _repeatPeriod,
+                          options: RepeatPeriod.values
+                              .map(
+                                (p) =>
+                                    AppDropdownOption(value: p, label: p.label),
+                              )
+                              .toList(),
+                          onSelected: (v) => setState(() {
+                            _repeatPeriod = v ?? _repeatPeriod;
+                            markDirtyAndPersist(_collectDraft);
+                          }),
+                        ),
+                        if (_repeatPeriod == RepeatPeriod.custom) ...[
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            initialValue: _customRepeatDays.toString(),
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: '每 N 天',
+                            ),
+                            onChanged: (v) {
+                              _customRepeatDays = int.tryParse(v) ?? 30;
+                              markDirtyAndPersist(_collectDraft);
+                            },
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/utils/form_draft_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,7 +11,12 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    store = FormDraftStore(ttl: const Duration(hours: 24));
+    store = FormDraftStore();
+  });
+
+  test('builds stable new and edit draft keys', () {
+    expect(FormDraftStore.newDraftKey('bill'), 'bill:new');
+    expect(FormDraftStore.editDraftKey('project', 42), 'project:edit:42');
   });
 
   test('save then load returns the draft stamped with _savedAt', () async {
@@ -33,13 +40,20 @@ void main() {
     expect(await store.load('bill'), isNull);
   });
 
-  test('expired draft is treated as missing and cleaned up', () async {
-    final expiredStore = FormDraftStore(ttl: const Duration(milliseconds: 1));
-    await expiredStore.save('bill', {'title': 'old'});
-    // Wait past the TTL.
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    expect(await expiredStore.load('bill'), isNull);
-    expect(expiredStore.hasFreshDraft('bill'), isFalse);
+  test('old draft remains available until explicitly cleared', () async {
+    SharedPreferences.setMockInitialValues({
+      'form_draft.bill': jsonEncode({
+        'title': 'old',
+        '_savedAt': DateTime(2020).toIso8601String(),
+      }),
+    });
+    final oldStore = FormDraftStore();
+
+    final draft = await oldStore.load('bill');
+
+    expect(draft, isNotNull);
+    expect(draft!['title'], 'old');
+    expect(oldStore.hasFreshDraft('bill'), isTrue);
   });
 
   test('drafts are independent per formType', () async {

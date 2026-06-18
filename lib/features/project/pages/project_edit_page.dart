@@ -44,7 +44,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   final _participantController = TextEditingController();
   final _noteController = TextEditingController();
   final FormDraftStore _draftStore = FormDraftStore();
-  static const String _draftType = 'project';
+  static const String _draftEntityType = 'project';
   final StepEditorController<_ProjectStepDraft> _stepEditor =
       StepEditorController();
 
@@ -58,6 +58,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   int? _editId;
   bool _loaded = false;
   bool _isTitleManuallyEdited = false;
+  bool _isHydratingForm = false;
   Map<int, String> _categoryNames = {};
 
   /// 终态（已完成/已取消/已归档）或已软删除的项目，编辑页整页只读，
@@ -71,7 +72,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   }
 
   void _onNoteChanged() {
-    if (_isEdit) return;
+    if (_isHydratingForm || _isReadonly) return;
     markDirtyAndPersist(_collectProjectDraft);
   }
 
@@ -79,26 +80,37 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_loaded) return;
-    attachDraft(_draftStore, _draftType);
     final state = GoRouterState.of(context);
     final idStr = state.pathParameters['id'];
     if (idStr != null && idStr != 'new') {
       _isEdit = true;
       _editId = int.tryParse(idStr);
-      _loadFromDatabase();
     } else {
       // 新建项目时，关键日期默认为当天
       _startDate = DateTime.now();
-      // Offer to restore a recent unsaved draft (draft takes precedence over
-      // template pre-fill, same as the bill page).
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => maybeRestoreDraft(_applyProjectDraft, noun: '项目'),
-      );
     }
     // Check if template is requested via extra
     final extra = state.extra;
     if (extra is Map && extra['template'] == 'photography') {
       _pendingTemplateKey = ProjectTemplateKeys.photographyOrder;
+    }
+    final draftType = _isEdit && _editId != null
+        ? FormDraftStore.editDraftKey(_draftEntityType, _editId!)
+        : FormDraftStore.newDraftKey(_draftEntityType);
+    attachDraft(
+      _draftStore,
+      draftType,
+      collect: _collectProjectDraft,
+      noun: '项目',
+    );
+    if (_isEdit) {
+      _loadFromDatabase(offerDraftAfterLoad: true);
+    } else {
+      // Offer to restore a saved draft (draft takes precedence over template
+      // pre-fill, same as the bill page).
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => maybeRestoreDraft(_applyProjectDraft, noun: '项目'),
+      );
     }
     _loaded = true;
   }
@@ -175,12 +187,13 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
     });
   }
 
-  Future<void> _loadFromDatabase() async {
+  Future<void> _loadFromDatabase({bool offerDraftAfterLoad = false}) async {
     final id = _editId;
     if (id == null) return;
     final project = await ref.read(databaseProvider).projectDao.getById(id);
     if (!mounted) return;
     final status = ProjectStatus.fromString(project.projectStatus);
+    _isHydratingForm = true;
     setState(() {
       _titleController.text = project.title;
       _participantController.text = project.participant ?? '';
@@ -191,6 +204,12 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       _noteController.text = project.note ?? '';
       _isReadonly = status.isFinal || project.deletedAt != null;
     });
+    _isHydratingForm = false;
+    if (offerDraftAfterLoad && !_isReadonly) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => maybeRestoreDraft(_applyProjectDraft, noun: '项目'),
+      );
+    }
   }
 
   @override
@@ -231,17 +250,20 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       'endDate': _endDate?.toIso8601String(),
       'selectedTemplateId': _selectedTemplateId,
       'steps': _stepEditor.steps
-          .map((draft) => {
-                'title': draft.titleController.text,
-                'amount': draft.amountController.text,
-                'amountType': draft.amountType.value,
-                'dueDate': draft.dueDate.toIso8601String(),
-              })
+          .map(
+            (draft) => {
+              'title': draft.titleController.text,
+              'amount': draft.amountController.text,
+              'amountType': draft.amountType.value,
+              'dueDate': draft.dueDate.toIso8601String(),
+            },
+          )
           .toList(growable: false),
     };
   }
 
   void _applyProjectDraft(Map<String, dynamic> draft) {
+    _isHydratingForm = true;
     setState(() {
       _titleController.text = draft['title'] as String? ?? '';
       _participantController.text = draft['participant'] as String? ?? '';
@@ -259,25 +281,30 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       }
       final stepList = draft['steps'] as List? ?? const [];
       final baseDate = _startDate ?? DateTime.now();
-      final drafts = stepList.map<Object>((raw) {
-        final step = raw as Map<String, dynamic>;
-        return _ProjectStepDraft(
-          title: step['title'] as String? ?? '',
-          amountType: AmountType.fromString(
-            step['amountType'] as String? ?? 'none',
-          ),
-          amount: _parseAmountCents(step['amount'] as String?),
-          baseDate: baseDate,
-          dueDate: DateTime.tryParse(step['dueDate'] as String? ?? '') ??
-              baseDate,
-        );
-      }).cast<_ProjectStepDraft>().toList();
+      final drafts = stepList
+          .map<Object>((raw) {
+            final step = raw as Map<String, dynamic>;
+            return _ProjectStepDraft(
+              title: step['title'] as String? ?? '',
+              amountType: AmountType.fromString(
+                step['amountType'] as String? ?? 'none',
+              ),
+              amount: _parseAmountCents(step['amount'] as String?),
+              baseDate: baseDate,
+              dueDate:
+                  DateTime.tryParse(step['dueDate'] as String? ?? '') ??
+                  baseDate,
+            );
+          })
+          .cast<_ProjectStepDraft>()
+          .toList();
       _stepEditor.steps
         ..clear()
         ..addAll(drafts);
       _stepEditor.selectedIndex = 0;
       _isTitleManuallyEdited = true; // 草稿标题优先于自动生成
     });
+    _isHydratingForm = false;
     _stepEditor.syncStepPage(
       notifyListeners: () => setState(() {}),
       animate: false,
@@ -493,206 +520,211 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
         ),
         body: AbsorbPointer(
           // 终态/已删除时禁用整页交互，使所有字段只读。
-        absorbing: _isReadonly,
-        child: Form(
-          key: _formKey,
-          child: CustomScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            slivers: [
-              // 基本信息
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                sliver: SliverToBoxAdapter(
-                  child: _BasicInfoSection(
-                    titleController: _titleController,
-                    participantController: _participantController,
-                    noteController: _noteController,
-                    selectedCategoryId: _selectedCategoryId,
-                    startDate: _startDate,
-                    endDate: _endDate,
-                    isEdit: _isEdit,
-                    onTitleManuallyEdited: () {
-                      _isTitleManuallyEdited = true;
-                      markDirtyAndPersist(_collectProjectDraft);
-                    },
-                    onCategoryChanged: (v) {
-                      setState(() => _selectedCategoryId = v);
-                      _tryAutoTitle();
-                      markDirtyAndPersist(_collectProjectDraft);
-                    },
-                    onStartDateChanged: (date) {
-                      setState(() {
-                        _startDate = date;
-                        _updateStepDates();
-                      });
-                      _tryAutoTitle();
-                      markDirtyAndPersist(_collectProjectDraft);
-                    },
-                    onEndDateChanged: (date) {
-                      setState(() => _endDate = date);
-                      markDirtyAndPersist(_collectProjectDraft);
-                    },
-                    onParticipantChanged: () {
-                      _tryAutoTitle();
-                      markDirtyAndPersist(_collectProjectDraft);
-                    },
-                    onCategoriesLoaded: (names) {
-                      _categoryNames = names;
-                      _tryAutoTitle();
-                    },
-                  ),
-                ),
-              ),
-              // 节点部分（新建模式下始终显示）
-              if (!_isEdit) ...[
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: StepTabHeader<_ProjectStepDraft>(
-                    scrollController: _stepEditor.tabScrollController,
-                    steps: _stepEditor.steps,
-                    selectedIndex: currentStepIndex,
-                    onReorder: (oldIndex, newIndex) {
-                      _stepEditor.reorderStep(
-                        oldIndex,
-                        newIndex,
-                        notifyListeners: () => setState(() {}),
-                      );
-                      markDirtyAndPersist(_collectProjectDraft);
-                    },
-                    onSelected: (index) => _stepEditor.selectStep(
-                      index,
-                      notifyListeners: () => setState(() {}),
+          absorbing: _isReadonly,
+          child: Form(
+            key: _formKey,
+            child: CustomScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              slivers: [
+                // 基本信息
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  sliver: SliverToBoxAdapter(
+                    child: _BasicInfoSection(
+                      titleController: _titleController,
+                      participantController: _participantController,
+                      noteController: _noteController,
+                      selectedCategoryId: _selectedCategoryId,
+                      startDate: _startDate,
+                      endDate: _endDate,
+                      isEdit: _isEdit,
+                      onTitleManuallyEdited: () {
+                        _isTitleManuallyEdited = true;
+                        markDirtyAndPersist(_collectProjectDraft);
+                      },
+                      onCategoryChanged: (v) {
+                        setState(() => _selectedCategoryId = v);
+                        _tryAutoTitle();
+                        markDirtyAndPersist(_collectProjectDraft);
+                      },
+                      onStartDateChanged: (date) {
+                        setState(() {
+                          _startDate = date;
+                          _updateStepDates();
+                        });
+                        _tryAutoTitle();
+                        markDirtyAndPersist(_collectProjectDraft);
+                      },
+                      onEndDateChanged: (date) {
+                        setState(() => _endDate = date);
+                        markDirtyAndPersist(_collectProjectDraft);
+                      },
+                      onParticipantChanged: () {
+                        _tryAutoTitle();
+                        markDirtyAndPersist(_collectProjectDraft);
+                      },
+                      onCategoriesLoaded: (names) {
+                        _categoryNames = names;
+                        _tryAutoTitle();
+                      },
                     ),
-                    onAdd: _addStep,
-                    keyPrefix: 'project-edit',
                   ),
                 ),
-                if (_stepEditor.steps.isNotEmpty)
-                  SliverLayoutBuilder(
-                    builder: (context, constraints) {
-                      final workspaceHeight =
-                          constraints.viewportMainAxisExtent + keyboardInset;
-                      final minHeight =
-                          workspaceHeight - StepTabHeader.extent;
-                      final contentHeight =
-                          _stepPageTopInset +
-                          _stepCardContentMinExtent +
-                          _stepPageBottomDragExtent +
-                          bottomPadding;
-                      final pageHeight = minHeight < contentHeight
-                          ? contentHeight
-                          : minHeight;
-                      return SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: pageHeight < 0 ? 0 : pageHeight,
-                          child: PageView.builder(
-                            key: const ValueKey('project-edit-step-page-view'),
-                            controller: _stepEditor.pageController,
-                            itemCount: _stepEditor.steps.length,
-                            onPageChanged: (index) =>
-                                _stepEditor.handlePageChanged(
-                                  index,
-                                  notifyListeners: () => setState(() {}),
-                                ),
-                            itemBuilder: (context, index) {
-                              return ColoredBox(
-                                color: Colors.transparent,
-                                child: LayoutBuilder(
-                                  builder: (context, pageConstraints) {
-                                    final cardMinHeight =
-                                        pageConstraints.maxHeight -
-                                        _stepPageTopInset -
-                                        _stepPageBottomDragExtent -
-                                        bottomPadding;
-                                    return Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        16,
-                                        _stepPageTopInset,
-                                        16,
-                                        bottomPadding,
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Align(
-                                            alignment: Alignment.topCenter,
-                                            child: ConstrainedBox(
-                                              key: ValueKey(
-                                                'project-edit-step-card-frame-$index',
-                                              ),
-                                              constraints: BoxConstraints(
-                                                maxWidth: 560,
-                                                minHeight: cardMinHeight < 0
-                                                    ? 0
-                                                    : cardMinHeight,
-                                              ),
-                                              child: StepDraftCard<
-                                                _ProjectStepDraft
-                                              >(
+                // 节点部分（新建模式下始终显示）
+                if (!_isEdit) ...[
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: StepTabHeader<_ProjectStepDraft>(
+                      scrollController: _stepEditor.tabScrollController,
+                      steps: _stepEditor.steps,
+                      selectedIndex: currentStepIndex,
+                      onReorder: (oldIndex, newIndex) {
+                        _stepEditor.reorderStep(
+                          oldIndex,
+                          newIndex,
+                          notifyListeners: () => setState(() {}),
+                        );
+                        markDirtyAndPersist(_collectProjectDraft);
+                      },
+                      onSelected: (index) => _stepEditor.selectStep(
+                        index,
+                        notifyListeners: () => setState(() {}),
+                      ),
+                      onAdd: _addStep,
+                      keyPrefix: 'project-edit',
+                    ),
+                  ),
+                  if (_stepEditor.steps.isNotEmpty)
+                    SliverLayoutBuilder(
+                      builder: (context, constraints) {
+                        final workspaceHeight =
+                            constraints.viewportMainAxisExtent + keyboardInset;
+                        final minHeight =
+                            workspaceHeight - StepTabHeader.extent;
+                        final contentHeight =
+                            _stepPageTopInset +
+                            _stepCardContentMinExtent +
+                            _stepPageBottomDragExtent +
+                            bottomPadding;
+                        final pageHeight = minHeight < contentHeight
+                            ? contentHeight
+                            : minHeight;
+                        return SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: pageHeight < 0 ? 0 : pageHeight,
+                            child: PageView.builder(
+                              key: const ValueKey(
+                                'project-edit-step-page-view',
+                              ),
+                              controller: _stepEditor.pageController,
+                              itemCount: _stepEditor.steps.length,
+                              onPageChanged: (index) =>
+                                  _stepEditor.handlePageChanged(
+                                    index,
+                                    notifyListeners: () => setState(() {}),
+                                  ),
+                              itemBuilder: (context, index) {
+                                return ColoredBox(
+                                  color: Colors.transparent,
+                                  child: LayoutBuilder(
+                                    builder: (context, pageConstraints) {
+                                      final cardMinHeight =
+                                          pageConstraints.maxHeight -
+                                          _stepPageTopInset -
+                                          _stepPageBottomDragExtent -
+                                          bottomPadding;
+                                      return Padding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          16,
+                                          _stepPageTopInset,
+                                          16,
+                                          bottomPadding,
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Align(
+                                              alignment: Alignment.topCenter,
+                                              child: ConstrainedBox(
                                                 key: ValueKey(
-                                                  'project-edit-step-card-${_stepEditor.steps[index].localId}',
+                                                  'project-edit-step-card-frame-$index',
                                                 ),
-                                                draft: _stepEditor.steps[index],
-                                                amountLabel: '金额',
-                                                titleFieldKey: const ValueKey(
-                                                  'project-edit-step-title-field',
+                                                constraints: BoxConstraints(
+                                                  maxWidth: 560,
+                                                  minHeight: cardMinHeight < 0
+                                                      ? 0
+                                                      : cardMinHeight,
                                                 ),
-                                                amountFieldKey: const ValueKey(
-                                                  'project-edit-step-amount-field',
-                                                ),
-                                                onChanged: () {
-                                                  setState(() {});
-                                                  markDirtyAndPersist(
-                                                    _collectProjectDraft,
-                                                  );
-                                                },
-                                                onDelete: _deleteCurrentStep,
-                                                extraSlot: (draft) => DateField(
-                                                  label: '到期日期',
-                                                  initialValue: draft.dueDate,
-                                                  onPick: () async {
-                                                    final picked =
-                                                        await showDatePicker(
-                                                          context: context,
-                                                          initialDate:
-                                                              draft.dueDate,
-                                                          firstDate:
-                                                              DateTime(2020),
-                                                          lastDate:
-                                                              DateTime(2035),
-                                                        );
-                                                    if (picked != null) {
-                                                      draft.setDueDate(picked);
-                                                      setState(() {});
-                                                      markDirtyAndPersist(
-                                                        _collectProjectDraft,
-                                                      );
-                                                    }
-                                                    return picked;
+                                                child: StepDraftCard<_ProjectStepDraft>(
+                                                  key: ValueKey(
+                                                    'project-edit-step-card-${_stepEditor.steps[index].localId}',
+                                                  ),
+                                                  draft:
+                                                      _stepEditor.steps[index],
+                                                  amountLabel: '金额',
+                                                  titleFieldKey: const ValueKey(
+                                                    'project-edit-step-title-field',
+                                                  ),
+                                                  amountFieldKey: const ValueKey(
+                                                    'project-edit-step-amount-field',
+                                                  ),
+                                                  onChanged: () {
+                                                    setState(() {});
+                                                    markDirtyAndPersist(
+                                                      _collectProjectDraft,
+                                                    );
                                                   },
+                                                  onDelete: _deleteCurrentStep,
+                                                  extraSlot: (draft) => DateField(
+                                                    label: '到期日期',
+                                                    initialValue: draft.dueDate,
+                                                    onPick: () async {
+                                                      final picked =
+                                                          await showDatePicker(
+                                                            context: context,
+                                                            initialDate:
+                                                                draft.dueDate,
+                                                            firstDate: DateTime(
+                                                              2020,
+                                                            ),
+                                                            lastDate: DateTime(
+                                                              2035,
+                                                            ),
+                                                          );
+                                                      if (picked != null) {
+                                                        draft.setDueDate(
+                                                          picked,
+                                                        );
+                                                        setState(() {});
+                                                        markDirtyAndPersist(
+                                                          _collectProjectDraft,
+                                                        );
+                                                      }
+                                                      return picked;
+                                                    },
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(
-                                            height: _stepPageBottomDragExtent,
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
+                                            const SizedBox(
+                                              height: _stepPageBottomDragExtent,
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -799,8 +831,7 @@ class _BasicInfoSectionState extends ConsumerState<_BasicInfoSection> {
             key: const ValueKey('project-key-date-field'),
             label: '关键日期 *',
             initialValue: widget.startDate,
-            validator: (value) =>
-                value == null ? '请选择关键日期' : null,
+            validator: (value) => value == null ? '请选择关键日期' : null,
             onPick: () async {
               final picked = await showDatePicker(
                 context: context,
@@ -1014,15 +1045,15 @@ base class _ProjectStepDraft extends StepDraft {
     int? amount,
     required DateTime baseDate,
     required DateTime dueDate,
-  })  : localId = StepDraftIdGenerator.nextId(),
-        _amountType = amountType,
-        _dueDate = dueDate,
-        super.internal(
-          titleController: TextEditingController(text: title),
-          amountController: TextEditingController(
-            text: amount == null ? '' : (amount / 100).toStringAsFixed(2),
-          ),
-        );
+  }) : localId = StepDraftIdGenerator.nextId(),
+       _amountType = amountType,
+       _dueDate = dueDate,
+       super.internal(
+         titleController: TextEditingController(text: title),
+         amountController: TextEditingController(
+           text: amount == null ? '' : (amount / 100).toStringAsFixed(2),
+         ),
+       );
 
   factory _ProjectStepDraft.fromStep(
     ProjectTemplateStep step, {

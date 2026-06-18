@@ -22,7 +22,7 @@ import '../../core/utils/form_draft_store.dart';
 /// void didChangeDependencies() {
 ///   super.didChangeDependencies();
 ///   if (_loaded) return;
-///   attachDraft(_draftStore, 'bill'); // once
+///   attachDraft(_draftStore, 'bill:new', collect: _collectDraft, noun: '账单');
 ///   if (!_isEdit) maybeRestoreDraft(_applyDraft, noun: '账单');
 ///   _loaded = true;
 /// }
@@ -32,14 +32,16 @@ import '../../core/utils/form_draft_store.dart';
 ///
 /// The dirty flag is both the back-guard trigger and the draft trigger: a
 /// form that the user never touched (e.g. template pre-fill) is neither
-/// guarded nor persisted. Drafts are debounced (500ms) and auto-expire after
-/// 24h — see [FormDraftStore].
+/// guarded nor persisted. Drafts are debounced (500ms), but confirming exit
+/// saves the latest snapshot immediately.
 mixin DirtyGuardMixin<T extends StatefulWidget> on State<T> {
   bool _dirty = false;
 
   Timer? _draftDebounce;
   FormDraftStore? _draftStore;
   String? _draftType;
+  Map<String, dynamic> Function()? _draftCollect;
+  String? _draftNoun;
 
   /// Whether the form currently has unsaved changes.
   bool get isDirty => _dirty;
@@ -59,12 +61,20 @@ mixin DirtyGuardMixin<T extends StatefulWidget> on State<T> {
     setState(() => _dirty = false);
   }
 
-  /// Binds a [FormDraftStore] + [draftType] so this form can persist and
-  /// restore an in-progress draft. Call once during initialization (typically
-  /// in [State.didChangeDependencies]). Only meaningful for "new" forms.
-  void attachDraft(FormDraftStore store, String draftType) {
+  /// Binds a [FormDraftStore] + [draftType] so this form can persist, restore,
+  /// and immediately save an in-progress draft before exiting.
+  ///
+  /// Call once after the route knows whether this is a new form or an edit form.
+  void attachDraft(
+    FormDraftStore store,
+    String draftType, {
+    Map<String, dynamic> Function()? collect,
+    String? noun,
+  }) {
     _draftStore = store;
     _draftType = draftType;
+    _draftCollect = collect;
+    _draftNoun = noun;
   }
 
   /// Marks the form dirty *and* schedules a debounced (500ms) persist of the
@@ -73,6 +83,7 @@ mixin DirtyGuardMixin<T extends StatefulWidget> on State<T> {
   /// SharedPreferences on every keystroke.
   void markDirtyAndPersist(Map<String, dynamic> Function() collect) {
     markDirty();
+    _draftCollect = collect;
     final store = _draftStore;
     final type = _draftType;
     if (store == null || type == null) return;
@@ -83,10 +94,9 @@ mixin DirtyGuardMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Offers to restore a previously persisted draft for this form. If a fresh
-  /// (non-expired) draft exists, shows a "恢复未完成的{noun}？" dialog:
-  /// choosing **恢复** calls [apply] with the draft map, choosing **丢弃**
-  /// clears it. Does nothing when there is no draft. Call this during "new"
-  /// form initialization, after [attachDraft]. [noun] defaults to '草稿'.
+  /// draft exists, shows a restore dialog. Choosing **恢复草稿** calls [apply]
+  /// with the draft map; choosing **不恢复并删除草稿** clears it. Does nothing
+  /// when there is no draft.
   Future<void> maybeRestoreDraft(
     void Function(Map<String, dynamic>) apply, {
     String? noun,
@@ -97,24 +107,25 @@ mixin DirtyGuardMixin<T extends StatefulWidget> on State<T> {
     final draft = await store.load(type);
     if (draft == null || !mounted) return;
 
-    final label = noun ?? '草稿';
+    final label = noun ?? _draftNoun ?? '表单';
     final savedAt = DateTime.tryParse(draft['_savedAt'] as String? ?? '');
     final ageLabel = savedAt == null
         ? ''
         : '（${savedAt.month}/${savedAt.day} ${savedAt.hour.toString().padLeft(2, '0')}:${savedAt.minute.toString().padLeft(2, '0')}）';
     final restore = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: Text('恢复未完成的$label？'),
-        content: Text('发现一条未提交的草稿$ageLabel，是否恢复？'),
+        title: Text('恢复$label草稿？'),
+        content: Text('发现一份未保存的$label草稿$ageLabel。恢复草稿会覆盖当前页面内容；不恢复会删除这份草稿。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('丢弃'),
+            child: const Text('不恢复并删除草稿'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('恢复'),
+            child: const Text('恢复草稿'),
           ),
         ],
       ),
@@ -126,6 +137,17 @@ mixin DirtyGuardMixin<T extends StatefulWidget> on State<T> {
     if (!mounted) return;
     apply(draft);
     markDirty();
+  }
+
+  /// Immediately persists the latest draft snapshot. Use before leaving a dirty
+  /// page so the final input is not lost while a debounce is still pending.
+  Future<void> saveDraftNow() async {
+    final store = _draftStore;
+    final type = _draftType;
+    final collect = _draftCollect;
+    if (store == null || type == null || collect == null) return;
+    _draftDebounce?.cancel();
+    await store.save(type, collect());
   }
 
   /// Clears the persisted draft. Call after a successful save so a submitted
@@ -149,11 +171,18 @@ mixin DirtyGuardMixin<T extends StatefulWidget> on State<T> {
   }
 
   Future<void> _confirmExit() async {
+    final canSaveDraft =
+        _draftStore != null && _draftType != null && _draftCollect != null;
     final confirmed = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('放弃未保存的修改？'),
-        content: const Text('当前页面有未保存的修改，离开后将丢失。确定要离开吗？'),
+        title: Text(canSaveDraft ? '保存草稿并离开？' : '放弃未保存的修改？'),
+        content: Text(
+          canSaveDraft
+              ? '当前页面有未保存的修改。离开前会保存为${_draftNoun ?? '表单'}草稿，并覆盖当前作用域已有草稿。'
+              : '当前页面有未保存的修改，离开后将丢失。确定要离开吗？',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -161,12 +190,16 @@ mixin DirtyGuardMixin<T extends StatefulWidget> on State<T> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('放弃修改'),
+            child: Text(canSaveDraft ? '保存草稿并离开' : '放弃修改'),
           ),
         ],
       ),
     );
     if (confirmed == true && mounted) {
+      if (canSaveDraft) {
+        await saveDraftNow();
+        if (!mounted) return;
+      }
       // markClean rebuilds so PopScope.canPop flips to true, then we force the
       // pop. We intentionally use pop() (not maybePop()) so the route exits
       // even if the canPop rebuild hasn't settled yet — this matches the
