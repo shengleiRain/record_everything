@@ -49,6 +49,7 @@ class DefaultCategories {
     {'name': '旅行计划', 'icon': 'flight'},
     {'name': '学习成长', 'icon': 'school'},
     {'name': '摄影接单', 'icon': 'camera_alt'},
+    {'name': '跟拍', 'icon': 'photo_camera'},
     {'name': '其他项目', 'icon': 'folder'},
   ];
 }

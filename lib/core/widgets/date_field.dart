@@ -29,10 +29,13 @@ class DateField extends StatefulWidget {
 
   final String label;
 
-  /// Initial date shown before the user interacts. Changes from the parent
-  /// are NOT reactively reflected once the field has been interacted with —
-  /// like any [FormField], the field owns its value. To reset programmatically,
-  /// bump the [key].
+  /// Initial date shown before the user interacts.
+  ///
+  /// Before the user picks a date, this value is reactive: a parent that
+  /// rebuilds with a different value (e.g. after an async DB load completes)
+  /// will see it reflected in the field. Once the user picks a date the field
+  /// owns its value, like any [FormField], and subsequent parent changes are
+  /// ignored — to reset programmatically, bump the [key].
   final DateTime? initialValue;
 
   /// Opens the date picker and returns the chosen date, or null if cancelled.
@@ -60,9 +63,51 @@ class _DateFieldState extends State<DateField> {
   late final GlobalKey<FormFieldState<DateTime>> _formFieldKey =
       GlobalKey<FormFieldState<DateTime>>();
 
+  /// Whether the user has interacted with the field (picked a date). Once set
+  /// the field owns its value, matching the [FormField] contract, and parent
+  /// changes to [DateField.initialValue] are ignored. Before that, an async
+  /// load that supplies the real value after the first build must still reach
+  /// the field.
+  bool _touched = false;
+
+  @override
+  void didUpdateWidget(covariant DateField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_touched) return;
+    final field = _formFieldKey.currentState;
+    if (field == null) return;
+    // Reflect an async-loaded value the parent supplies after first build.
+    // Only push when it actually differs from what the field currently shows
+    // (avoids resetting validation state on no-op rebuilds).
+    final next = widget.initialValue;
+    final shouldUpdate = (next != field.value && next != null) ||
+        (next == null && field.value != null);
+    if (!shouldUpdate) return;
+    // didUpdateWidget runs during the build phase, but FormField.didChange
+    // marks the Form dirty (setState/markNeedsBuild). Schedule it for after the
+    // current frame to avoid "setState called during build". Coalesce rapid
+    // rebuilds onto the latest value so only one deferred update lands.
+    _pendingValue = next;
+    if (_pendingScheduled) return;
+    _pendingScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pendingScheduled = false;
+      if (!mounted || _touched) return;
+      final f = _formFieldKey.currentState;
+      if (f == null) return;
+      if (f.value != _pendingValue) {
+        f.didChange(_pendingValue);
+      }
+    });
+  }
+
+  DateTime? _pendingValue;
+  bool _pendingScheduled = false;
+
   Future<void> _handleTap() async {
     final picked = await widget.onPick();
     if (picked != null && mounted) {
+      _touched = true;
       _formFieldKey.currentState?.didChange(picked);
     }
   }

@@ -1,5 +1,6 @@
 class ProjectTemplateKeys {
   const ProjectTemplateKeys._();
 
-  static const photographyOrder = 'photography_order';
+  static const weddingPhotography = 'wedding_photography';
+  static const certificatePhotography = 'certificate_photography';
 }

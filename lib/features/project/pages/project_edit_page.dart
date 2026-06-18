@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
-import '../../../core/constants/project_template_keys.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/form_draft_store.dart';
 import '../../../core/utils/money_formatter.dart';
@@ -53,7 +52,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   DateTime? _startDate;
   DateTime? _endDate;
   int? _selectedTemplateId;
-  String? _pendingTemplateKey;
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
@@ -89,11 +87,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       // 新建项目时，关键日期默认为当天
       _startDate = DateTime.now();
     }
-    // Check if template is requested via extra
-    final extra = state.extra;
-    if (extra is Map && extra['template'] == 'photography') {
-      _pendingTemplateKey = ProjectTemplateKeys.photographyOrder;
-    }
     final draftType = _isEdit && _editId != null
         ? FormDraftStore.editDraftKey(_draftEntityType, _editId!)
         : FormDraftStore.newDraftKey(_draftEntityType);
@@ -115,30 +108,10 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
     _loaded = true;
   }
 
-  void _applyPendingTemplateSelection(List<ProjectTemplate>? templates) {
-    final pendingKey = _pendingTemplateKey;
-    if (_isEdit || pendingKey == null || templates == null) return;
-    final template = templates
-        .where((entry) => entry.templateKey == pendingKey)
-        .firstOrNull;
-    if (template == null || _selectedTemplateId == template.id) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _pendingTemplateKey != pendingKey) return;
-      setState(() {
-        _selectedTemplateId = template.id;
-        _selectedCategoryId = template.categoryId ?? _selectedCategoryId;
-        _pendingTemplateKey = null;
-      });
-      _tryAutoTitle();
-      _loadTemplateDrafts(template);
-    });
-  }
-
   void _selectTemplate(ProjectTemplate? template) {
     setState(() {
       _selectedTemplateId = template?.id;
       _selectedCategoryId = template?.categoryId ?? _selectedCategoryId;
-      _pendingTemplateKey = null;
     });
     _tryAutoTitle();
     _loadTemplateDrafts(template);
@@ -282,8 +255,17 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
         draft['status'] as String? ?? _status.value,
       );
       _selectedCategoryId = draft['categoryId'] as int?;
-      _startDate = DateTime.tryParse(draft['startDate'] as String? ?? '');
-      _endDate = DateTime.tryParse(draft['endDate'] as String? ?? '');
+      // 草稿里可能没有有效日期（例如旧草稿或字段尚未加载时保存的）。
+      // 解析失败时保留当前值（编辑态下为数据库已加载的日期），避免把
+      // 关键日期清空成 null 导致用户被迫重新设置。
+      final parsedStart = DateTime.tryParse(
+        draft['startDate'] as String? ?? '',
+      );
+      if (parsedStart != null) _startDate = parsedStart;
+      final parsedEnd = DateTime.tryParse(
+        draft['endDate'] as String? ?? '',
+      );
+      if (parsedEnd != null) _endDate = parsedEnd;
       _selectedTemplateId = draft['selectedTemplateId'] as int?;
       // Rebuild the step drafts from the persisted snapshot.
       for (final old in _stepEditor.steps) {
@@ -483,7 +465,6 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       );
     }
     final templates = ref.watch(projectTemplatesProvider).valueOrNull;
-    _applyPendingTemplateSelection(templates);
 
     final currentStepIndex = _stepEditor.currentIndex;
     final mediaQuery = MediaQuery.of(context);

@@ -22,21 +22,14 @@ void main() {
 
     tearDown(() => db.close());
 
-    test('photography template creates payment and timeline items', () async {
+    test('wedding template creates payment and timeline items', () async {
       final repo = ProjectRepository(db);
       final template = await repo.getTemplateByKey(
-        ProjectTemplateKeys.photographyOrder,
+        ProjectTemplateKeys.weddingPhotography,
       );
 
       final steps = (await repo.getTemplateSteps(template!.id))
-          .map(
-            (step) => ProjectTemplateStepInput(
-              title: step.title,
-              amountType: step.amountType,
-              amount: step.amount,
-              offsetDays: step.offsetDays,
-            ),
-          )
+          .map(ProjectTemplateStepInput.fromTemplateStep)
           .toList(growable: false);
 
       final project = await repo.createProjectFromTemplate(
@@ -50,14 +43,17 @@ void main() {
       final items = await db.lifeItemDao.watchByProjectId(project.id).first;
 
       expect(template.isDefault, isTrue);
-      expect(project.templateKey, ProjectTemplateKeys.photographyOrder);
-      expect(items.map((item) => item.title), [
-        '收定金',
-        '拍摄日提醒',
-        '选片/确认交付内容',
-        '修图交付',
-        '收尾款',
-      ]);
+      expect(project.templateKey, ProjectTemplateKeys.weddingPhotography);
+      // 节点按到期时间排序，断言集合而非严格顺序（顺序取决于「今天」与
+      // 关键日期的相对位置，会随日历变化）。
+      expect(items.map((item) => item.title).toSet(), {
+        '定金',
+        '拍摄',
+        '交付预告片',
+        '交付剩余照片',
+        '尾款',
+      });
+      expect(items, hasLength(5));
       expect(items.where((item) => item.amountType == 'income'), hasLength(2));
     });
 
@@ -214,15 +210,15 @@ void main() {
       },
     );
 
-    test('photography template edits affect generated project items', () async {
+    test('template edits affect generated project items', () async {
       final repo = ProjectRepository(db);
       final template = await repo.getTemplateByKey(
-        ProjectTemplateKeys.photographyOrder,
+        ProjectTemplateKeys.weddingPhotography,
       );
       expect(template == null, isFalse);
 
       await repo.updateProjectTemplate(
-        template: template!.copyWith(name: '我的摄影流程'),
+        template: template!.copyWith(name: '我的跟拍流程'),
         steps: const [
           ProjectTemplateStepInput(
             title: '确认档期',
@@ -259,7 +255,7 @@ void main() {
       );
       final items = await db.lifeItemDao.watchByProjectId(project.id).first;
 
-      expect(project.templateKey, ProjectTemplateKeys.photographyOrder);
+      expect(project.templateKey, ProjectTemplateKeys.weddingPhotography);
       expect(items.map((item) => item.title), ['确认档期', '收预约款']);
       expect(items.first.dueTime, DateTime(2026, 9, 10));
       expect(items.last.amount, 100000);
@@ -270,14 +266,14 @@ void main() {
       () async {
         final repo = ProjectRepository(db);
         final template = await repo.getTemplateByKey(
-          ProjectTemplateKeys.photographyOrder,
+          ProjectTemplateKeys.weddingPhotography,
         );
         expect(template != null, isTrue);
 
         await repo.deleteProjectTemplate(template!.id);
 
         final byKey = await repo.getTemplateByKey(
-          ProjectTemplateKeys.photographyOrder,
+          ProjectTemplateKeys.weddingPhotography,
         );
         final templates = await db.projectTemplateDao.getAll();
 
@@ -390,7 +386,8 @@ void main() {
         expect(updatedTemplate.name, '轻量项目模板');
         expect(steps.map((step) => step.title), ['签约确认', '收尾款']);
         expect(project.templateKey, 'custom:${template.id}');
-        expect(project.note, '可编辑默认节点');
+        // 未填项目备注时不继承模板备注，保持为空。
+        expect(project.note, null);
         expect(generatedItems, hasLength(2));
         expect(generatedItems.first.title, '签约确认');
         expect(generatedItems.first.amountType, 'none');
@@ -479,5 +476,121 @@ void main() {
         expect(steps.map((step) => step.title), ['建立沟通', '回款']);
       },
     );
+
+    test('default project type includes 跟拍 category', () async {
+      final categories = await db.categoryDao.getByType('project');
+      expect(
+        categories.any((category) => category.name == '跟拍'),
+        isTrue,
+      );
+    });
+
+    test('wedding photography template ships with preset nodes', () async {
+      final repo = ProjectRepository(db);
+      final template = await repo.getTemplateByKey(
+        ProjectTemplateKeys.weddingPhotography,
+      );
+      expect(template, isNot(null));
+      expect(template!.isDefault, isTrue);
+      expect(template.note, '婚礼跟拍预设模板，可根据自己的情况修改。');
+
+      final steps = await repo.getTemplateSteps(template.id);
+      expect(steps.map((step) => step.title), [
+        '定金',
+        '拍摄',
+        '交付预告片',
+        '交付剩余照片',
+        '尾款',
+      ]);
+      // 收入项：定金（创建日期当天）与尾款（关键日期当天）。
+      final incomeSteps = steps.where((step) => step.amountType == 'income');
+      expect(incomeSteps.map((step) => step.title), ['定金', '尾款']);
+
+      final deposit = steps.firstWhere((step) => step.title == '定金');
+      expect(deposit.createdDateOffsetDays, 0);
+      expect(deposit.keyDateOffsetDays, null);
+
+      final shooting = steps.firstWhere((step) => step.title == '拍摄');
+      expect(shooting.keyDateOffsetDays, 0);
+      expect(shooting.createdDateOffsetDays, null);
+
+      final remainPhotos = steps.firstWhere(
+        (step) => step.title == '交付剩余照片',
+      );
+      expect(remainPhotos.keyDateOffsetDays, 15);
+    });
+
+    test('certificate photography template ships with preset nodes', () async {
+      final repo = ProjectRepository(db);
+      final template = await repo.getTemplateByKey(
+        ProjectTemplateKeys.certificatePhotography,
+      );
+      expect(template, isNot(null));
+      expect(template!.isDefault, isTrue);
+      expect(template.note, '领证跟拍预设模板，可根据自己的情况修改。');
+
+      final steps = await repo.getTemplateSteps(template.id);
+      expect(steps.map((step) => step.title), [
+        '定金',
+        '拍摄',
+        '交付照片',
+        '尾款',
+      ]);
+      final incomeSteps = steps.where((step) => step.amountType == 'income');
+      expect(incomeSteps.map((step) => step.title), ['定金', '尾款']);
+
+      final deposit = steps.firstWhere((step) => step.title == '定金');
+      expect(deposit.createdDateOffsetDays, 0);
+      expect(deposit.keyDateOffsetDays, null);
+
+      final shooting = steps.firstWhere((step) => step.title == '拍摄');
+      expect(shooting.keyDateOffsetDays, 0);
+      expect(shooting.createdDateOffsetDays, null);
+    });
+
+    test('duplicateProjectTemplate copies steps and detaches preset binding',
+        () async {
+      final repo = ProjectRepository(db);
+      final original = await repo.getTemplateByKey(
+        ProjectTemplateKeys.weddingPhotography,
+      );
+      expect(original, isNot(null));
+      final originalSteps = await repo.getTemplateSteps(original!.id);
+
+      final copy = await repo.duplicateProjectTemplate(original.id);
+
+      expect(copy.id, isNot(original.id));
+      expect(copy.name, '婚礼跟拍模板 副本');
+      // 副本脱离内置绑定：没有 templateKey，也不是预置模板。
+      expect(copy.templateKey, null);
+      expect(copy.isDefault, isFalse);
+      expect(copy.categoryId, original.categoryId);
+      expect(copy.note, original.note);
+
+      final copySteps = await repo.getTemplateSteps(copy.id);
+      expect(
+        copySteps.map((step) => step.title),
+        originalSteps.map((step) => step.title),
+      );
+      // 节点的金额类型与两种日期锚点偏移都被完整复制。
+      for (var i = 0; i < copySteps.length; i++) {
+        expect(copySteps[i].amountType, originalSteps[i].amountType);
+        expect(
+          copySteps[i].keyDateOffsetDays,
+          originalSteps[i].keyDateOffsetDays,
+        );
+        expect(
+          copySteps[i].createdDateOffsetDays,
+          originalSteps[i].createdDateOffsetDays,
+        );
+      }
+
+      // 原模板与原节点保持不变。
+      final stillOriginal = await repo.getTemplateByKey(
+        ProjectTemplateKeys.weddingPhotography,
+      );
+      expect(stillOriginal, isNot(null));
+      expect(await repo.getTemplateSteps(original.id), hasLength(5));
+    });
   });
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
 import '../providers/project_providers.dart';
 
@@ -50,12 +51,18 @@ class ProjectTemplateListPage extends ConsumerWidget {
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-            itemCount: templates.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, index) =>
-                _TemplateTile(template: templates[index]),
+          // 与项目/账单列表页一致：点击空白区域收起已展开的滑动按钮。
+          return Listener(
+            behavior: HitTestBehavior.translucent,
+            onPointerDown: (event) =>
+                SwipeRevealController.closeIfOutside(event.position),
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+              itemCount: templates.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (context, index) =>
+                  _TemplateTile(template: templates[index]),
+            ),
           );
         },
       ),
@@ -73,94 +80,131 @@ class _TemplateTile extends ConsumerWidget {
 
   final ProjectTemplate template;
 
+  Future<bool?> _confirmDelete(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('删除模板'),
+        content: Text('确定删除”${template.name}”？已创建的项目不会受影响。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _confirmCopy(BuildContext context) async {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('复制模板'),
+        content: Text('复制“${template.name}”为新模板？复制后会打开新模板供你编辑。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('复制'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final steps = ref
         .watch(projectTemplateStepsProvider(template.id))
         .valueOrNull;
 
-    return Dismissible(
-      key: ValueKey(template.id),
-      direction: DismissDirection.endToStart,
-      confirmDismiss: (direction) async {
-        return showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('删除模板'),
-            content: Text('确定删除”${template.name}”？已创建的项目不会受影响。'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('取消'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('删除'),
-              ),
-            ],
+    final card = Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        leading: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(8),
           ),
-        );
-      },
-      onDismissed: (direction) async {
-        await ref
-            .read(projectNotifierProvider.notifier)
-            .deleteTemplate(template.id);
-      },
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: AppColors.error,
-          borderRadius: BorderRadius.circular(8),
+          child: const Icon(Icons.view_timeline_outlined, size: 20),
         ),
-        child: const Icon(Icons.delete_outline, color: Colors.white),
-      ),
-      child: Card(
-        margin: EdgeInsets.zero,
-        elevation: 0,
-        color: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          leading: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.view_timeline_outlined, size: 20),
-          ),
-          title: Text(
-            template.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: [
-                  if (template.isDefault) const _Badge(label: '预置'),
-                  _Badge(label: '${steps?.length ?? 0} 个默认节点'),
-                ],
-              ),
-              if (template.note?.isNotEmpty == true) ...[
-                const SizedBox(height: 4),
-                Text(
-                  template.note!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+        title: Text(
+          template.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                if (template.isDefault) const _Badge(label: '预置'),
+                _Badge(label: '${steps?.length ?? 0} 个默认节点'),
               ],
+            ),
+            if (template.note?.isNotEmpty == true) ...[
+              const SizedBox(height: 4),
+              Text(
+                template.note!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
-          ),
-          onTap: () => context.push('/projects/templates/${template.id}/edit'),
+          ],
         ),
+        onTap: () => context.push('/projects/templates/${template.id}/edit'),
       ),
+    );
+
+    // 与项目/账单卡片一致的滑动操作：左滑露出「复制 / 删除」两个按钮。
+    return SwipeActionReveal(
+      actions: [
+        SwipeAction(
+          label: '复制',
+          icon: Icons.content_copy,
+          color: AppColors.primary,
+          onTap: () async {
+            final shouldCopy = await _confirmCopy(context);
+            if (shouldCopy != true) return;
+            if (!context.mounted) return;
+            final copy = await ref
+                .read(projectNotifierProvider.notifier)
+                .duplicateTemplate(template.id);
+            if (!context.mounted) return;
+            context.push('/projects/templates/${copy.id}/edit');
+          },
+        ),
+        SwipeAction(
+          label: '删除',
+          icon: Icons.delete_outline,
+          color: AppColors.overdue,
+          onTap: () async {
+            final shouldDelete = await _confirmDelete(context);
+            if (shouldDelete != true) return;
+            await ref
+                .read(projectNotifierProvider.notifier)
+                .deleteTemplate(template.id);
+          },
+        ),
+      ],
+      child: card,
     );
   }
 }

@@ -105,10 +105,7 @@ class QuickCreateSheet extends StatelessWidget {
                           icon: Icons.photo_camera_outlined,
                           title: '摄影接单',
                           subtitle: '定金 / 尾款',
-                          onTap: () => onNavigate(
-                            '/projects/new',
-                            extra: {'template': 'photography'},
-                          ),
+                          onTap: () => onNavigate('/projects/new'),
                         ),
                       ],
                     ),

@@ -272,6 +272,25 @@ class ProjectRepository {
   Future<void> deleteProjectTemplate(int id) =>
       _db.projectTemplateDao.softDeleteTemplate(id);
 
+  /// 基于已有模板复制生成一个新的自定义模板。
+  ///
+  /// 新模板：名称为「{原名} 副本」、复制分类与备注、[templateKey] 置空
+  /// （副本不再是内置预置模板）、[ProjectTemplate.isDefault] 为 false，
+  /// 并完整复制所有节点（标题/金额类型/金额/两种日期锚点偏移/顺序）。
+  Future<ProjectTemplate> duplicateProjectTemplate(int id) async {
+    final source = await _db.projectTemplateDao.getById(id);
+    final steps = (await _db.projectTemplateDao.getSteps(id))
+        .map(ProjectTemplateStepInput.fromTemplateStep)
+        .toList(growable: false);
+    return createProjectTemplate(
+      name: '${source.name} 副本',
+      categoryId: source.categoryId,
+      note: source.note,
+      isDefault: false,
+      steps: steps,
+    );
+  }
+
   Future<Project> createProjectFromTemplate({
     required ProjectTemplate template,
     required List<ProjectTemplateStepInput> steps,
@@ -293,7 +312,7 @@ class ProjectRepository {
       endDate: endDate,
       totalAmount: totalAmount,
       templateKey: template.templateKey ?? 'custom:${template.id}',
-      note: _mergeTemplateNote(template.note, note),
+      note: _normalizeNote(note),
     );
 
     await _createProjectLifeItems(project: project, steps: steps);
@@ -452,14 +471,9 @@ class ProjectRepository {
         first.day == second.day;
   }
 
-  String? _mergeTemplateNote(String? templateNote, String? projectNote) {
-    final parts = [
-      if (templateNote != null && templateNote.trim().isNotEmpty)
-        templateNote.trim(),
-      if (projectNote != null && projectNote.trim().isNotEmpty)
-        projectNote.trim(),
-    ];
-    return parts.isEmpty ? null : parts.join('\n');
+  String? _normalizeNote(String? note) {
+    final trimmed = note?.trim();
+    return (trimmed != null && trimmed.isNotEmpty) ? trimmed : null;
   }
 
   Future<void> _markCategoryUsed(int? categoryId) async {

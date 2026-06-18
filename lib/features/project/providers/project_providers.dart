@@ -177,6 +177,9 @@ class ProjectNotifier extends Notifier<void> {
 
   Future<void> deleteTemplate(int id) => _repo.deleteProjectTemplate(id);
 
+  Future<ProjectTemplate> duplicateTemplate(int id) =>
+      _repo.duplicateProjectTemplate(id);
+
   Future<void> update(Project project) => _repo.updateProject(project);
 
   Future<Project> changeStatus({

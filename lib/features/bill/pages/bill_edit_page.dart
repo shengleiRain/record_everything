@@ -16,7 +16,6 @@ import '../../../shared/widgets/dirty_guard_mixin.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
 import '../../../shared/widgets/money_text_form_field.dart';
 import '../../../shared/widgets/readonly_message.dart';
-import '../../../shared/widgets/saving_button.dart';
 import '../../project/widgets/project_picker_field.dart';
 import '../providers/bill_providers.dart';
 import '../../../data/database/app_database.dart';
@@ -329,12 +328,6 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 32),
-              SavingButton(
-                onPressed: _save,
-                isSaving: isSaving,
-                label: _isEdit ? '保存修改' : '创建账单',
               ),
             ],
           ),

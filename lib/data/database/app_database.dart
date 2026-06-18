@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   static QueryExecutor openConnection() {
     return driftDatabase(name: 'life_items.db');
@@ -140,6 +140,12 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(lifeItems, lifeItems.projectDateOffsetDays);
         await m.addColumn(lifeItems, lifeItems.projectDateManuallyEdited);
       }
+      if (from < 10) {
+        // 补插新增的默认项目类型「跟拍」与两个内置跟拍模板。
+        // 幂等：已存在则跳过，与 onCreate 行为一致。
+        await _ensureDefaultProjectCategory('跟拍', 'photo_camera');
+        await _ensureDefaultProjectTemplates();
+      }
     },
   );
 
@@ -199,6 +205,26 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  /// 幂等地补插单个默认项目类型分类。升级迁移时用：只插入缺失的分类，
+  /// 避免重跑 [_insertDefaultProjectCategories] 造成已存在分类的重复行。
+  Future<void> _ensureDefaultProjectCategory(String name, String icon) async {
+    final existing =
+        await (select(categories)
+              ..where(
+                (t) => t.type.equals('project') & t.name.equals(name),
+              ))
+            .getSingleOrNull();
+    if (existing != null) return;
+    await into(categories).insert(
+      CategoriesCompanion.insert(
+        name: name,
+        type: 'project',
+        icon: Value(icon),
+        isDefault: const Value(true),
+      ),
+    );
+  }
+
   Future<void> _createProjectIndexes() async {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_projects_category_deleted ON projects(category_id, deleted_at)',
@@ -242,33 +268,76 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Future<void> _ensureDefaultProjectTemplates() async {
-    final photographyCategory =
+    await _ensureDefaultTemplate(
+      templateKey: ProjectTemplateKeys.weddingPhotography,
+      name: '婚礼跟拍模板',
+      note: '婚礼跟拍预设模板，可根据自己的情况修改。',
+      categoryName: '跟拍',
+      steps: const [
+        _DefaultTemplateStep(title: '定金', amountType: 'income', createdDateOffsetDays: 0),
+        _DefaultTemplateStep(title: '拍摄', keyDateOffsetDays: 0),
+        _DefaultTemplateStep(title: '交付预告片', keyDateOffsetDays: 0),
+        _DefaultTemplateStep(title: '交付剩余照片', keyDateOffsetDays: 15),
+        _DefaultTemplateStep(title: '尾款', amountType: 'income', keyDateOffsetDays: 0),
+      ],
+    );
+    await _ensureDefaultTemplate(
+      templateKey: ProjectTemplateKeys.certificatePhotography,
+      name: '领证跟拍模板',
+      note: '领证跟拍预设模板，可根据自己的情况修改。',
+      categoryName: '跟拍',
+      steps: const [
+        _DefaultTemplateStep(title: '定金', amountType: 'income', createdDateOffsetDays: 0),
+        _DefaultTemplateStep(title: '拍摄', keyDateOffsetDays: 0),
+        _DefaultTemplateStep(title: '交付照片', keyDateOffsetDays: 0),
+        _DefaultTemplateStep(title: '尾款', amountType: 'income', keyDateOffsetDays: 0),
+      ],
+    );
+  }
+
+  /// 幂等地确保某个内置项目模板存在并带有预设节点。
+  ///
+  /// 规则（与历史版本单模板逻辑一致）：
+  /// - 若该 key 已被用户软删除，则不再复活（尊重用户的删除）。
+  /// - 若存在（按 key，或 key 为空时按名称兜底），回填 templateKey/isDefault，
+  ///   并在分类缺失时补上；已有节点的模板不覆盖节点。
+  /// - 否则新建模板并写入预设节点。
+  /// 节点同时写 [ProjectTemplateStepInput.offsetDays] 与对应锚点字段
+  /// （keyDateOffsetDays/createdDateOffsetDays），保持与历史迁移行格式一致。
+  Future<void> _ensureDefaultTemplate({
+    required String templateKey,
+    required String name,
+    required String note,
+    required String categoryName,
+    required List<_DefaultTemplateStep> steps,
+  }) async {
+    final category =
         await (select(categories)
-              ..where((t) => t.type.equals('project') & t.name.equals('摄影接单')))
+              ..where((t) => t.type.equals('project') & t.name.equals(categoryName)))
             .getSingleOrNull();
-    final photographyCategoryId = photographyCategory?.id;
+    final categoryId = category?.id;
 
     final existingByKey =
         await (select(projectTemplates)..where(
               (t) =>
-                  t.templateKey.equals(ProjectTemplateKeys.photographyOrder) &
-                  t.deletedAt.isNull(),
+                  t.templateKey.equals(templateKey) & t.deletedAt.isNull(),
             ))
             .getSingleOrNull();
     final deletedByKey =
         await (select(projectTemplates)..where(
               (t) =>
-                  t.templateKey.equals(ProjectTemplateKeys.photographyOrder) &
+                  t.templateKey.equals(templateKey) &
                   t.deletedAt.isNotNull(),
             ))
             .getSingleOrNull();
+    // 用户已删除该预置模板：不复活。
     if (existingByKey == null && deletedByKey != null) return;
     final existingByName =
         existingByKey ??
         await (select(projectTemplates)..where(
               (t) =>
                   t.templateKey.isNull() &
-                  t.name.equals('摄影接单模板') &
+                  t.name.equals(name) &
                   t.deletedAt.isNull(),
             ))
             .getSingleOrNull();
@@ -277,10 +346,10 @@ class AppDatabase extends _$AppDatabase {
     if (existingByName == null) {
       template = await into(projectTemplates).insertReturning(
         ProjectTemplatesCompanion.insert(
-          name: '摄影接单模板',
-          templateKey: const Value(ProjectTemplateKeys.photographyOrder),
-          categoryId: Value(photographyCategoryId),
-          note: const Value('内置模板，可按你的接单流程调整默认节点。'),
+          name: name,
+          templateKey: Value(templateKey),
+          categoryId: Value(categoryId),
+          note: Value(note),
           isDefault: const Value(true),
         ),
       );
@@ -290,9 +359,9 @@ class AppDatabase extends _$AppDatabase {
         projectTemplates,
       )..where((t) => t.id.equals(template.id))).write(
         ProjectTemplatesCompanion(
-          templateKey: const Value(ProjectTemplateKeys.photographyOrder),
+          templateKey: Value(templateKey),
           categoryId: template.categoryId == null
-              ? Value(photographyCategoryId)
+              ? Value(categoryId)
               : const Value.absent(),
           isDefault: const Value(true),
           updatedAt: Value(DateTime.now()),
@@ -300,52 +369,26 @@ class AppDatabase extends _$AppDatabase {
       );
     }
 
-    final steps = await (select(
+    final savedSteps = await (select(
       projectTemplateSteps,
     )..where((t) => t.templateId.equals(template.id))).get();
-    if (steps.isNotEmpty) return;
+    if (savedSteps.isNotEmpty) return;
 
-    final defaults = <ProjectTemplateStepsCompanion>[
-      ProjectTemplateStepsCompanion.insert(
-        templateId: template.id,
-        title: '收定金',
-        amountType: const Value('income'),
-        offsetDays: const Value(-7),
-        keyDateOffsetDays: const Value(-7),
-        sortOrder: const Value(0),
-      ),
-      ProjectTemplateStepsCompanion.insert(
-        templateId: template.id,
-        title: '拍摄日提醒',
-        offsetDays: const Value(0),
-        keyDateOffsetDays: const Value(0),
-        sortOrder: const Value(1),
-      ),
-      ProjectTemplateStepsCompanion.insert(
-        templateId: template.id,
-        title: '选片/确认交付内容',
-        offsetDays: const Value(3),
-        keyDateOffsetDays: const Value(3),
-        sortOrder: const Value(2),
-      ),
-      ProjectTemplateStepsCompanion.insert(
-        templateId: template.id,
-        title: '修图交付',
-        offsetDays: const Value(14),
-        keyDateOffsetDays: const Value(14),
-        sortOrder: const Value(3),
-      ),
-      ProjectTemplateStepsCompanion.insert(
-        templateId: template.id,
-        title: '收尾款',
-        amountType: const Value('income'),
-        offsetDays: const Value(14),
-        keyDateOffsetDays: const Value(14),
-        sortOrder: const Value(4),
-      ),
-    ];
-    for (final step in defaults) {
-      await into(projectTemplateSteps).insert(step);
+    for (var index = 0; index < steps.length; index++) {
+      final step = steps[index];
+      final isCreatedAnchor = step.createdDateOffsetDays != null;
+      final offset = step.keyDateOffsetDays ?? step.createdDateOffsetDays ?? 0;
+      await into(projectTemplateSteps).insert(
+        ProjectTemplateStepsCompanion.insert(
+          templateId: template.id,
+          title: step.title,
+          amountType: Value(step.amountType),
+          offsetDays: Value(offset),
+          keyDateOffsetDays: Value(isCreatedAnchor ? null : offset),
+          createdDateOffsetDays: Value(isCreatedAnchor ? offset : null),
+          sortOrder: Value(index),
+        ),
+      );
     }
   }
 
@@ -455,6 +498,25 @@ class AppDatabase extends _$AppDatabase {
       );
     }
   }
+}
+
+class _DefaultTemplateStep {
+  const _DefaultTemplateStep({
+    required this.title,
+    this.amountType = 'none',
+    this.keyDateOffsetDays,
+    this.createdDateOffsetDays,
+  }) : assert(
+         (keyDateOffsetDays == null ? 0 : 1) +
+                 (createdDateOffsetDays == null ? 0 : 1) <=
+             1,
+         'A default template step can only anchor to one date base.',
+       );
+
+  final String title;
+  final String amountType;
+  final int? keyDateOffsetDays;
+  final int? createdDateOffsetDays;
 }
 
 class _DefaultItemTemplate {
