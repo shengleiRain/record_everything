@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/form_draft_store.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../data/database/app_database.dart';
@@ -38,6 +39,8 @@ class _ProjectTemplateEditPageState
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _noteController = TextEditingController();
+  final FormDraftStore _draftStore = FormDraftStore();
+  static const String _draftType = 'project_template';
   final StepEditorController<_StepDraft> _stepEditor = StepEditorController();
 
   bool _loaded = false;
@@ -47,9 +50,22 @@ class _ProjectTemplateEditPageState
   int? _categoryId;
 
   @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_onFieldChanged);
+    _noteController.addListener(_onFieldChanged);
+  }
+
+  void _onFieldChanged() {
+    if (_isEdit) return;
+    markDirtyAndPersist(_collectTemplateDraft);
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_loaded) return;
+    attachDraft(_draftStore, _draftType);
     final idStr = GoRouterState.of(context).pathParameters['id'];
     if (idStr != null && idStr != 'new') {
       _isEdit = true;
@@ -57,6 +73,11 @@ class _ProjectTemplateEditPageState
       _load();
     } else {
       _stepEditor.steps.add(_StepDraft(title: '下一步行动', offsetDays: 0));
+      // Offer to restore a recent unsaved draft (draft takes precedence over
+      // the default step, same as the bill page).
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => maybeRestoreDraft(_applyTemplateDraft, noun: '项目模板'),
+      );
     }
     _loaded = true;
   }
@@ -86,10 +107,68 @@ class _ProjectTemplateEditPageState
 
   bool get _canSave => !_isEdit || _template != null;
 
+  Map<String, dynamic> _collectTemplateDraft() {
+    return {
+      'name': _nameController.text,
+      'note': _noteController.text,
+      'categoryId': _categoryId,
+      'steps': _stepEditor.steps
+          .map((draft) => {
+                'title': draft.titleController.text,
+                'amount': draft.amountController.text,
+                'amountType': draft.amountType.value,
+                'offsetDays':
+                    int.tryParse(draft.offsetDaysController.text.trim()) ?? 0,
+              })
+          .toList(growable: false),
+    };
+  }
+
+  void _applyTemplateDraft(Map<String, dynamic> draft) {
+    setState(() {
+      _nameController.text = draft['name'] as String? ?? '';
+      _noteController.text = draft['note'] as String? ?? '';
+      _categoryId = draft['categoryId'] as int?;
+      for (final old in _stepEditor.steps) {
+        old.dispose();
+      }
+      final stepList = draft['steps'] as List? ?? const [];
+      final drafts = stepList.map<Object>((raw) {
+        final step = raw as Map<String, dynamic>;
+        return _StepDraft(
+          title: step['title'] as String? ?? '',
+          amountType: AmountType.fromString(
+            step['amountType'] as String? ?? 'none',
+          ),
+          amount: _parseAmountCents(step['amount'] as String?),
+          offsetDays: step['offsetDays'] as int? ?? 0,
+        );
+      }).cast<_StepDraft>().toList();
+      _stepEditor.steps
+        ..clear()
+        ..addAll(drafts);
+      if (_stepEditor.steps.isEmpty) {
+        _stepEditor.steps.add(_StepDraft(title: '下一步行动', offsetDays: 0));
+      }
+      _stepEditor.selectedIndex = 0;
+    });
+    _stepEditor.syncStepPage(
+      notifyListeners: () => setState(() {}),
+      animate: false,
+    );
+  }
+
+  int? _parseAmountCents(String? text) {
+    if (text == null || text.trim().isEmpty) return null;
+    return MoneyFormatter.parse(text);
+  }
+
   @override
   void dispose() {
     _stepEditor.dispose();
+    _nameController.removeListener(_onFieldChanged);
     _nameController.dispose();
+    _noteController.removeListener(_onFieldChanged);
     _noteController.dispose();
     for (final step in _stepEditor.steps) {
       step.dispose();
@@ -138,6 +217,8 @@ class _ProjectTemplateEditPageState
       }
       if (mounted) {
         markClean();
+        await clearDraft();
+        if (!mounted) return;
         context.pop();
       }
     });
@@ -148,6 +229,7 @@ class _ProjectTemplateEditPageState
       _StepDraft(title: '新节点', offsetDays: 0),
       notifyListeners: () => setState(() {}),
     );
+    markDirtyAndPersist(_collectTemplateDraft);
   }
 
   void _deleteCurrentStep() {
@@ -155,6 +237,7 @@ class _ProjectTemplateEditPageState
       notifyListeners: () => setState(() {}),
       disposeRemoved: (removed) => removed.dispose(),
     );
+    markDirtyAndPersist(_collectTemplateDraft);
   }
 
   @override
@@ -197,8 +280,10 @@ class _ProjectTemplateEditPageState
                   categoryId: _categoryId,
                   nameController: _nameController,
                   noteController: _noteController,
-                  onCategorySelected: (value) =>
-                      setState(() => _categoryId = value),
+                  onCategorySelected: (value) => setState(() {
+                    _categoryId = value;
+                    markDirtyAndPersist(_collectTemplateDraft);
+                  }),
                 ),
               ),
             ),
@@ -208,11 +293,14 @@ class _ProjectTemplateEditPageState
                 scrollController: _stepEditor.tabScrollController,
                 steps: _stepEditor.steps,
                 selectedIndex: currentStepIndex,
-                onReorder: (oldIndex, newIndex) => _stepEditor.reorderStep(
-                  oldIndex,
-                  newIndex,
-                  notifyListeners: () => setState(() {}),
-                ),
+                onReorder: (oldIndex, newIndex) {
+                  _stepEditor.reorderStep(
+                    oldIndex,
+                    newIndex,
+                    notifyListeners: () => setState(() {}),
+                  );
+                  markDirtyAndPersist(_collectTemplateDraft);
+                },
                 onSelected: (index) => _stepEditor.selectStep(
                   index,
                   notifyListeners: () => setState(() {}),
@@ -296,8 +384,12 @@ class _ProjectTemplateEditPageState
                                                 deleteButtonKey: const ValueKey(
                                                   'project-template-delete-step',
                                                 ),
-                                                onChanged: () =>
-                                                    setState(() {}),
+                                                onChanged: () {
+                                                  setState(() {});
+                                                  markDirtyAndPersist(
+                                                    _collectTemplateDraft,
+                                                  );
+                                                },
                                                 onDelete: _deleteCurrentStep,
                                                 extraSlot: (draft) => TextFormField(
                                                   key: const ValueKey(
@@ -316,6 +408,10 @@ class _ProjectTemplateEditPageState
                                                             '0 表示关键日期当天，-7 表示提前 7 天，14 表示之后 14 天',
                                                         helperMaxLines: 3,
                                                       ),
+                                                  onChanged: (_) =>
+                                                      markDirtyAndPersist(
+                                                    _collectTemplateDraft,
+                                                  ),
                                                 ),
                                               ),
                                             ),

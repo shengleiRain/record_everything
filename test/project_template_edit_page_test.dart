@@ -9,8 +9,15 @@ import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/data/database/database_provider.dart';
 import 'package:record_everything/features/project/pages/project_template_edit_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    // The edit page now persists an input draft via SharedPreferences with a
+    // 500ms debounce. Pre-seed the mock so draft saves resolve synchronously
+    // and don't stall pumpAndSettle.
+    SharedPreferences.setMockInitialValues({});
+  });
   for (final viewport in <Size>[const Size(360, 800), const Size(430, 932)]) {
     testWidgets(
       'template editor fits ${viewport.width.toInt()}x${viewport.height.toInt()} mobile viewport',

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../../core/constants/project_template_keys.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/form_draft_store.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/date_field.dart';
@@ -42,6 +43,8 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   final _titleController = TextEditingController();
   final _participantController = TextEditingController();
   final _noteController = TextEditingController();
+  final FormDraftStore _draftStore = FormDraftStore();
+  static const String _draftType = 'project';
   final StepEditorController<_ProjectStepDraft> _stepEditor =
       StepEditorController();
 
@@ -62,9 +65,21 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   bool _isReadonly = false;
 
   @override
+  void initState() {
+    super.initState();
+    _noteController.addListener(_onNoteChanged);
+  }
+
+  void _onNoteChanged() {
+    if (_isEdit) return;
+    markDirtyAndPersist(_collectProjectDraft);
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_loaded) return;
+    attachDraft(_draftStore, _draftType);
     final state = GoRouterState.of(context);
     final idStr = state.pathParameters['id'];
     if (idStr != null && idStr != 'new') {
@@ -74,6 +89,11 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
     } else {
       // 新建项目时，关键日期默认为当天
       _startDate = DateTime.now();
+      // Offer to restore a recent unsaved draft (draft takes precedence over
+      // template pre-fill, same as the bill page).
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => maybeRestoreDraft(_applyProjectDraft, noun: '项目'),
+      );
     }
     // Check if template is requested via extra
     final extra = state.extra;
@@ -178,6 +198,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
     _stepEditor.dispose();
     _titleController.dispose();
     _participantController.dispose();
+    _noteController.removeListener(_onNoteChanged);
     _noteController.dispose();
     for (final draft in _stepEditor.steps) {
       draft.dispose();
@@ -197,6 +218,75 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
     for (final draft in _stepEditor.steps) {
       draft.updateDueDate(baseDate);
     }
+  }
+
+  Map<String, dynamic> _collectProjectDraft() {
+    return {
+      'title': _titleController.text,
+      'participant': _participantController.text,
+      'note': _noteController.text,
+      'status': _status.value,
+      'categoryId': _selectedCategoryId,
+      'startDate': _startDate?.toIso8601String(),
+      'endDate': _endDate?.toIso8601String(),
+      'selectedTemplateId': _selectedTemplateId,
+      'steps': _stepEditor.steps
+          .map((draft) => {
+                'title': draft.titleController.text,
+                'amount': draft.amountController.text,
+                'amountType': draft.amountType.value,
+                'dueDate': draft.dueDate.toIso8601String(),
+              })
+          .toList(growable: false),
+    };
+  }
+
+  void _applyProjectDraft(Map<String, dynamic> draft) {
+    setState(() {
+      _titleController.text = draft['title'] as String? ?? '';
+      _participantController.text = draft['participant'] as String? ?? '';
+      _noteController.text = draft['note'] as String? ?? '';
+      _status = ProjectStatus.fromString(
+        draft['status'] as String? ?? _status.value,
+      );
+      _selectedCategoryId = draft['categoryId'] as int?;
+      _startDate = DateTime.tryParse(draft['startDate'] as String? ?? '');
+      _endDate = DateTime.tryParse(draft['endDate'] as String? ?? '');
+      _selectedTemplateId = draft['selectedTemplateId'] as int?;
+      // Rebuild the step drafts from the persisted snapshot.
+      for (final old in _stepEditor.steps) {
+        old.dispose();
+      }
+      final stepList = draft['steps'] as List? ?? const [];
+      final baseDate = _startDate ?? DateTime.now();
+      final drafts = stepList.map<Object>((raw) {
+        final step = raw as Map<String, dynamic>;
+        return _ProjectStepDraft(
+          title: step['title'] as String? ?? '',
+          amountType: AmountType.fromString(
+            step['amountType'] as String? ?? 'none',
+          ),
+          amount: _parseAmountCents(step['amount'] as String?),
+          baseDate: baseDate,
+          dueDate: DateTime.tryParse(step['dueDate'] as String? ?? '') ??
+              baseDate,
+        );
+      }).cast<_ProjectStepDraft>().toList();
+      _stepEditor.steps
+        ..clear()
+        ..addAll(drafts);
+      _stepEditor.selectedIndex = 0;
+      _isTitleManuallyEdited = true; // 草稿标题优先于自动生成
+    });
+    _stepEditor.syncStepPage(
+      notifyListeners: () => setState(() {}),
+      animate: false,
+    );
+  }
+
+  int? _parseAmountCents(String? text) {
+    if (text == null || text.trim().isEmpty) return null;
+    return MoneyFormatter.parse(text);
   }
 
   String _generateAutoTitle() {
@@ -291,6 +381,8 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       }
       if (!mounted) return;
       markClean();
+      await clearDraft();
+      if (!mounted) return;
       context.pop();
     });
   }
@@ -317,6 +409,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       _ProjectStepDraft(title: '新节点', baseDate: baseDate, dueDate: baseDate),
       notifyListeners: () => setState(() {}),
     );
+    markDirtyAndPersist(_collectProjectDraft);
   }
 
   void _deleteCurrentStep() {
@@ -324,6 +417,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       notifyListeners: () => setState(() {}),
       disposeRemoved: (removed) => removed.dispose(),
     );
+    markDirtyAndPersist(_collectProjectDraft);
   }
 
   @override
@@ -417,10 +511,14 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                     startDate: _startDate,
                     endDate: _endDate,
                     isEdit: _isEdit,
-                    onTitleManuallyEdited: () => _isTitleManuallyEdited = true,
+                    onTitleManuallyEdited: () {
+                      _isTitleManuallyEdited = true;
+                      markDirtyAndPersist(_collectProjectDraft);
+                    },
                     onCategoryChanged: (v) {
                       setState(() => _selectedCategoryId = v);
                       _tryAutoTitle();
+                      markDirtyAndPersist(_collectProjectDraft);
                     },
                     onStartDateChanged: (date) {
                       setState(() {
@@ -428,9 +526,16 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                         _updateStepDates();
                       });
                       _tryAutoTitle();
+                      markDirtyAndPersist(_collectProjectDraft);
                     },
-                    onEndDateChanged: (date) => setState(() => _endDate = date),
-                    onParticipantChanged: () => _tryAutoTitle(),
+                    onEndDateChanged: (date) {
+                      setState(() => _endDate = date);
+                      markDirtyAndPersist(_collectProjectDraft);
+                    },
+                    onParticipantChanged: () {
+                      _tryAutoTitle();
+                      markDirtyAndPersist(_collectProjectDraft);
+                    },
                     onCategoriesLoaded: (names) {
                       _categoryNames = names;
                       _tryAutoTitle();
@@ -446,12 +551,14 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                     scrollController: _stepEditor.tabScrollController,
                     steps: _stepEditor.steps,
                     selectedIndex: currentStepIndex,
-                    onReorder: (oldIndex, newIndex) =>
-                        _stepEditor.reorderStep(
-                          oldIndex,
-                          newIndex,
-                          notifyListeners: () => setState(() {}),
-                        ),
+                    onReorder: (oldIndex, newIndex) {
+                      _stepEditor.reorderStep(
+                        oldIndex,
+                        newIndex,
+                        notifyListeners: () => setState(() {}),
+                      );
+                      markDirtyAndPersist(_collectProjectDraft);
+                    },
                     onSelected: (index) => _stepEditor.selectStep(
                       index,
                       notifyListeners: () => setState(() {}),
@@ -532,8 +639,12 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                                                 amountFieldKey: const ValueKey(
                                                   'project-edit-step-amount-field',
                                                 ),
-                                                onChanged: () =>
-                                                    setState(() {}),
+                                                onChanged: () {
+                                                  setState(() {});
+                                                  markDirtyAndPersist(
+                                                    _collectProjectDraft,
+                                                  );
+                                                },
                                                 onDelete: _deleteCurrentStep,
                                                 extraSlot: (draft) => DateField(
                                                   label: '到期日期',
@@ -552,6 +663,9 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                                                     if (picked != null) {
                                                       draft.setDueDate(picked);
                                                       setState(() {});
+                                                      markDirtyAndPersist(
+                                                        _collectProjectDraft,
+                                                      );
                                                     }
                                                     return picked;
                                                   },

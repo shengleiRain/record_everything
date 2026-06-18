@@ -8,6 +8,7 @@ import '../../../domain/enums/item_status.dart';
 import '../../../domain/enums/amount_type.dart';
 import '../../../domain/enums/repeat_period.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/form_draft_store.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/section_card.dart';
@@ -36,6 +37,8 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   final _amountController = TextEditingController();
+  final FormDraftStore _draftStore = FormDraftStore();
+  static const String _draftType = 'life_item';
 
   AmountType _amountType = AmountType.none;
   RepeatPeriod _repeatPeriod = RepeatPeriod.daily;
@@ -62,6 +65,18 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   void initState() {
     super.initState();
     _titleController.addListener(_onTitleChanged);
+    _descController.addListener(_onDescChanged);
+    _amountController.addListener(_onAmountChanged);
+  }
+
+  void _onDescChanged() {
+    if (_isEdit) return;
+    markDirtyAndPersist(_collectDraft);
+  }
+
+  void _onAmountChanged() {
+    if (_isEdit) return;
+    markDirtyAndPersist(_collectDraft);
   }
 
   void _onTitleChanged() {
@@ -69,7 +84,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
     final next = _titleController.text;
     if (next == _titleInput) return;
     setState(() => _titleInput = next);
-    markDirty();
+    markDirtyAndPersist(_collectDraft);
     // Debounce the template recommendation query so we don't hit the DB on
     // every keystroke.
     _recommendDebounce?.cancel();
@@ -85,6 +100,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_loaded) return;
+    attachDraft(_draftStore, _draftType);
     final state = GoRouterState.of(context);
     final extra = state.extra;
     if (extra != null && extra is Map<String, dynamic>) {
@@ -108,6 +124,13 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
     // Also check extra for projectId when navigating from project detail
     if (!_isEdit && extra is Map && extra['projectId'] != null) {
       _projectId = extra['projectId'] as int?;
+    }
+    if (!_isEdit) {
+      // New item: offer to restore a recent unsaved draft (draft takes
+      // precedence over pre-filled values, same as the bill page).
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => maybeRestoreDraft(_applyLifeItemDraft, noun: '事项'),
+      );
     }
     _loaded = true;
   }
@@ -231,6 +254,8 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   void dispose() {
     _recommendDebounce?.cancel();
     _titleController.removeListener(_onTitleChanged);
+    _descController.removeListener(_onDescChanged);
+    _amountController.removeListener(_onAmountChanged);
     _titleController.dispose();
     _descController.dispose();
     _amountController.dispose();
@@ -243,6 +268,57 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       return 'every:$_customRepeatDays:days';
     }
     return _repeatPeriod.value;
+  }
+
+  Map<String, dynamic> _collectDraft() {
+    return {
+      'title': _titleController.text,
+      'description': _descController.text,
+      'amount': _amountController.text,
+      'amountType': _amountType.value,
+      'dueDate': _dueDate.toIso8601String(),
+      'categoryId': _selectedCategoryId,
+      'projectId': _projectId,
+      'reminderPreset': _reminderPreset.name,
+      'customReminderTime': _customReminderTime?.toIso8601String(),
+      'hasRepeat': _hasRepeat,
+      'repeatPeriod': _repeatPeriod.value,
+      'customRepeatDays': _customRepeatDays,
+    };
+  }
+
+  void _applyLifeItemDraft(Map<String, dynamic> draft) {
+    setState(() {
+      _titleController.text = draft['title'] as String? ?? '';
+      _descController.text = draft['description'] as String? ?? '';
+      _amountController.text = draft['amount'] as String? ?? '';
+      _amountType = AmountType.fromString(
+        draft['amountType'] as String? ?? 'none',
+      );
+      _dueDate = DateTime.tryParse(
+            draft['dueDate'] as String? ?? '',
+          ) ??
+          DateTime.now().add(const Duration(days: 1));
+      _selectedCategoryId = draft['categoryId'] as int?;
+      _projectId = draft['projectId'] as int?;
+      final presetName = draft['reminderPreset'] as String?;
+      if (presetName != null) {
+        _reminderPreset = ReminderPreset.values.firstWhere(
+          (p) => p.name == presetName,
+          orElse: () => ReminderPreset.none,
+        );
+      }
+      _customReminderTime = DateTime.tryParse(
+        draft['customReminderTime'] as String? ?? '',
+      );
+      _hasRepeat = draft['hasRepeat'] as bool? ?? false;
+      final periodValue = draft['repeatPeriod'] as String?;
+      if (periodValue != null) {
+        _repeatPeriod = RepeatPeriod.fromString(periodValue);
+      }
+      _customRepeatDays =
+          draft['customRepeatDays'] as int? ?? _customRepeatDays;
+    });
   }
 
   Future<void> _save() async {
@@ -304,6 +380,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
           'repeatRule': _buildRepeatRule(),
         });
         markClean();
+        await clearDraft();
         if (mounted) context.pop();
       });
     }
@@ -402,8 +479,10 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                                 ),
                               )
                               .toList(),
-                          onSelected: (v) =>
-                              setState(() => _selectedCategoryId = v),
+                          onSelected: (v) => setState(() {
+                            _selectedCategoryId = v;
+                            markDirtyAndPersist(_collectDraft);
+                          }),
                         );
                       },
                     ),
@@ -423,7 +502,10 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                   children: [
                     ProjectPickerField(
                       value: _projectId,
-                      onChanged: (v) => setState(() => _projectId = v),
+                      onChanged: (v) => setState(() {
+                        _projectId = v;
+                        markDirtyAndPersist(_collectDraft);
+                      }),
                     ),
                     const SizedBox(height: 16),
                     DateField(
@@ -439,6 +521,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                         );
                         if (picked != null && mounted) {
                           setState(() => _dueDate = picked);
+                          markDirtyAndPersist(_collectDraft);
                         }
                         return picked;
                       },
@@ -453,7 +536,10 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                           )
                           .toList(),
                       onSelected: (v) => setState(
-                        () => _reminderPreset = v ?? _reminderPreset,
+                        () {
+                          _reminderPreset = v ?? _reminderPreset;
+                          markDirtyAndPersist(_collectDraft);
+                        },
                       ),
                     ),
                     if (_reminderPreset == ReminderPreset.custom) ...[
@@ -481,8 +567,10 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                             (t) => AppDropdownOption(value: t, label: t.label),
                           )
                           .toList(),
-                      onSelected: (v) =>
-                          setState(() => _amountType = v ?? _amountType),
+                      onSelected: (v) => setState(() {
+                        _amountType = v ?? _amountType;
+                        markDirtyAndPersist(_collectDraft);
+                      }),
                     ),
                     if (_amountType != AmountType.none) ...[
                       const SizedBox(height: 16),
@@ -500,7 +588,10 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                       value: _hasRepeat,
                       title: const Text('重复'),
                       contentPadding: EdgeInsets.zero,
-                      onChanged: (v) => setState(() => _hasRepeat = v),
+                      onChanged: (v) => setState(() {
+                        _hasRepeat = v;
+                        markDirtyAndPersist(_collectDraft);
+                      }),
                     ),
                     if (_hasRepeat) ...[
                       const SizedBox(height: 8),
@@ -513,8 +604,10 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                                   AppDropdownOption(value: p, label: p.label),
                             )
                             .toList(),
-                        onSelected: (v) =>
-                            setState(() => _repeatPeriod = v ?? _repeatPeriod),
+                        onSelected: (v) => setState(() {
+                          _repeatPeriod = v ?? _repeatPeriod;
+                          markDirtyAndPersist(_collectDraft);
+                        }),
                       ),
                       if (_repeatPeriod == RepeatPeriod.custom) ...[
                         const SizedBox(height: 16),
@@ -522,8 +615,10 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                           initialValue: _customRepeatDays.toString(),
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(labelText: '每 N 天'),
-                          onChanged: (v) =>
-                              _customRepeatDays = int.tryParse(v) ?? 30,
+                          onChanged: (v) {
+                            _customRepeatDays = int.tryParse(v) ?? 30;
+                            markDirtyAndPersist(_collectDraft);
+                          },
                         ),
                       ],
                     ],
@@ -562,6 +657,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       current.minute,
     );
     setState(() => _customReminderTime = merged);
+    markDirtyAndPersist(_collectDraft);
     return merged;
   }
 
@@ -580,6 +676,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       picked.minute,
     );
     setState(() => _customReminderTime = merged);
+    markDirtyAndPersist(_collectDraft);
     return merged;
   }
 

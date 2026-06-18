@@ -39,7 +39,6 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   final FormDraftStore _draftStore = FormDraftStore();
-  Timer? _draftDebounce;
 
   BillAmountType _amountType = BillAmountType.expense;
   DateTime _billTime = DateTime.now();
@@ -55,6 +54,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_loaded) return;
+    attachDraft(_draftStore, _draftType);
     final state = GoRouterState.of(context);
     final extra = state.extra;
     if (extra is Map) {
@@ -84,41 +84,11 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
       _loadBill();
     } else {
       // New bill: offer to restore a recent unsaved draft.
-      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRestoreDraft());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => maybeRestoreDraft(_applyDraft, noun: '账单'),
+      );
     }
     _loaded = true;
-  }
-
-  Future<void> _maybeRestoreDraft() async {
-    if (!mounted) return;
-    final draft = await _draftStore.load(_draftType);
-    if (draft == null || !mounted) return;
-    final savedAt = DateTime.tryParse(draft['_savedAt'] as String? ?? '');
-    final ageLabel = savedAt == null
-        ? ''
-        : '（${savedAt.month}/${savedAt.day} ${savedAt.hour.toString().padLeft(2, '0')}:${savedAt.minute.toString().padLeft(2, '0')}）';
-    final restore = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('恢复未完成的账单？'),
-        content: Text('发现一条未提交的草稿$ageLabel，是否恢复？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('丢弃'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('恢复'),
-          ),
-        ],
-      ),
-    );
-    if (restore != true) {
-      await _draftStore.clear(_draftType);
-      return;
-    }
-    _applyDraft(draft);
   }
 
   void _applyDraft(Map<String, dynamic> draft) {
@@ -140,11 +110,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
   }
 
   void _markDirtyAndPersist() {
-    markDirty();
-    _draftDebounce?.cancel();
-    _draftDebounce = Timer(const Duration(milliseconds: 500), () {
-      _draftStore.save(_draftType, _collectDraft());
-    });
+    markDirtyAndPersist(_collectDraft);
   }
 
   Map<String, dynamic> _collectDraft() {
@@ -179,7 +145,6 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
 
   @override
   void dispose() {
-    _draftDebounce?.cancel();
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
@@ -396,7 +361,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
           await ref.read(lifeItemNotifierProvider.notifier).complete(lifeItemId);
         }
         markClean();
-        await _draftStore.clear(_draftType);
+        await clearDraft();
         if (mounted) context.pop();
       });
       // runSave surfaced any error via SnackBar; nothing more to do.
