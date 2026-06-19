@@ -116,3 +116,10 @@ final statsCategoryTrendProvider =
   final db = ref.watch(databaseProvider);
   return db.billRecordDao.watchCategoryMonthlySums(start, end, 'expense');
 });
+
+/// 分类 id → 名称映射（供图表图例使用）。
+final categoryNamesProvider = FutureProvider<Map<int, String>>((ref) async {
+  final db = ref.watch(databaseProvider);
+  final cats = await db.categoryDao.getAll();
+  return {for (final c in cats) c.id: c.name};
+});

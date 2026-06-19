@@ -7,6 +7,8 @@ import '../../../core/utils/money_formatter.dart';
 import '../../../data/database/daos/bill_record_dao.dart';
 import '../../../data/database/database_provider.dart';
 import '../providers/statistics_providers.dart';
+import '../widgets/category_trend_chart.dart';
+import '../widgets/daily_trend_chart.dart';
 
 class StatisticsPage extends ConsumerWidget {
   const StatisticsPage({super.key});
@@ -46,6 +48,14 @@ class StatisticsPage extends ConsumerWidget {
         ref.watch(statsCompletedProjectsProvider).valueOrNull ?? const [];
     final projectIncome =
         ref.watch(statsProjectIncomeProvider).valueOrNull ?? 0;
+
+    // 趋势分析（phase 3）
+    final dailyTrend =
+        ref.watch(statsDailyTrendProvider).valueOrNull ?? const [];
+    final categoryTrend =
+        ref.watch(statsCategoryTrendProvider).valueOrNull ?? const [];
+    final categoryNames =
+        ref.watch(categoryNamesProvider).valueOrNull ?? const {};
 
     return Scaffold(
       appBar: AppBar(title: const Text('统计')),
@@ -93,6 +103,25 @@ class StatisticsPage extends ConsumerWidget {
             child: _MonthlyTrendChart(
               incomeData: trendIncome,
               expenseData: trendExpense,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 本月每日支出（phase 3）
+          _ChartCard(
+            title: '本月每日支出',
+            trailing: MoneyFormatter.format(expense),
+            child: DailyTrendChart(data: dailyTrend),
+          ),
+          const SizedBox(height: 12),
+
+          // 分类消费趋势（phase 3）
+          _ChartCard(
+            title: '分类消费趋势',
+            trailing: '近6个月',
+            child: CategoryTrendChart(
+              data: categoryTrend,
+              categoryNames: categoryNames,
             ),
           ),
           const SizedBox(height: 12),
