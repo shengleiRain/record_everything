@@ -3,7 +3,7 @@
 - **状态**：已确认（设计阶段）
 - **日期**：2026-06-19
 - **范围**：阶段一 —— AI 智能录入 + 识图记账
-- **目标平台**：仅 Android
+- **目标平台**：Android 优先实现，架构预留 iOS 支持（详见 §14 跨平台策略）
 
 ## 1. 背景与目标
 
@@ -22,7 +22,7 @@ record_everything 是一款统一的生活管理 App，已具备完整的"生活
 
 | 决策点 | 选择 | 理由 |
 |--------|------|------|
-| 目标平台 | 仅 Android | 当前主要在 Android 上运行 |
+| 目标平台 | Android 优先，架构预留 iOS | 当前主要在 Android 上运行；核心管道/数据模型/UI 均为纯 Dart 层，所有依赖跨平台，未来加 iOS 只需补平台配置层 |
 | AI 实现 | 本地 + 云端混合，端侧优先 | 95% 日常使用离线可用、零成本、隐私好；复杂语义按需走云 |
 | 云端接入 | BYOK（用户自带 Key） | 零运营成本、零后端、隐私可控、避免内置密钥被逆向抽取 |
 | 草稿存储 | 纯内存，不落库 | 不污染 schema、无需迁移；退出即作废，与主流记账 App 一致 |
@@ -212,18 +212,19 @@ class EntryDraft {
 ### 6.3 系统分享接入
 
 - **场景**：从其他 App 分享文本（"明天下午3点开会，记得带资料"）→ 选"生活事项" → 自动解析。
-- **实现**：`receive_sharing_intent` 插件。
-- **Manifest 改动**：activity 新增 SEND intent-filter（mimeType text/plain）。
+- **实现**：`receive_sharing_intent` 插件（跨平台，Android 走 intent，iOS 走 Share Extension + app group，均由插件屏蔽差异）。
+- **Android 改动**：activity 新增 SEND intent-filter（mimeType text/plain）。
+- **iOS 改动**（未来启用时）：Info.plist 注册 UTType/CFBundleDocumentTypes，新增 Share Extension target（接受 text/plain）。插件层面 Dart 代码不变。
 - **交互**：分享进来 → 拿到文本 → 直接跳草稿确认页（跳过输入框），source=share，顶部显示"来自分享"标识 + 原文预览。
-- **冷热启动**：插件区分冷启动（initState 读初始 sharing）和热启动（StreamSubscription 监听 onNewIntent），两者都要处理——这是此类功能最易出 bug 的点。
+- **冷热启动**：插件区分冷启动（initState 读初始 sharing）和热启动（StreamSubscription 监听 onNewIntent / iOS 的 scene phase），两者都要处理——这是此类功能最易出 bug 的点。
 
 ### 6.4 语音输入（低成本，复用）
 
-- **不做独立 ASR**，复用 Android 系统语音输入键盘（Gboard/搜狗/百度都自带）。
+- **不做独立 ASR**，复用系统语音输入键盘（Android 的 Gboard/搜狗/百度、iOS 的系统键盘都自带语音转文字）。
 - **交互**：输入框聚焦弹键盘时引导用键盘麦克风；输入框"解析"按钮旁加 🎤，点击：
-  - 系统有 `RecognizerIntent` → 用 `speech_to_text` 调起，结果回填输入框
-  - 没有 → toast 提示用键盘语音
-- **理由**：系统语音键盘已覆盖 95% 中文语音输入，体验最好、零集成成本；`speech_to_text` 仅兜底。
+  - 系统支持语音识别（Android `RecognizerIntent` / iOS `SFSpeechRecognizer`）→ 用 `speech_to_text` 调起，结果回填输入框
+  - 不支持 → toast 提示用键盘语音
+- **理由**：系统语音键盘已覆盖 95% 语音输入场景，体验最好、零集成成本；`speech_to_text` 跨平台，仅兜底。
 
 ## 7. 草稿确认页
 
@@ -301,16 +302,18 @@ class CustomOpenAiCompatibleParser implements CloudParser { ... }
 
 统一接口、各厂商独立实现，统一约定第 5.4 节的 JSON schema。
 
-## 9. 新增依赖
+## 9. 新增依赖（全部跨平台，iOS 复用）
 
-| 包 | 用途 | 必要性 |
-|----|------|--------|
-| `google_mlkit_text_recognition` | 端侧 OCR（识图记账） | 必需 |
-| `image_picker` | 拍照/选图 | 必需 |
-| `receive_sharing_intent` | 系统分享接收 | 必需 |
-| `speech_to_text` | 语音输入兜底 | 必需 |
-| `flutter_secure_storage` | BYOK Key 存储 | 必需 |
-| `http` | 云端 API 调用 | 必需 |
+| 包 | 用途 | iOS 支持 |
+|----|------|---------|
+| `google_mlkit_text_recognition` | 端侧 OCR（识图记账） | ✅ 同样端侧、免费 |
+| `image_picker` | 拍照/选图 | ✅ |
+| `receive_sharing_intent` | 系统分享接收 | ✅（需补 Share Extension） |
+| `speech_to_text` | 语音输入兜底 | ✅（用 `SFSpeechRecognizer`） |
+| `flutter_secure_storage` | BYOK Key 存储 | ✅（用 Keychain） |
+| `http` | 云端 API 调用 | ✅ |
+
+所有依赖均为 Flutter 生态官方/主流跨平台包，本次选定它们时就已把"未来支持 iOS"纳入考量——核心解析管道、数据模型、UI 全部在纯 Dart 层，平台差异被压缩到配置层（Manifest / Info.plist）和原生 target（Share Extension）。
 
 ## 10. 错误处理与降级矩阵
 
@@ -379,7 +382,56 @@ lib/
 
 切片 1-3 是 MVP（纯本地、零依赖、可立即提升录入体验）；4-7 是增量增强。每个切片都能独立交付价值。
 
-## 14. 后续阶段（路线图，本次不实现）
+## 14. 跨平台策略（Android 优先，预留 iOS）
+
+本次实现仅交付 Android，但架构上为未来 iOS 支持留好通道，原则是：**业务逻辑零平台耦合，平台差异收敛到配置层与原生 target。**
+
+### 14.1 各能力平台对等关系
+
+| 能力 | Android（本次实现） | iOS（未来启用） | Dart 层是否改动 |
+|------|---------------------|-----------------|----------------|
+| 本地规则引擎 / SmartEntryParser | 纯 Dart | 同左 | 无 |
+| DraftItem / EntryDraft 数据模型 | 纯 Dart | 同左 | 无 |
+| 草稿确认页 / 快速输入页 UI | 纯 Dart | 同左 | 无 |
+| 识图记账 OCR | ML Kit（端侧） | ML Kit（端侧） | 无 |
+| 拍照/选图 | `image_picker` | `image_picker` | 无 |
+| 系统分享 | SEND intent-filter | Share Extension target + Info.plist UTType | 无（Dart 代码不变） |
+| 语音输入 | `RecognizerIntent` | `SFSpeechRecognizer` | 无（`speech_to_text` 屏蔽） |
+| BYOK Key 存储 | Keystore | Keychain | 无（`flutter_secure_storage` 屏蔽） |
+| 云端 API | `http` | `http` | 无 |
+
+**结论：除系统分享在 iOS 需要新增一个 Share Extension 原生 target 外，其余能力未来启用 iOS 时 Dart 代码零改动，仅需补 iOS 平台配置。**
+
+### 14.2 系统分享的平台抽象边界（唯一需要特别处理处）
+
+系统分享是唯一一个两端原生接入形态不同的入口。为隔离差异，约定：
+
+```dart
+/// 平台无关的分享接收抽象。本次只实现 Android 分支，
+/// iOS 分支在未来启用 iOS 时补 Share Extension 配置后接入。
+abstract class ShareReceiver {
+  Stream<String> get sharedTextStream;   // 热启动
+  Future<String?> getInitialSharedText;  // 冷启动
+}
+```
+
+- 本次实现：`AndroidShareReceiver`（基于 `receive_sharing_intent`）。
+- 未来 iOS：`IosShareReceiver`（同样基于 `receive_sharing_intent`，但需先建 Share Extension target），接入处用 `Platform.isIOS` 选择实现。
+- 业务层只依赖 `ShareReceiver` 抽象，不直接依赖 `receive_sharing_intent` 的 API——这样未来加 iOS 实现时，parser / 确认页 / provider 代码完全不用改。
+
+### 14.3 iOS 平台配置清单（未来启用时执行，本次不做）
+
+记录在此供未来参考，本次实现不涉及：
+- Info.plist：相机/相册权限文案（`NSCameraUsageDescription` / `NSPhotoLibraryUsageDescription`）、语音权限（`NSSpeechRecognitionPermission`）
+- Share Extension：新增 target，配置 `NSExtension` 接受 `public.text`，配 App Group 与主 App 共享数据
+- `flutter_secure_storage`：iOS 无额外配置（Keychain 默认可用）
+
+### 14.4 实施约定
+
+- 本次切片 5（系统分享）只交付 Android，但代码按 §14.2 的抽象写，不把 `receive_sharing_intent` 的调用散落到 UI 层。
+- README / 代码注释里标注"iOS 支持见 spec §14"。
+
+## 15. 后续阶段（路线图，本次不实现）
 
 - **阶段二：桌面与锁屏触达** —— 桌面 App Widget（今日待办/一键记账/本月预算环形）+ Android 16 Live Updates 锁屏实时倒计时 + App Shortcuts + Quick Settings Tile。单独立项。
 - **阶段三：智能洞察与自动化** —— 消费趋势/异常预警、自动分类建议、（可选）短信自动记账。本地统计算法为主。单独立项。
