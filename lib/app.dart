@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/home/services/widget_sync_service.dart';
 import 'features/smart_entry/models/draft_item.dart';
 import 'features/smart_entry/providers/smart_entry_providers.dart';
 import 'features/smart_entry/services/share_receiver.dart';
@@ -35,13 +36,24 @@ class _ShareBootstrap extends StatefulWidget {
   State<_ShareBootstrap> createState() => _ShareBootstrapState();
 }
 
-class _ShareBootstrapState extends State<_ShareBootstrap> {
+class _ShareBootstrapState extends State<_ShareBootstrap>
+    with WidgetsBindingObserver {
   StreamSubscription<String>? _sub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) => _init());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive) {
+      // App 进入后台，同步数据到 Widget。
+      final container = ProviderScope.containerOf(context);
+      WidgetSyncService.syncFromProviders(container);
+    }
   }
 
   Future<void> _init() async {
@@ -73,6 +85,7 @@ class _ShareBootstrapState extends State<_ShareBootstrap> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sub?.cancel();
     super.dispose();
   }

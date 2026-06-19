@@ -82,6 +82,36 @@ class WidgetSyncService {
     }
   }
 
+  /// 从 Ref 读取数据并同步。供 Notifier CRUD 后调用。
+  static Future<void> syncFromRef(Ref ref) async {
+    try {
+      final now = DateTime.now();
+      const weekday = ['周一','周二','周三','周四','周五','周六','周日'];
+      final dateLabel = '${now.month}月${now.day}日 ${weekday[now.weekday - 1]}';
+
+      final agenda = ref.read(homeSelectedDayAgendaProvider).valueOrNull ?? [];
+      final todayItems = agenda
+          .where((a) => !a.isCompleted)
+          .map((a) => WidgetItemData(title: a.title, isOverdue: a.isOverdue))
+          .toList();
+      final overdueCount = todayItems.where((i) => i.isOverdue).length;
+
+      final income = ref.read(homeMonthlyIncomeProvider).valueOrNull ?? 0;
+      final expense = ref.read(homeMonthlyExpenseProvider).valueOrNull ?? 0;
+
+      await sync(
+        dateLabel: dateLabel,
+        todayCount: todayItems.length,
+        overdueCount: overdueCount,
+        items: todayItems,
+        monthlyIncome: MoneyFormatter.format(income),
+        monthlyExpense: MoneyFormatter.format(expense),
+      );
+    } catch (_) {
+      // 静默失败。
+    }
+  }
+
   /// 将待办列表格式化为 JSON 字符串（最多 3 条）。
   static String formatWidgetItems(List<WidgetItemData> items) {
     final list = items

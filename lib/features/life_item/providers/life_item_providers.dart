@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/calendar/calendar_event_service.dart';
 import '../../../core/notifications/reminder_scheduler.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../../data/repositories/life_item_repository.dart';
+import '../../home/services/widget_sync_service.dart';
 
 final lifeItemRepoProvider = Provider<LifeItemRepository>((ref) {
   return LifeItemRepository(ref.watch(databaseProvider));
@@ -76,42 +79,48 @@ class LifeItemNotifier extends Notifier<void> {
       repeatRule: data['repeatRule'] as String?,
     );
     await _scheduleIfNeeded(item);
+    unawaited(WidgetSyncService.syncFromRef(ref));
     return item;
   }
 
   Future<LifeItem> update(LifeItem item) async {
     final updated = await _repo.updateItem(item);
     await _rebuildReminder(updated);
+    unawaited(WidgetSyncService.syncFromRef(ref));
     return updated;
   }
 
   Future<void> delete(int id) async {
     await _repo.deleteItem(id);
     await _scheduler.cancel(id);
+    unawaited(WidgetSyncService.syncFromRef(ref));
   }
 
   Future<LifeItem> complete(int id) async {
     final updated = await _repo.complete(id);
     await _scheduler.cancel(id);
+    unawaited(WidgetSyncService.syncFromRef(ref));
     return updated;
   }
 
   Future<LifeItem> cancel(int id) async {
     final updated = await _repo.cancel(id);
     await _scheduler.cancel(id);
+    unawaited(WidgetSyncService.syncFromRef(ref));
     return updated;
   }
 
   Future<LifeItem> reopen(int id) async {
     final updated = await _repo.reopen(id);
-    // 重新打开后，若仍有未来的提醒时间，需要重新排提醒。
     await _rebuildReminder(updated);
+    unawaited(WidgetSyncService.syncFromRef(ref));
     return updated;
   }
 
   Future<LifeItem> defer(int id, DateTime newDate) async {
     final updated = await _repo.defer(id, newDate);
     await _rebuildReminder(updated);
+    unawaited(WidgetSyncService.syncFromRef(ref));
     return updated;
   }
 
@@ -119,6 +128,7 @@ class LifeItemNotifier extends Notifier<void> {
     final next = await _repo.completeAndGenerateNext(id);
     await _scheduler.cancel(id);
     await _scheduleIfNeeded(next);
+    unawaited(WidgetSyncService.syncFromRef(ref));
     return next;
   }
 

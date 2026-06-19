@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../../data/repositories/account_repository.dart';
 import '../../../data/repositories/bill_record_repository.dart';
 import '../../../data/repositories/budget_repository.dart';
+import '../../home/services/widget_sync_service.dart';
 
 final billRepoProvider = Provider<BillRecordRepository>((ref) {
   return BillRecordRepository(ref.watch(databaseProvider));
@@ -63,7 +66,7 @@ class BillNotifier extends Notifier<void> {
     final resolvedAccountId =
         accountId ??
         (await ref.read(accountRepoProvider).ensureDefaultAccount()).id;
-    return _repo.create(
+    final record = await _repo.create(
       title: title,
       amount: amount,
       amountType: amountType,
@@ -74,6 +77,8 @@ class BillNotifier extends Notifier<void> {
       note: note,
       lifeItemId: lifeItemId,
     );
+    unawaited(WidgetSyncService.syncFromRef(ref));
+    return record;
   }
 
   Future<BillRecord> createFromLifeItem(
@@ -84,7 +89,7 @@ class BillNotifier extends Notifier<void> {
   ) async {
     final accountId =
         (await ref.read(accountRepoProvider).ensureDefaultAccount()).id;
-    return _repo.create(
+    final record = await _repo.create(
       title: item.title,
       amount: customAmount ?? item.amount ?? 0,
       amountType: item.amountType,
@@ -95,9 +100,14 @@ class BillNotifier extends Notifier<void> {
       note: (note == null || note.trim().isEmpty) ? item.title : note,
       lifeItemId: item.id,
     );
+    unawaited(WidgetSyncService.syncFromRef(ref));
+    return record;
   }
 
-  Future<void> delete(int id) => _repo.deleteRecord(id);
+  Future<void> delete(int id) async {
+    await _repo.deleteRecord(id);
+    unawaited(WidgetSyncService.syncFromRef(ref));
+  }
 }
 
 final billNotifierProvider = NotifierProvider<BillNotifier, void>(
