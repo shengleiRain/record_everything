@@ -88,7 +88,19 @@ class LocalRuleEngine {
     ];
   }
 
+  /// 小票/账单关键字后的金额优先（"合计 25.00"、"实付 ¥12"、"Total 99"）。
+  static final _receiptAmountPattern = RegExp(
+    r'(?:合计|实付|实收|总额|总金额|应付|应付款|Total|Amount)\s*[:：]?\s*(?:[￥¥]|RMB|人民币)?\s*(\d+(?:\.\d+)?)',
+    caseSensitive: false,
+  );
+
   int? _extractAmount(String seg) {
+    // OCR 小票特化：优先抓 "合计/实付/Total" 后的数字。
+    final receipt = _receiptAmountPattern.firstMatch(seg);
+    if (receipt != null) {
+      final rn = double.tryParse(receipt.group(1)!);
+      if (rn != null) return (rn * 100).round();
+    }
     final m = amountPattern.firstMatch(seg);
     if (m == null) return null;
     final n = double.tryParse(m.group(1)!);
