@@ -16,6 +16,9 @@ import '../../features/settings/pages/category_management_page.dart';
 import '../../features/settings/pages/data_safety_page.dart';
 import '../../features/settings/pages/recycle_bin_page.dart';
 import '../../features/search/search_page.dart';
+import '../../features/smart_entry/models/draft_item.dart';
+import '../../features/smart_entry/pages/smart_entry_confirm_page.dart';
+import '../../features/smart_entry/pages/smart_entry_input_page.dart';
 
 int _currentIndex(GoRouterState state) {
   final path = state.uri.path;
@@ -73,6 +76,17 @@ final appRouter = GoRouter(
   routes: [
     // Full-screen routes (no bottom navigation bar).
     GoRoute(path: '/search', builder: (context, state) => const SearchPage()),
+    GoRoute(
+      path: '/smart-entry/input',
+      builder: (context, state) => const SmartEntryInputPage(),
+    ),
+    GoRoute(
+      path: '/smart-entry/confirm',
+      builder: (context, state) {
+        final draft = state.extra as EntryDraft;
+        return SmartEntryConfirmPage(draft: draft);
+      },
+    ),
     ShellRoute(
       builder: _buildShell,
       routes: [

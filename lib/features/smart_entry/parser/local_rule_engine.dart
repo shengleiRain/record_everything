@@ -40,7 +40,6 @@ class LocalRuleEngine {
 
     if (kind == null) return const [];
 
-    final isExpense = expenseVerbs.any(seg.contains);
     final isIncome = incomeVerbs.any(seg.contains);
 
     final title = _extractTitle(seg);
