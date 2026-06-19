@@ -96,3 +96,13 @@ class SmartEntryPersistService {
 final smartEntryPersistProvider = Provider<SmartEntryPersistService>((ref) {
   return SmartEntryPersistService(ref);
 });
+
+/// 根据账单标题推荐分类 id（基于历史账单匹配频率）。
+final categorySuggestionProvider =
+    FutureProvider.family<int?, (String title, String amountType)>(
+  (ref, params) async {
+    final (title, amountType) = params;
+    final db = ref.read(databaseProvider);
+    return db.billRecordDao.suggestCategoryByTitle(title, amountType);
+  },
+);

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/daos/bill_record_dao.dart';
+import '../../../data/database/database_provider.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../life_item/providers/life_item_providers.dart';
 import '../../project/providers/project_providers.dart';
@@ -95,4 +96,23 @@ final statsCompletedProjectsProvider = StreamProvider<List<Project>>((ref) {
 final statsProjectIncomeProvider = StreamProvider<int>((ref) {
   final month = ref.watch(statsMonthProvider);
   return ref.watch(projectRepoProvider).watchAllProjectIncomeForMonth(month);
+});
+
+// ===== 趋势分析（phase 3） =====
+
+/// 当月每日支出总额。
+final statsDailyTrendProvider = StreamProvider<List<DailySumRow>>((ref) {
+  final month = ref.watch(statsMonthProvider);
+  final db = ref.watch(databaseProvider);
+  return db.billRecordDao.watchDailySumsForMonth(month, 'expense');
+});
+
+/// 最近 6 个月 Top 分类月度支出。
+final statsCategoryTrendProvider =
+    StreamProvider<List<CategoryMonthlySumRow>>((ref) {
+  final now = DateTime.now();
+  final start = DateTime(now.year, now.month - 5, 1);
+  final end = DateTime(now.year, now.month + 1, 1);
+  final db = ref.watch(databaseProvider);
+  return db.billRecordDao.watchCategoryMonthlySums(start, end, 'expense');
 });
