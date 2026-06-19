@@ -262,6 +262,105 @@ class BillRecordDao extends DatabaseAccessor<AppDatabase>
       );
     return query.watchSingle().map((row) => row.read(sumExpr) ?? 0);
   }
+
+  /// 当月按日聚合支出/收入。在 Dart 层分组，避免 Drift SQL 表达式兼容问题。
+  Stream<List<DailySumRow>> watchDailySumsForMonth(
+    DateTime month,
+    String amountType,
+  ) {
+    final start = DateTime(month.year, month.month, 1);
+    final end = DateTime(month.year, month.month + 1, 1);
+    return watchBetween(start, end)
+        .map(
+          (bills) => bills
+              .where((b) => b.amountType == amountType && b.deletedAt == null)
+              .fold<Map<int, int>>({}, (map, b) {
+                final day = b.billTime.day;
+                map[day] = (map[day] ?? 0) + b.amount;
+                return map;
+              })
+              .entries
+              .map(
+                (e) => DailySumRow(
+                  date: DateTime(month.year, month.month, e.key),
+                  total: e.value,
+                ),
+              )
+              .toList()
+            ..sort((a, b) => a.date.day.compareTo(b.date.day)),
+        );
+  }
+
+  /// 按月+分类聚合（用于分类趋势图）。在 Dart 层分组。
+  Stream<List<CategoryMonthlySumRow>> watchCategoryMonthlySums(
+    DateTime start,
+    DateTime end,
+    String amountType,
+  ) {
+    return watchBetween(start, end)
+        .map(
+          (bills) => bills
+              .where(
+                (b) =>
+                    b.amountType == amountType &&
+                    b.deletedAt == null &&
+                    b.categoryId != null,
+              )
+              .fold<Map<String, CategoryMonthlySumRow>>({}, (map, b) {
+                final key =
+                    '${b.billTime.year}-${b.billTime.month}-${b.categoryId}';
+                final existing = map[key];
+                if (existing != null) {
+                  map[key] = CategoryMonthlySumRow(
+                    year: existing.year,
+                    month: existing.month,
+                    categoryId: existing.categoryId,
+                    total: existing.total + b.amount,
+                  );
+                } else {
+                  map[key] = CategoryMonthlySumRow(
+                    year: b.billTime.year,
+                    month: b.billTime.month,
+                    categoryId: b.categoryId!,
+                    total: b.amount,
+                  );
+                }
+                return map;
+              })
+              .values
+              .toList()
+            ..sort(
+              (a, b) =>
+                  a.year != b.year
+                      ? a.year.compareTo(b.year)
+                      : a.month.compareTo(b.month),
+            ),
+        );
+  }
+
+  /// 根据标题关键词推荐分类 id（历史账单中最常用的分类）。
+  /// keyword 长度 < 2 时返回 null。
+  Future<int?> suggestCategoryByTitle(
+    String keyword,
+    String amountType,
+  ) async {
+    if (keyword.trim().length < 2) return null;
+    final catIdExpr = billRecords.categoryId;
+    final countExpr = catIdExpr.count();
+    final query = selectOnly(billRecords)
+      ..addColumns([catIdExpr, countExpr])
+      ..where(
+        billRecords.title.like('%$keyword%') &
+            billRecords.amountType.equals(amountType) &
+            billRecords.deletedAt.isNull() &
+            billRecords.categoryId.isNotNull(),
+      )
+      ..groupBy([catIdExpr])
+      ..orderBy([OrderingTerm.desc(countExpr)])
+      ..limit(1);
+    final result = await query.getSingleOrNull();
+    return result?.read(catIdExpr);
+  }
 }
 
 class MonthlySumRow {
@@ -274,4 +373,23 @@ class CategoryBreakdownRow {
   final int? categoryId;
   final int sum;
   const CategoryBreakdownRow({this.categoryId, required this.sum});
+}
+
+class DailySumRow {
+  final DateTime date;
+  final int total;
+  const DailySumRow({required this.date, required this.total});
+}
+
+class CategoryMonthlySumRow {
+  final int year;
+  final int month;
+  final int categoryId;
+  final int total;
+  const CategoryMonthlySumRow({
+    required this.year,
+    required this.month,
+    required this.categoryId,
+    required this.total,
+  });
 }
