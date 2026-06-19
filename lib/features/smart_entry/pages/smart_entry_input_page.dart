@@ -48,7 +48,7 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
           _controller.text = _controller.text + r.recognizedWords;
         }
       },
-      localeId: 'zh_CN',
+      listenOptions: SpeechListenOptions(localeId: 'zh_CN'),
     );
   }
 
