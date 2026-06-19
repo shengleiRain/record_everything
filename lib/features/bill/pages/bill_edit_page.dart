@@ -47,6 +47,10 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
   bool _isEdit = false;
   int? _editId;
   bool _loaded = false;
+
+  // 自动分类建议（phase 3）
+  int? _suggestedCategoryId;
+  Timer? _suggestionDebounce;
   bool _isReadonly = false;
   bool _isHydratingForm = false;
 
@@ -170,11 +174,30 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
 
   @override
   void dispose() {
+    _suggestionDebounce?.cancel();
     _amountController.removeListener(_onAmountChanged);
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _onTitleChanged(String title) {
+    _suggestionDebounce?.cancel();
+    if (title.trim().length < 2 || _selectedCategoryId != null) {
+      setState(() => _suggestedCategoryId = null);
+      return;
+    }
+    _suggestionDebounce = Timer(const Duration(milliseconds: 500), () async {
+      final db = ref.read(databaseProvider);
+      final id = await db.billRecordDao.suggestCategoryByTitle(
+        title.trim(),
+        _amountType.value,
+      );
+      if (mounted && id != null && _selectedCategoryId == null) {
+        setState(() => _suggestedCategoryId = id);
+      }
+    });
   }
 
   @override
@@ -232,13 +255,16 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                 title: '账单内容',
                 child: Column(
                   children: [
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(labelText: '标题 *'),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? '请输入标题' : null,
-                      onChanged: (_) => _markDirtyAndPersist(),
-                    ),
+  TextFormField(
+    controller: _titleController,
+    decoration: const InputDecoration(labelText: '标题 *'),
+    validator: (v) =>
+        (v == null || v.trim().isEmpty) ? '请输入标题' : null,
+    onChanged: (v) {
+      _markDirtyAndPersist();
+      _onTitleChanged(v);
+    },
+  ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _noteController,
@@ -289,8 +315,28 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                             .toList(),
                         onSelected: (v) => setState(() {
                           _selectedCategoryId = v;
+                          _suggestedCategoryId = null;
                           _markDirtyAndPersist();
                         }),
+                      ),
+                    // 自动分类推荐（phase 3）
+                    if (_suggestedCategoryId != null &&
+                        _selectedCategoryId == null &&
+                        categories.any((c) => c.id == _suggestedCategoryId))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: ActionChip(
+                          avatar: const Icon(Icons.lightbulb_outline,
+                              size: 16, color: AppColors.primary),
+                          label: Text(
+                            '推荐：${categories.firstWhere((c) => c.id == _suggestedCategoryId).name}',
+                          ),
+                          onPressed: () => setState(() {
+                            _selectedCategoryId = _suggestedCategoryId;
+                            _suggestedCategoryId = null;
+                            _markDirtyAndPersist();
+                          }),
+                        ),
                       ),
                   ],
                 ),
