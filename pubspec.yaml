@@ -32,6 +32,12 @@ dependencies:
   file_picker: ^11.0.2
   add_2_calendar: 3.1.0  # pinned: 3.1.1's android/build.gradle.kts uses an incompatible `kotlin { compilerOptions }` DSL (missing kotlin plugin + AGP 9.0.1/Kotlin 2.3.20). 3.1.0 uses the legacy Groovy build.gradle and the same Dart API.
   shared_preferences: ^2.5.5
+  http: ^1.6.0
+  image_picker: ^1.2.2
+  receive_sharing_intent: ^1.8.1
+  speech_to_text: ^7.4.0
+  flutter_secure_storage: ^10.3.1
+  google_mlkit_text_recognition: ^0.15.1
 
 dev_dependencies:
   flutter_test:
