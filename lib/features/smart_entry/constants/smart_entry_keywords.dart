@@ -120,7 +120,10 @@ const taskVerbs = <String>[
 // ===== 金额/单位 =====
 
 /// 金额正则：匹配带或不带货币符号的数字（含小数）。捕获组 1 为纯数字串。
-final amountPattern = RegExp(r'(?:[￥¥]|RMB|人民币)?\s*(\d+(?:\.\d+)?)');
+/// 否定先行：数字后紧跟"点/时/号"的是时间/日期（"3点"、"15号"），不算金额。
+final amountPattern = RegExp(
+  r'(?:[￥¥]|RMB|人民币)?\s*(\d+(?:\.\d+)?)(?![点时号])',
+);
 
 /// 货币符号集合，用于判定是否有金额上下文。
 const currencyMarkers = [
