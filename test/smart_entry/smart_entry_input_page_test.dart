@@ -72,4 +72,9 @@ void main() {
     expect(find.text('来自：快速输入'), findsOneWidget);
     expect(find.text('咖啡花了20'), findsOneWidget);
   });
+
+  testWidgets('识图入口存在', (tester) async {
+    await pumpApp(tester);
+    expect(find.byKey(const ValueKey('smart-entry-ocr-btn')), findsOneWidget);
+  });
 }

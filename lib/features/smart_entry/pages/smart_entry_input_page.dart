@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../models/draft_item.dart';
 import '../providers/smart_entry_providers.dart';
+import '../services/ocr_service.dart';
 
 /// 快速输入页。spec §6.1。
 class SmartEntryInputPage extends ConsumerStatefulWidget {
@@ -17,6 +21,7 @@ class SmartEntryInputPage extends ConsumerStatefulWidget {
 
 class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
   final _controller = TextEditingController();
+  final _ocr = OcrService();
   bool _parsing = false;
 
   Future<void> _parse() async {
@@ -30,8 +35,35 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
     context.push('/smart-entry/confirm', extra: draft);
   }
 
+  Future<void> _pickAndRecognize() async {
+    final picker = ImagePicker();
+    final xfile = await picker.pickImage(source: ImageSource.gallery);
+    if (xfile == null) return;
+    setState(() => _parsing = true);
+    try {
+      final text = await _ocr.recognize(File(xfile.path));
+      if (!mounted) return;
+      final parser = ref.read(smartEntryParserProvider);
+      final draft = await parser.parse(
+        text,
+        source: DraftSource.ocr,
+        ocrFullText: text,
+      );
+      if (!mounted) return;
+      setState(() => _parsing = false);
+      context.push('/smart-entry/confirm', extra: draft);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _parsing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('识别失败，请重试或换个清晰的图片')),
+      );
+    }
+  }
+
   @override
   void dispose() {
+    _ocr.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -71,6 +103,13 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
               icon: const Icon(Icons.auto_awesome),
               label: Text(_parsing ? '解析中…' : '解析'),
               onPressed: _parsing ? null : _parse,
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: const ValueKey('smart-entry-ocr-btn'),
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: const Text('拍照 / 选图记账'),
+              onPressed: _parsing ? null : _pickAndRecognize,
             ),
           ],
         ),
