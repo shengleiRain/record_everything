@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="smart_entry"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_edit"
+        android:shortcutShortLabel="@string/shortcut_smart_entry"
+        android:shortcutLongLabel="@string/shortcut_smart_entry">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="lifeitems://smart-entry/input" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="quick_bill"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:shortcutShortLabel="@string/shortcut_quick_bill"
+        android:shortcutLongLabel="@string/shortcut_quick_bill">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="lifeitems://bills/new" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="today_items"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_today"
+        android:shortcutShortLabel="@string/shortcut_today_items"
+        android:shortcutLongLabel="@string/shortcut_today_items">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="lifeitems://items" />
+    </shortcut>
+</shortcuts>

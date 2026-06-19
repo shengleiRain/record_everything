@@ -74,6 +74,18 @@ Widget _buildShell(BuildContext context, GoRouterState state, Widget child) {
 
 final appRouter = GoRouter(
   initialLocation: '/home',
+  redirect: (context, state) {
+    // 处理 lifeitems:// URI scheme（来自 App Shortcuts / Widget）。
+    final uri = state.uri;
+    if (uri.scheme == 'lifeitems') {
+      // lifeitems://smart-entry/input → /smart-entry/input
+      // lifeitems://bills/new → /bills/new
+      // lifeitems://items → /items
+      final path = '/${uri.host}${uri.path}';
+      return path;
+    }
+    return null; // 不重定向
+  },
   routes: [
     // Full-screen routes (no bottom navigation bar).
     GoRoute(path: '/search', builder: (context, state) => const SearchPage()),

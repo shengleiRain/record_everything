@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">生活事项</string>
+    <string name="shortcut_smart_entry">智能输入</string>
+    <string name="shortcut_quick_bill">快速记账</string>
+    <string name="shortcut_today_items">今日待办</string>
+    <string name="widget_description">今日待办与收支概览</string>
+</resources>
