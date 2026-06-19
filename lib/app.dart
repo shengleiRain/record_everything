@@ -65,7 +65,7 @@ class _ShareBootstrapState extends State<_ShareBootstrap> {
 
   Future<void> _openConfirm(String text) async {
     final container = ProviderScope.containerOf(context);
-    final parser = container.read(smartEntryParserProvider);
+    final parser = await container.read(smartEntryParserProvider.future);
     final draft = await parser.parse(text, source: DraftSource.share);
     if (!mounted) return;
     context.push('/smart-entry/confirm', extra: draft);

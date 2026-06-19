@@ -5,11 +5,22 @@ import '../../../data/database/database_provider.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../life_item/providers/life_item_providers.dart';
 import '../models/draft_item.dart';
+import '../parser/cloud_parser.dart';
 import '../parser/smart_entry_parser.dart';
 import '../services/category_matcher.dart';
+import '../services/secure_key_store.dart';
 
-final smartEntryParserProvider = Provider<SmartEntryParser>((ref) {
-  return SmartEntryParser();
+/// FutureProvider：首次读取时从 secure storage 加载 AiConfig，
+/// 据此决定注入 NoopCloudParser 还是 QwenCloudParser。
+final smartEntryParserProvider = FutureProvider<SmartEntryParser>((ref) async {
+  final config = await ref.read(secureKeyStoreProvider).load();
+  final cloud = config.enabled && config.isConfigured
+      ? QwenCloudParser(
+          apiKey: config.apiKey!,
+          model: config.model ?? 'qwen-plus',
+        )
+      : const NoopCloudParser();
+  return SmartEntryParser(cloud: cloud);
 });
 
 final categoryMatcherProvider = Provider<CategoryMatcher>((ref) {

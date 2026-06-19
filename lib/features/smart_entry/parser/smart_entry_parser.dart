@@ -1,17 +1,24 @@
 import '../models/draft_item.dart';
+import 'cloud_parser.dart';
 import 'local_rule_engine.dart';
 
 /// 智能录入解析管道入口。spec §5.1。
 ///
-/// 当前实现：预处理 → 分句 → 本地规则引擎 → 装配 EntryDraft。
-/// 云端兜底分支在切片7接入（见 _maybeCloudEnhance 钩子）。
+/// 预处理 → 分句 → 本地规则引擎 → 装配 EntryDraft。
+/// 低置信项或空结果时走云端兜底（BYOK，可开关）。
 class SmartEntryParser {
-  SmartEntryParser({DateTime? now}) : _engine = LocalRuleEngine(now: now);
+  SmartEntryParser({
+    DateTime? now,
+    CloudParser cloud = const NoopCloudParser(),
+  }) : _engine = LocalRuleEngine(now: now),
+       _cloud = cloud;
 
   SmartEntryParser.forTest({required DateTime now})
-    : _engine = LocalRuleEngine(now: now);
+    : _engine = LocalRuleEngine(now: now),
+      _cloud = const NoopCloudParser();
 
   final LocalRuleEngine _engine;
+  final CloudParser _cloud;
 
   /// 解析文本输入。
   /// [source] 标记数据来源；[ocrFullText] 仅 OCR 来源携带原文。
@@ -20,9 +27,8 @@ class SmartEntryParser {
     DraftSource source = DraftSource.nl,
     String? ocrFullText,
   }) async {
-    final items = _engine.parseAll(input);
-    // 切片7在此处插入：若存在低置信项或空段且云开启，调 CloudParser 兜底。
-    await _maybeCloudEnhance(items, input);
+    var items = _engine.parseAll(input);
+    items = await _maybeCloudEnhance(items, input, source);
     return EntryDraft(
       items: items,
       source: source,
@@ -31,8 +37,22 @@ class SmartEntryParser {
     );
   }
 
-  /// 云端兜底钩子。切片1返回空实现；切片7实现真正的云端调用。
-  Future<void> _maybeCloudEnhance(List<DraftItem> items, String input) async {
-    // no-op for now (slice 1). 云端分支在切片7接入。
+  /// 存在低置信项或空结果时，重跑云端；失败降级返回本地结果。spec §5.3/§5.5。
+  Future<List<DraftItem>> _maybeCloudEnhance(
+    List<DraftItem> items,
+    String input,
+    DraftSource source,
+  ) async {
+    final needCloud = items.isEmpty || items.any((i) => i.isLowConfidence);
+    if (!needCloud) return items;
+    try {
+      final cloudItems = await _cloud
+          .parse(input, source: source)
+          .timeout(const Duration(seconds: 10));
+      if (cloudItems.isEmpty) return items;
+      return cloudItems; // 云端结果覆盖本地低置信段
+    } catch (_) {
+      return items; // 降级
+    }
   }
 }

@@ -6,7 +6,13 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class SecureKeyStore {
   SecureKeyStore(this._storage);
 
-  final FlutterSecureStorage _storage;
+  /// 测试用：直接传入 AiConfig，不依赖原生 FlutterSecureStorage。
+  SecureKeyStore.forTesting(AiConfig config)
+    : _storage = null,
+      _testConfig = config;
+
+  final FlutterSecureStorage? _storage;
+  AiConfig? _testConfig;
 
   static const _kProvider = 'smart_entry.ai.provider';
   static const _kApiKey = 'smart_entry.ai.api_key';
@@ -21,27 +27,33 @@ class SecureKeyStore {
     bool enabled = false,
     bool alwaysCloud = false,
   }) async {
-    await _storage.write(key: _kProvider, value: provider);
-    await _storage.write(key: _kApiKey, value: apiKey);
-    await _storage.write(key: _kModel, value: model);
-    await _storage.write(key: _kEnabled, value: enabled.toString());
-    await _storage.write(key: _kAlwaysCloud, value: alwaysCloud.toString());
+    final s = _storage;
+    if (s == null) return; // 测试模式：忽略写入
+    await s.write(key: _kProvider, value: provider);
+    await s.write(key: _kApiKey, value: apiKey);
+    await s.write(key: _kModel, value: model);
+    await s.write(key: _kEnabled, value: enabled.toString());
+    await s.write(key: _kAlwaysCloud, value: alwaysCloud.toString());
   }
 
   Future<AiConfig> load() async {
-    final enabled = await _storage.read(key: _kEnabled);
-    final always = await _storage.read(key: _kAlwaysCloud);
+    if (_testConfig != null) return _testConfig!;
+    final s = _storage!;
+    final enabled = await s.read(key: _kEnabled);
+    final always = await s.read(key: _kAlwaysCloud);
     return AiConfig(
-      provider: await _storage.read(key: _kProvider),
-      apiKey: await _storage.read(key: _kApiKey),
-      model: await _storage.read(key: _kModel),
+      provider: await s.read(key: _kProvider),
+      apiKey: await s.read(key: _kApiKey),
+      model: await s.read(key: _kModel),
       enabled: enabled == 'true',
       alwaysCloud: always == 'true',
     );
   }
 
   Future<void> clear() async {
-    await _storage.deleteAll();
+    final s = _storage;
+    if (s == null) return;
+    await s.deleteAll();
   }
 }
 

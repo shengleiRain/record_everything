@@ -56,7 +56,7 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     setState(() => _parsing = true);
-    final parser = ref.read(smartEntryParserProvider);
+    final parser = await ref.read(smartEntryParserProvider.future);
     final draft = await parser.parse(text, source: DraftSource.nl);
     if (!mounted) return;
     setState(() => _parsing = false);
@@ -71,7 +71,7 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
     try {
       final text = await _ocr.recognize(File(xfile.path));
       if (!mounted) return;
-      final parser = ref.read(smartEntryParserProvider);
+      final parser = await ref.read(smartEntryParserProvider.future);
       final draft = await parser.parse(
         text,
         source: DraftSource.ocr,

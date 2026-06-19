@@ -9,6 +9,7 @@ import 'package:record_everything/data/database/database_provider.dart';
 import 'package:record_everything/features/smart_entry/models/draft_item.dart';
 import 'package:record_everything/features/smart_entry/pages/smart_entry_confirm_page.dart';
 import 'package:record_everything/features/smart_entry/pages/smart_entry_input_page.dart';
+import 'package:record_everything/features/smart_entry/services/secure_key_store.dart';
 
 void main() {
   late AppDatabase db;
@@ -20,6 +21,7 @@ void main() {
   tearDown(() async => db.close());
 
   /// 用 go_router 挂载 input + confirm，路径与真实 appRouter 一致（/smart-entry/*）。
+  /// override secureKeyStoreProvider 以避免依赖原生 FlutterSecureStorage。
   Future<void> pumpApp(WidgetTester tester) async {
     final router = GoRouter(
       initialLocation: '/smart-entry/input',
@@ -37,7 +39,10 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(db)],
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          secureKeyStoreProvider.overrideWithValue(_FakeSecureKeyStore()),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -82,4 +87,9 @@ void main() {
     await pumpApp(tester);
     expect(find.byKey(const ValueKey('smart-entry-voice-btn')), findsOneWidget);
   });
+}
+
+/// 测试用 FakeSecureKeyStore：不依赖原生 FlutterSecureStorage。
+class _FakeSecureKeyStore extends SecureKeyStore {
+  _FakeSecureKeyStore() : super.forTesting(const AiConfig());
 }
