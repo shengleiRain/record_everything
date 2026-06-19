@@ -19,6 +19,7 @@ import '../../features/search/search_page.dart';
 import '../../features/smart_entry/models/draft_item.dart';
 import '../../features/smart_entry/pages/smart_entry_confirm_page.dart';
 import '../../features/smart_entry/pages/smart_entry_input_page.dart';
+import '../../features/smart_entry/pages/ai_assistant_settings_page.dart';
 
 int _currentIndex(GoRouterState state) {
   final path = state.uri.path;
@@ -170,6 +171,10 @@ final appRouter = GoRouter(
             GoRoute(
               path: 'recycle',
               builder: (context, state) => const RecycleBinPage(),
+            ),
+            GoRoute(
+              path: 'ai-assistant',
+              builder: (context, state) => const AiAssistantSettingsPage(),
             ),
           ],
         ),

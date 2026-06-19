@@ -64,6 +64,12 @@ class SettingsPage extends ConsumerWidget {
                 subtitle: '恢复误删事项和账单',
                 onTap: () => context.push('/settings/recycle'),
               ),
+              _SettingsRowData(
+                icon: 'AI',
+                title: 'AI 助手',
+                subtitle: '智能输入 / BYOK 配置',
+                onTap: () => context.push('/settings/ai-assistant'),
+              ),
             ],
           ),
           const SizedBox(height: 12),
