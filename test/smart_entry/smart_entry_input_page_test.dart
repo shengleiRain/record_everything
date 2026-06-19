@@ -77,4 +77,9 @@ void main() {
     await pumpApp(tester);
     expect(find.byKey(const ValueKey('smart-entry-ocr-btn')), findsOneWidget);
   });
+
+  testWidgets('语音入口存在', (tester) async {
+    await pumpApp(tester);
+    expect(find.byKey(const ValueKey('smart-entry-voice-btn')), findsOneWidget);
+  });
 }

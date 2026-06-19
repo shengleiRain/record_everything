@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../models/draft_item.dart';
@@ -22,7 +23,34 @@ class SmartEntryInputPage extends ConsumerStatefulWidget {
 class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
   final _controller = TextEditingController();
   final _ocr = OcrService();
+  final _speech = SpeechToText();
   bool _parsing = false;
+  bool _speechAvailable = false;
+
+  Future<void> _initSpeech() async {
+    _speechAvailable = await _speech.initialize();
+  }
+
+  Future<void> _listen() async {
+    if (!_speechAvailable) {
+      await _initSpeech();
+    }
+    if (!_speechAvailable) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('设备不支持语音输入，请用键盘的麦克风')),
+      );
+      return;
+    }
+    await _speech.listen(
+      onResult: (r) {
+        if (r.finalResult) {
+          _controller.text = _controller.text + r.recognizedWords;
+        }
+      },
+      localeId: 'zh_CN',
+    );
+  }
 
   Future<void> _parse() async {
     final text = _controller.text.trim();
@@ -110,6 +138,13 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
               icon: const Icon(Icons.photo_camera_outlined),
               label: const Text('拍照 / 选图记账'),
               onPressed: _parsing ? null : _pickAndRecognize,
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: const ValueKey('smart-entry-voice-btn'),
+              icon: const Icon(Icons.mic_none_rounded),
+              label: const Text('语音输入'),
+              onPressed: _listen,
             ),
           ],
         ),
