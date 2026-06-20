@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/notifications/notification_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/toast.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -59,6 +60,12 @@ class SettingsPage extends ConsumerWidget {
                 onTap: () => context.push('/settings/data'),
               ),
               _SettingsRowData(
+                icon: '云',
+                title: 'WebDAV 同步',
+                subtitle: '配置云端备份服务器',
+                onTap: () => context.push('/settings/webdav'),
+              ),
+              _SettingsRowData(
                 icon: '收',
                 title: '回收站',
                 subtitle: '恢复误删事项和账单',
@@ -82,9 +89,7 @@ class SettingsPage extends ConsumerWidget {
   }
 
   void _showComingSoon(BuildContext context, String title) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$title 后续开放')));
+    Toast.info(context, '$title 后续开放');
   }
 }
 
