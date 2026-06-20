@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/category_icon_options.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/toast.dart';
 import '../../../data/database/app_database.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../../../shared/widgets/form_save_mixin.dart';
@@ -117,9 +118,7 @@ class _CategoryManagementPageState
         .where((row) => row.id != category.id && !row.isHidden)
         .toList();
     if (targets.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('没有可合并的目标分类')));
+      Toast.info(context, '没有可合并的目标分类');
       return;
     }
 
@@ -167,15 +166,11 @@ class _CategoryManagementPageState
     try {
       await ref.read(categoryNotifierProvider.notifier).delete(category.id);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('已处理 ${category.name}')));
+        Toast.info(context, '已处理 ${category.name}');
       }
     } on Object catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
+        Toast.error(context, error.toString());
       }
     }
   }

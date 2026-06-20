@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/toast.dart';
 import '../models/draft_item.dart';
 import '../providers/smart_entry_providers.dart';
 import '../widgets/draft_item_card.dart';
@@ -35,16 +36,12 @@ class _SmartEntryConfirmPageState extends ConsumerState<SmartEntryConfirmPage> {
 
     if (result.failed.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已保存 ${result.saved.length} 条')),
-      );
+      Toast.success(context, '已保存 ${result.saved.length} 条');
       context.pop();
     } else {
       setState(() => _items = result.failed); // 保留失败项供重试
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('部分保存失败 ${result.failed.length} 条，请核对')),
-      );
+      Toast.error(context, '部分保存失败 ${result.failed.length} 条，请核对');
     }
   }
 

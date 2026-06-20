@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/form_draft_store.dart';
+import '../../../core/utils/toast.dart';
 import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../domain/enums/bill_amount_type.dart';
@@ -384,9 +385,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
 
   Future<void> _save() async {
     if (_isReadonly) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('账单已删除，不可编辑')));
+      Toast.error(context, '账单已删除，不可编辑');
       return;
     }
     if (!_formKey.currentState!.validate()) return;

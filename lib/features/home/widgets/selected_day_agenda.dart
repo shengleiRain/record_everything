@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utils/toast.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../bill/providers/bill_providers.dart';
 import '../../bill/widgets/bill_detail_sheet.dart';
@@ -134,9 +135,7 @@ class SelectedDayAgenda extends ConsumerWidget {
       onCancel: () async {
         await ref.read(lifeItemNotifierProvider.notifier).cancel(lifeItem.id);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('已取消事项')));
+        Toast.info(context, '已取消事项');
       },
     );
   }

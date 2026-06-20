@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../../domain/enums/item_status.dart';
 import '../../../domain/enums/amount_type.dart';
+import '../../../core/utils/toast.dart';
 import '../../../domain/enums/repeat_period.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/form_draft_store.dart';
@@ -344,9 +345,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   Future<void> _save() async {
     // 守卫：终态/已删除事项整页只读，禁止任何写入（防绕过 UI）。
     if (_isReadonly) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('事项已完结，不可编辑')));
+      Toast.error(context, '事项已完结，不可编辑');
       return;
     }
     if (!_formKey.currentState!.validate()) return;

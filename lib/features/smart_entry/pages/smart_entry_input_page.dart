@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import '../../../core/utils/toast.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../models/draft_item.dart';
 import '../providers/smart_entry_providers.dart';
@@ -37,9 +39,7 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
     }
     if (!_speechAvailable) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('设备不支持语音输入，请用键盘的麦克风')),
-      );
+      Toast.error(context, '设备不支持语音输入，请用键盘的麦克风');
       return;
     }
     await _speech.listen(
@@ -83,9 +83,7 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _parsing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('识别失败，请重试或换个清晰的图片')),
-      );
+      Toast.error(context, '识别失败，请重试或换个清晰的图片');
     }
   }
 

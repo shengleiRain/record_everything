@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/utils/toast.dart';
+
 /// Manages the "saving" lifecycle for a form [State].
 ///
 /// Every edit/create form in the app follows the same pattern:
@@ -53,9 +55,7 @@ mixin FormSaveMixin<T extends StatefulWidget> on State<T> {
       return true;
     } on Object catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage ?? '保存失败：$error')),
-        );
+        Toast.error(context, errorMessage ?? '保存失败：$error');
       }
       return false;
     } finally {

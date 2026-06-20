@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/toast.dart';
 import '../providers/smart_entry_providers.dart';
 import '../services/secure_key_store.dart';
 
@@ -53,9 +54,7 @@ class _AiAssistantSettingsPageState
     // 刷新 parser provider 使新配置生效。
     ref.invalidate(smartEntryParserProvider);
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已保存')));
+    Toast.success(context, '已保存');
   }
 
   @override

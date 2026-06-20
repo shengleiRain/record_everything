@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/utils/toast.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../data/database/app_database.dart';
 import '../providers/life_item_providers.dart';
@@ -201,9 +202,7 @@ class LifeItemListPage extends ConsumerWidget {
       onCancel: () async {
         await ref.read(lifeItemNotifierProvider.notifier).cancel(item.id);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('已取消事项')));
+        Toast.info(context, '已取消事项');
       },
     );
   }
@@ -228,9 +227,7 @@ class LifeItemListPage extends ConsumerWidget {
   ) async {
     await ref.read(lifeItemNotifierProvider.notifier).reopen(item.id);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已重新打开事项')));
+    Toast.info(context, '已重新打开事项');
   }
 }
 

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/form_draft_store.dart';
 import '../../../core/utils/money_formatter.dart';
+import '../../../core/utils/toast.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/repositories/project_repository.dart';
@@ -199,9 +200,7 @@ class _ProjectTemplateEditPageState
         .map((step) => step.toInput())
         .toList(growable: false);
     if (steps.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('至少保留一个模板节点')));
+      Toast.info(context, '至少保留一个模板节点');
       return;
     }
 

@@ -89,7 +89,7 @@ void main() {
   });
 
   testWidgets(
-      'runSave swallows errors, shows a SnackBar, and returns false '
+      'runSave swallows errors, shows a Toast, and returns false '
       '(onSuccess not called)', (tester) async {
     var succeeded = false;
 
@@ -106,9 +106,12 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.byType(SnackBar), findsOneWidget);
     expect(find.textContaining('保存失败'), findsOneWidget);
     expect(succeeded, isFalse);
+
+    // Advance past Toast auto-dismiss timer.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
   });
 
   testWidgets('runSave returns true and calls onSuccess on success',
@@ -127,6 +130,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(succeeded, isTrue);
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.byType(SnackBar), findsNothing); // No SnackBar anymore
   });
 }

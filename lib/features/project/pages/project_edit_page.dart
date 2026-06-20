@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/form_draft_store.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/utils/toast.dart';
 import '../../../core/widgets/date_field.dart';
 import '../../../core/widgets/section_card.dart';
 import '../../../data/database/app_database.dart';
@@ -335,9 +336,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   Future<void> _save() async {
     // 守卫：终态/已删除项目整页只读，禁止任何写入（防绕过 UI）。
     if (_isReadonly) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('项目已完结，不可编辑')));
+      Toast.error(context, '项目已完结，不可编辑');
       return;
     }
     if (!_formKey.currentState!.validate()) return;

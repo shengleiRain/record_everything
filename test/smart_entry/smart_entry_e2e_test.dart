@@ -77,7 +77,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
 
-    // 验证 SnackBar
+    // 验证 Toast
     expect(find.textContaining('已保存'), findsOneWidget);
 
     // 验证落库
@@ -85,6 +85,9 @@ void main() {
     expect(bills, hasLength(1));
     expect(bills.first.title, '午餐');
     expect(bills.first.amount, 2500);
+    // Advance past Toast auto-dismiss timer.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
   });
 
   testWidgets('一句话拆多条：事项+账单同时入库', (tester) async {
@@ -113,6 +116,9 @@ void main() {
     final items = await db.lifeItemDao.getAll();
     expect(bills, hasLength(1));
     expect(items, isNotEmpty); // 开会 → lifeItem
+    // Advance past Toast auto-dismiss timer.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
   });
 }
 

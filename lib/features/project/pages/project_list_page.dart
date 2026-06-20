@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
+import '../../../core/utils/toast.dart';
 import '../../../data/database/app_database.dart';
 import '../../../domain/enums/project_status.dart';
 import '../../settings/providers/settings_providers.dart';
@@ -220,9 +221,7 @@ class _ProjectCategorySection extends ConsumerWidget {
         .read(projectNotifierProvider.notifier)
         .changeStatus(project: project, next: ProjectStatus.archived);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已归档项目')));
+    Toast.info(context, '已归档项目');
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, Project project) {

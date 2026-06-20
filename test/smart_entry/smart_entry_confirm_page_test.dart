@@ -118,7 +118,7 @@ void main() {
     expect(find.textContaining('没识别到'), findsOneWidget);
   });
 
-  testWidgets('保存全部后落库并显示成功 SnackBar', (tester) async {
+  testWidgets('保存全部后落库并显示成功 Toast', (tester) async {
     await pumpConfirm(
       tester,
       items: [
@@ -140,6 +140,9 @@ void main() {
     expect(find.textContaining('已保存'), findsOneWidget);
     // 验证落库
     expect((await db.billRecordDao.getAll()).length, 1);
+    // Advance past Toast auto-dismiss timer.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
   });
 }
 

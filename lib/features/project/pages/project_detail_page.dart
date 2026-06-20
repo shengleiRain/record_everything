@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/utils/toast.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/card_parts.dart';
 import '../../../core/widgets/deleted_entity_banner.dart';
@@ -1034,9 +1035,7 @@ class _ProjectFlowCard extends ConsumerWidget {
   ) async {
     await ref.read(lifeItemNotifierProvider.notifier).complete(item.id);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已完成事项')));
+    Toast.info(context, '已完成事项');
   }
 
   Future<void> _reopenItem(
@@ -1046,9 +1045,7 @@ class _ProjectFlowCard extends ConsumerWidget {
   ) async {
     await ref.read(lifeItemNotifierProvider.notifier).reopen(item.id);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已重新打开事项')));
+    Toast.info(context, '已重新打开事项');
   }
 
   Future<void> _deferItem(
@@ -1069,9 +1066,7 @@ class _ProjectFlowCard extends ConsumerWidget {
     if (picked == null) return;
     await ref.read(lifeItemNotifierProvider.notifier).defer(item.id, picked);
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已延期事项')));
+    Toast.info(context, '已延期事项');
   }
 
   void _confirmDeleteItem(BuildContext context, WidgetRef ref, LifeItem item) {

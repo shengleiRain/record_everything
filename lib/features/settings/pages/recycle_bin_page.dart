@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/toast.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/database_provider.dart';
 import '../../bill/providers/bill_providers.dart';
@@ -101,27 +102,21 @@ class _RecycleBinPageState extends ConsumerState<RecycleBinPage> {
   Future<void> _restoreProject(Project project) async {
     await ref.read(projectNotifierProvider.notifier).restore(project.id);
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('项目已恢复')));
+    Toast.success(context, '项目已恢复');
     _refresh();
   }
 
   Future<void> _restoreItem(LifeItem item) async {
     await ref.read(lifeItemRepoProvider).restoreItem(item.id);
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('事项已恢复')));
+    Toast.success(context, '事项已恢复');
     _refresh();
   }
 
   Future<void> _restoreBill(BillRecord bill) async {
     await ref.read(billRepoProvider).restoreRecord(bill.id);
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('账单已恢复')));
+    Toast.success(context, '账单已恢复');
     _refresh();
   }
 
@@ -135,9 +130,7 @@ class _RecycleBinPageState extends ConsumerState<RecycleBinPage> {
             .read(projectNotifierProvider.notifier)
             .permanentDelete(project.id);
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('项目已永久删除')));
+        Toast.success(context, '项目已永久删除');
         _refresh();
       },
     );
@@ -149,9 +142,7 @@ class _RecycleBinPageState extends ConsumerState<RecycleBinPage> {
       onConfirm: () async {
         await ref.read(lifeItemRepoProvider).permanentDeleteItem(item.id);
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('事项已永久删除')));
+        Toast.success(context, '事项已永久删除');
         _refresh();
       },
     );
@@ -163,9 +154,7 @@ class _RecycleBinPageState extends ConsumerState<RecycleBinPage> {
       onConfirm: () async {
         await ref.read(billRepoProvider).permanentDeleteRecord(bill.id);
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('账单已永久删除')));
+        Toast.success(context, '账单已永久删除');
         _refresh();
       },
     );

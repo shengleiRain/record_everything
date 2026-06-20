@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../../core/utils/toast.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/card_parts.dart';
 import '../../../core/widgets/sheet_action_layout.dart';
@@ -143,9 +144,7 @@ Future<void> showLifeItemDetailSheet(
                               .reopen(item.id);
                           if (!context.mounted) return;
                           Navigator.of(sheetContext).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('已重新打开事项')),
-                          );
+                          Toast.info(context, '已重新打开事项');
                         },
                         icon: const Icon(Icons.restart_alt),
                         label: const Text('重新打开'),
@@ -246,9 +245,7 @@ void _showCompleteAction(BuildContext context, WidgetRef ref, LifeItem item) {
       await ref.read(lifeItemNotifierProvider.notifier).cancel(item.id);
       if (!context.mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已取消事项')));
+      Toast.info(context, '已取消事项');
     },
   );
 }
@@ -267,9 +264,7 @@ Future<void> _defer(BuildContext context, WidgetRef ref, LifeItem item) async {
   if (picked == null) return;
   await ref.read(lifeItemNotifierProvider.notifier).defer(item.id, picked);
   if (!context.mounted) return;
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(const SnackBar(content: Text('已延期事项')));
+  Toast.info(context, '已延期事项');
 }
 
 void _confirmDelete(
