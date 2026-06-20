@@ -72,7 +72,7 @@ Widget _buildShell(BuildContext context, GoRouterState state, Widget child) {
   );
 }
 
-final appRouter = GoRouter(
+GoRouter createAppRouter() => GoRouter(
   initialLocation: '/home',
   redirect: (context, state) {
     // 处理 lifeitems:// URI scheme（来自 App Shortcuts / Widget）。
@@ -194,3 +194,6 @@ final appRouter = GoRouter(
     ),
   ],
 );
+
+/// 应用全局路由实例。
+final GoRouter appRouter = createAppRouter();
