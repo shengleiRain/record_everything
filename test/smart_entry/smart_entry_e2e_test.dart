@@ -6,9 +6,12 @@ import 'package:go_router/go_router.dart';
 
 import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/data/database/database_provider.dart';
+import 'package:record_everything/data/repositories/bill_record_repository.dart';
+import 'package:record_everything/data/repositories/life_item_repository.dart';
 import 'package:record_everything/features/smart_entry/models/draft_item.dart';
 import 'package:record_everything/features/smart_entry/pages/smart_entry_confirm_page.dart';
 import 'package:record_everything/features/smart_entry/pages/smart_entry_input_page.dart';
+import 'package:record_everything/features/smart_entry/providers/smart_entry_providers.dart';
 import 'package:record_everything/features/smart_entry/services/secure_key_store.dart';
 
 void main() {
@@ -39,6 +42,9 @@ void main() {
       ProviderScope(
         overrides: [
           databaseProvider.overrideWithValue(db),
+          smartEntryPersistProvider.overrideWith(
+            (ref) => _TestPersistService(ref, db),
+          ),
           secureKeyStoreProvider.overrideWithValue(
             SecureKeyStore.forTesting(const AiConfig()),
           ),
@@ -59,7 +65,8 @@ void main() {
     );
     // 点击解析
     await tester.tap(find.byKey(const ValueKey('smart-entry-parse-btn')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     // 确认页显示
     expect(find.text('解析结果'), findsOneWidget);
@@ -67,7 +74,8 @@ void main() {
 
     // 点击保存
     await tester.tap(find.text('保存全部 1 条'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     // 验证 SnackBar
     expect(find.textContaining('已保存'), findsOneWidget);
@@ -87,14 +95,16 @@ void main() {
       '明天下午3点开会,午餐花了25',
     );
     await tester.tap(find.byKey(const ValueKey('smart-entry-parse-btn')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     // 确认页应显示两条
     expect(find.text('解析结果'), findsOneWidget);
     expect(find.text('保存全部 2 条'), findsOneWidget);
 
     await tester.tap(find.text('保存全部 2 条'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.textContaining('已保存'), findsOneWidget);
 
@@ -104,4 +114,38 @@ void main() {
     expect(bills, hasLength(1));
     expect(items, isNotEmpty); // 开会 → lifeItem
   });
+}
+
+class _TestPersistService extends SmartEntryPersistService {
+  _TestPersistService(super.ref, this.db);
+
+  final AppDatabase db;
+
+  @override
+  Future<DraftPersistResult> persist(List<DraftItem> items) async {
+    final saved = <DraftItem>[];
+    for (final item in items) {
+      if (item.kind == DraftKind.bill) {
+        await BillRecordRepository(db).create(
+          title: item.title,
+          amount: item.amountCents ?? 0,
+          amountType: item.amountType == DraftAmountType.income
+              ? 'income'
+              : 'expense',
+          billTime: item.time,
+          categoryId: item.categoryId,
+        );
+      } else {
+        await LifeItemRepository(db).create(
+          title: item.title,
+          amount: item.amountCents,
+          amountType: item.amountType.value,
+          dueTime: item.time,
+          categoryId: item.categoryId,
+        );
+      }
+      saved.add(item);
+    }
+    return DraftPersistResult(saved: saved, failed: const []);
+  }
 }

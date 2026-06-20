@@ -17,7 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:record_everything/core/router/app_router.dart'
-    show createAppRouter;
+    show createAppRouter, lifeItemsDeepLinkPath;
 import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/data/database/database_provider.dart';
@@ -194,7 +194,8 @@ void main() {
       expect(saved['widget_monthly_expense'], isA<String>());
 
       // widget_items 是 JSON 数组，最多 3 条。
-      final items = jsonDecode(saved['widget_items'] as String) as List<dynamic>;
+      final items =
+          jsonDecode(saved['widget_items'] as String) as List<dynamic>;
       expect(items.length, lessThanOrEqualTo(3));
       expect(items, isNotEmpty);
       expect(items.first, isA<Map>());
@@ -208,21 +209,24 @@ void main() {
     });
 
     test('Deep link URI scheme 映射：lifeitems:// 路由重定向逻辑', () {
-      // 复刻 app_router.dart 的 redirect 逻辑，验证 3 个 shortcuts 的 URI 都能正确映射。
-      expect(_applyRedirectLogic('lifeitems://smart-entry/input'),
-          '/smart-entry/input');
-      expect(_applyRedirectLogic('lifeitems://bills/new'), '/bills/new');
-      expect(_applyRedirectLogic('lifeitems://items'), '/items');
+      // 调用 app_router.dart 的真实 redirect helper，验证 shortcuts URI 都能正确映射。
+      expect(
+        lifeItemsDeepLinkPath(Uri.parse('lifeitems://smart-entry/input')),
+        '/smart-entry/input',
+      );
+      expect(
+        lifeItemsDeepLinkPath(Uri.parse('lifeitems://bills/new')),
+        '/bills/new',
+      );
+      expect(lifeItemsDeepLinkPath(Uri.parse('lifeitems://items/')), '/items');
       // 非 scheme 的普通路径不重定向。
-      expect(_applyRedirectLogic('/home'), null);
-      expect(_applyRedirectLogic('https://example.com'), null);
+      expect(lifeItemsDeepLinkPath(Uri.parse('/home')), null);
+      expect(lifeItemsDeepLinkPath(Uri.parse('https://example.com')), null);
     });
   });
 
   group('阶段三：智能洞察与自动化', () {
-    testWidgets('统计页趋势图表（每日支出 / 分类趋势）在有数据时渲染', (
-      tester,
-    ) async {
+    testWidgets('统计页趋势图表（每日支出 / 分类趋势）在有数据时渲染', (tester) async {
       final db = await pumpRealApp(tester);
       await _seedData(db);
 
@@ -243,9 +247,7 @@ void main() {
       expect(find.text('暂无数据'), findsNothing);
     });
 
-    testWidgets('自动分类推荐 chip：账单编辑页输入历史标题后出现并可采纳', (
-      tester,
-    ) async {
+    testWidgets('自动分类推荐 chip：账单编辑页输入历史标题后出现并可采纳', (tester) async {
       final harness = await pumpRealApp(tester);
 
       // 先落库一条带分类的“午餐”账单，作为历史样本。
@@ -314,13 +316,4 @@ Future<void> _seedData(AppDatabase db) async {
     billTime: DateTime.now(),
     categoryId: incomeCat.id,
   );
-}
-
-/// 复刻 app_router.dart redirect 逻辑，仅用于单测验证映射规则。
-String? _applyRedirectLogic(String input) {
-  final uri = Uri.parse(input);
-  if (uri.scheme == 'lifeitems') {
-    return '/${uri.host}${uri.path}';
-  }
-  return null;
 }

@@ -4,8 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/data/repositories/life_item_repository.dart';
 import 'package:record_everything/data/repositories/bill_record_repository.dart';
-import 'package:record_everything/domain/enums/item_status.dart';
-import 'package:record_everything/domain/models/repeat_rule.dart';
 
 /// 生活事项全业务路径测试。
 ///
@@ -503,28 +501,19 @@ void main() {
     test('匹配关键词推荐证件过期模板', () async {
       final templates = await repo.recommendTemplates('护照快到期了');
       expect(templates, isNotEmpty);
-      expect(
-        templates.any((t) => t.templateKey == 'document_expiry'),
-        isTrue,
-      );
+      expect(templates.any((t) => t.templateKey == 'document_expiry'), isTrue);
     });
 
     test('匹配关键词推荐药品补货模板', () async {
       final templates = await repo.recommendTemplates('感冒药吃完了要补货');
       expect(templates, isNotEmpty);
-      expect(
-        templates.any((t) => t.templateKey == 'medicine_restock'),
-        isTrue,
-      );
+      expect(templates.any((t) => t.templateKey == 'medicine_restock'), isTrue);
     });
 
     test('匹配关键词推荐家庭账单模板', () async {
       final templates = await repo.recommendTemplates('电费账单到期');
       expect(templates, isNotEmpty);
-      expect(
-        templates.any((t) => t.templateKey == 'household_bill'),
-        isTrue,
-      );
+      expect(templates.any((t) => t.templateKey == 'household_bill'), isTrue);
     });
 
     test('无匹配关键词不推荐', () async {

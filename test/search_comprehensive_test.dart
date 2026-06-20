@@ -20,12 +20,12 @@ import 'package:record_everything/features/search/search_service.dart';
 /// - 混合搜索（事项+账单+项目）
 /// - 无匹配返回空结果
 void main() {
-  List<LifeItem> _items = [];
-  List<BillRecord> _bills = [];
-  List<Project> _projects = [];
+  List<LifeItem> items = [];
+  List<BillRecord> bills = [];
+  List<Project> projects = [];
 
   setUp(() {
-    _items = [
+    items = [
       LifeItem(
         id: 1,
         title: '咖啡豆补货',
@@ -73,7 +73,7 @@ void main() {
       ),
     ];
 
-    _bills = [
+    bills = [
       BillRecord(
         id: 10,
         lifeItemId: null,
@@ -112,7 +112,7 @@ void main() {
       ),
     ];
 
-    _projects = [
+    projects = [
       Project(
         id: 20,
         title: '王先生婚礼跟拍',
@@ -148,9 +148,9 @@ void main() {
     test('按标题搜索事项', () {
       final results = SearchService.search(
         query: '咖啡',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results.any((r) => r.title == '咖啡豆补货'), isTrue);
     });
@@ -158,9 +158,9 @@ void main() {
     test('按描述搜索事项', () {
       final results = SearchService.search(
         query: '补货',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results.any((r) => r.title == '咖啡豆补货'), isTrue);
     });
@@ -168,11 +168,13 @@ void main() {
     test('搜索结果包含事项详情', () {
       final results = SearchService.search(
         query: '咖啡豆',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
-      final itemResult = results.firstWhere((r) => r.kind == SearchResultKind.lifeItem);
+      final itemResult = results.firstWhere(
+        (r) => r.kind == SearchResultKind.lifeItem,
+      );
       expect(itemResult.lifeItem, isNotNull);
       expect(itemResult.lifeItem!.id, 1);
     });
@@ -182,9 +184,9 @@ void main() {
     test('按标题搜索账单', () {
       final results = SearchService.search(
         query: '超市',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results.any((r) => r.title == '超市购物'), isTrue);
     });
@@ -192,9 +194,9 @@ void main() {
     test('按备注搜索账单', () {
       final results = SearchService.search(
         query: '滤纸',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results.any((r) => r.title == '超市购物'), isTrue);
     });
@@ -202,11 +204,13 @@ void main() {
     test('搜索结果包含账单详情', () {
       final results = SearchService.search(
         query: '工资',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
-      final billResult = results.firstWhere((r) => r.kind == SearchResultKind.billRecord);
+      final billResult = results.firstWhere(
+        (r) => r.kind == SearchResultKind.billRecord,
+      );
       expect(billResult.billRecord, isNotNull);
       expect(billResult.billRecord!.id, 11);
     });
@@ -216,9 +220,9 @@ void main() {
     test('按标题搜索项目', () {
       final results = SearchService.search(
         query: '婚礼',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results.any((r) => r.title == '王先生婚礼跟拍'), isTrue);
     });
@@ -226,9 +230,9 @@ void main() {
     test('按参与人搜索项目', () {
       final results = SearchService.search(
         query: '王先生',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results.any((r) => r.title == '王先生婚礼跟拍'), isTrue);
     });
@@ -236,9 +240,9 @@ void main() {
     test('按备注搜索项目', () {
       final results = SearchService.search(
         query: '摄影',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results.any((r) => r.title == '王先生婚礼跟拍'), isTrue);
     });
@@ -246,11 +250,13 @@ void main() {
     test('搜索结果包含项目详情', () {
       final results = SearchService.search(
         query: '证件照',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
-      final projectResult = results.firstWhere((r) => r.kind == SearchResultKind.project);
+      final projectResult = results.firstWhere(
+        (r) => r.kind == SearchResultKind.project,
+      );
       expect(projectResult.project, isNotNull);
       expect(projectResult.project!.id, 21);
     });
@@ -260,9 +266,9 @@ void main() {
     test('空查询返回空结果', () {
       final results = SearchService.search(
         query: '',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results, isEmpty);
     });
@@ -270,27 +276,21 @@ void main() {
     test('空白查询返回空结果', () {
       final results = SearchService.search(
         query: '   ',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results, isEmpty);
     });
 
     test('大小写不敏感搜索', () {
-      final results = SearchService.search(
-        query: 'COFFEE',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
-      );
       // 咖啡的英文不在数据中，但大小写不敏感应该对中文也生效
       // 测试中文大小写
       final results2 = SearchService.search(
         query: '咖啡',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results2, isNotEmpty);
     });
@@ -298,9 +298,9 @@ void main() {
     test('无匹配返回空结果', () {
       final results = SearchService.search(
         query: '完全不存在的关键词xyz123',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results, isEmpty);
     });
@@ -309,9 +309,9 @@ void main() {
       // 用"咖啡"搜索匹配事项（7月10日）和账单（7月5日）
       final results = SearchService.search(
         query: '咖啡',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       expect(results.length, greaterThanOrEqualTo(2));
       for (var i = 0; i < results.length - 1; i++) {
@@ -327,9 +327,9 @@ void main() {
       // "咖啡" 匹配事项标题和账单备注
       final results = SearchService.search(
         query: '咖啡',
-        lifeItems: _items,
-        billRecords: _bills,
-        projects: _projects,
+        lifeItems: items,
+        billRecords: bills,
+        projects: projects,
       );
       final kinds = results.map((r) => r.kind).toSet();
       expect(kinds, contains(SearchResultKind.lifeItem));
