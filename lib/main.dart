@@ -16,7 +16,7 @@ void main() async {
     ProviderScope(
       overrides: [
         backupFileGatewayProvider.overrideWithValue(
-          const FilePickerBackupFileGateway(),
+          FilePickerBackupFileGateway(),
         ),
         reminderSchedulerProvider.overrideWithValue(
           const NotificationReminderScheduler(),

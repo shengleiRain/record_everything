@@ -33,7 +33,7 @@ final backupServiceProvider = Provider<BackupService>((ref) {
 });
 
 final backupFileGatewayProvider = Provider<BackupFileGateway>((ref) {
-  return const UnconfiguredBackupFileGateway();
+  return UnconfiguredBackupFileGateway();
 });
 
 class CategoryNotifier extends Notifier<void> {

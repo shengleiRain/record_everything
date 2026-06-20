@@ -5,8 +5,8 @@ import 'package:file_picker/file_picker.dart';
 
 import 'backup_file_gateway.dart';
 
-class FilePickerBackupFileGateway implements BackupFileGateway {
-  const FilePickerBackupFileGateway();
+class FilePickerBackupFileGateway extends BackupFileGateway {
+  FilePickerBackupFileGateway();
 
   @override
   Future<String?> pickBackupJson() async {

@@ -39,6 +39,8 @@ dependencies:
   flutter_secure_storage: ^10.3.1
   google_mlkit_text_recognition: ^0.15.1
   home_widget: ^0.9.3
+  # WebDAV
+  webdav_client: ^1.2.2
 
 dev_dependencies:
   flutter_test:
