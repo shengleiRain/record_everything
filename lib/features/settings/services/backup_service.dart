@@ -23,6 +23,8 @@ class BackupImportSummary {
     this.projectTemplatesImported = 0,
     this.projectTemplateStepsImported = 0,
     this.itemTemplatesImported = 0,
+    this.accountsImported = 0,
+    this.monthlyBudgetsImported = 0,
   });
 
   final int categoriesImported;
@@ -33,6 +35,8 @@ class BackupImportSummary {
   final int projectTemplatesImported;
   final int projectTemplateStepsImported;
   final int itemTemplatesImported;
+  final int accountsImported;
+  final int monthlyBudgetsImported;
 }
 
 class BackupService {
@@ -59,8 +63,11 @@ class BackupService {
       projectTemplateSteps.addAll(steps);
     }
 
+    final accounts = await _db.select(_db.accounts).get();
+    final monthlyBudgets = await _db.select(_db.monthlyBudgets).get();
+
     final data = {
-      'version': 6,
+      'version': 7,
       'exportedAt': DateTime.now().toIso8601String(),
       'categories': categories.map(_categoryToMap).toList(),
       'itemTemplates': itemTemplates.map(_itemTemplateToMap).toList(),
@@ -72,6 +79,8 @@ class BackupService {
       'lifeItems': lifeItems.map(_lifeItemToMap).toList(),
       'billRecords': billRecords.map(_billRecordToMap).toList(),
       'projectEvents': projectEvents.map(_projectEventToMap).toList(),
+      'accounts': accounts.map(_accountToMap).toList(),
+      'monthlyBudgets': monthlyBudgets.map(_monthlyBudgetToMap).toList(),
     };
 
     return const JsonEncoder.withIndent('  ').convert(data);
@@ -97,6 +106,12 @@ class BackupService {
         : <Map<String, Object?>>[];
     final itemTemplates = version >= 5
         ? data['itemTemplates'] as List<Map<String, Object?>>
+        : <Map<String, Object?>>[];
+    final accounts = version >= 7
+        ? data['accounts'] as List<Map<String, Object?>>
+        : <Map<String, Object?>>[];
+    final monthlyBudgets = version >= 7
+        ? data['monthlyBudgets'] as List<Map<String, Object?>>
         : <Map<String, Object?>>[];
 
     return _db.transaction(() async {
@@ -407,6 +422,55 @@ class BackupService {
         projectEventsImported++;
       }
 
+      // Import accounts
+      var accountsImported = 0;
+      for (final map in accounts) {
+        final name = _requiredString(map, 'name');
+        final type = _optionalString(map, 'type') ?? 'cash';
+        final isDefault = _optionalBool(map, 'isDefault') ?? false;
+        final createdAt = _optionalDate(map, 'createdAt') ?? DateTime.now();
+
+        final existingAccounts = await _db.select(_db.accounts).get();
+        final existing = existingAccounts.where(
+          (a) => a.name == name && a.type == type,
+        ).firstOrNull;
+        if (existing != null) continue;
+
+        await _db.into(_db.accounts).insert(
+          AccountsCompanion.insert(
+            name: name,
+            type: Value(type),
+            isDefault: Value(isDefault),
+            createdAt: Value(createdAt),
+          ),
+        );
+        accountsImported++;
+      }
+
+      // Import monthly budgets
+      var monthlyBudgetsImported = 0;
+      for (final map in monthlyBudgets) {
+        final monthStart = _requiredDate(map, 'monthStart');
+        final amount = _requiredInt(map, 'amount');
+        final createdAt = _optionalDate(map, 'createdAt') ?? DateTime.now();
+        final updatedAt = _optionalDate(map, 'updatedAt') ?? createdAt;
+
+        final existing = await (_db.select(_db.monthlyBudgets)
+          ..where((t) => t.monthStart.equals(monthStart))
+        ).getSingleOrNull();
+        if (existing != null) continue;
+
+        await _db.into(_db.monthlyBudgets).insert(
+          MonthlyBudgetsCompanion.insert(
+            monthStart: monthStart,
+            amount: amount,
+            createdAt: Value(createdAt),
+            updatedAt: Value(updatedAt),
+          ),
+        );
+        monthlyBudgetsImported++;
+      }
+
       return BackupImportSummary(
         categoriesImported: categoriesImported,
         projectsImported: projectsImported,
@@ -416,6 +480,8 @@ class BackupService {
         projectTemplatesImported: projectTemplatesImported,
         projectTemplateStepsImported: projectTemplateStepsImported,
         itemTemplatesImported: itemTemplatesImported,
+        accountsImported: accountsImported,
+        monthlyBudgetsImported: monthlyBudgetsImported,
       );
     });
   }
@@ -437,7 +503,8 @@ class BackupService {
             rawVersion != 3 &&
             rawVersion != 4 &&
             rawVersion != 5 &&
-            rawVersion != 6)) {
+            rawVersion != 6 &&
+            rawVersion != 7)) {
       throw const BackupFormatException('备份版本不受支持');
     }
     final version = rawVersion;
@@ -471,6 +538,13 @@ class BackupService {
       result['itemTemplates'] = _optionalMapList(decoded, 'itemTemplates');
     } else {
       result['itemTemplates'] = <Map<String, Object?>>[];
+    }
+    if (version >= 7) {
+      result['accounts'] = _optionalMapList(decoded, 'accounts');
+      result['monthlyBudgets'] = _optionalMapList(decoded, 'monthlyBudgets');
+    } else {
+      result['accounts'] = <Map<String, Object?>>[];
+      result['monthlyBudgets'] = <Map<String, Object?>>[];
     }
     return result;
   }
@@ -664,4 +738,20 @@ Map<String, Object?> _projectEventToMap(ProjectEvent event) => {
   'eventTime': event.eventTime.toIso8601String(),
   'isSystem': event.isSystem,
   'createdAt': event.createdAt.toIso8601String(),
+};
+
+Map<String, Object?> _accountToMap(Account account) => {
+  'id': account.id,
+  'name': account.name,
+  'type': account.type,
+  'isDefault': account.isDefault,
+  'createdAt': account.createdAt.toIso8601String(),
+};
+
+Map<String, Object?> _monthlyBudgetToMap(MonthlyBudget budget) => {
+  'id': budget.id,
+  'monthStart': budget.monthStart.toIso8601String(),
+  'amount': budget.amount,
+  'createdAt': budget.createdAt.toIso8601String(),
+  'updatedAt': budget.updatedAt.toIso8601String(),
 };
