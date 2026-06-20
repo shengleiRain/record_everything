@@ -34,6 +34,7 @@ void main() {
     expect(find.text('¥25.00'), findsOneWidget);
     expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget); // 低置信
     expect(find.text('未识别到金额'), findsOneWidget);
+    expect(edited, isNull);
 
     await tester.tap(find.byKey(const ValueKey('draft-card-delete')));
     await tester.pump();
@@ -53,11 +54,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: DraftItemCard(
-            item: item,
-            onChanged: (_) {},
-            onDeleted: () {},
-          ),
+          body: DraftItemCard(item: item, onChanged: (_) {}, onDeleted: () {}),
         ),
       ),
     );

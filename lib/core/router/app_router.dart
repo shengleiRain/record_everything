@@ -35,6 +35,17 @@ void _onTap(BuildContext context, int index) {
   context.go(routes[index]);
 }
 
+String? lifeItemsDeepLinkPath(Uri uri) {
+  if (uri.scheme != 'lifeitems') return null;
+  var path = uri.host.isEmpty ? uri.path : '/${uri.host}${uri.path}';
+  if (!path.startsWith('/')) path = '/$path';
+  while (path.length > 1 && path.endsWith('/')) {
+    path = path.substring(0, path.length - 1);
+  }
+  if (uri.hasQuery) return '$path?${uri.query}';
+  return path;
+}
+
 Widget _buildShell(BuildContext context, GoRouterState state, Widget child) {
   return Scaffold(
     body: child,
@@ -76,14 +87,11 @@ GoRouter createAppRouter() => GoRouter(
   initialLocation: '/home',
   redirect: (context, state) {
     // 处理 lifeitems:// URI scheme（来自 App Shortcuts / Widget）。
-    final uri = state.uri;
-    if (uri.scheme == 'lifeitems') {
-      // lifeitems://smart-entry/input → /smart-entry/input
-      // lifeitems://bills/new → /bills/new
-      // lifeitems://items → /items
-      final path = '/${uri.host}${uri.path}';
-      return path;
-    }
+    // lifeitems://smart-entry/input → /smart-entry/input
+    // lifeitems://bills/new → /bills/new
+    // lifeitems://items/ → /items
+    final path = lifeItemsDeepLinkPath(state.uri);
+    if (path != null) return path;
     return null; // 不重定向
   },
   routes: [

@@ -6,8 +6,11 @@ import 'package:go_router/go_router.dart';
 
 import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/data/database/database_provider.dart';
+import 'package:record_everything/data/repositories/bill_record_repository.dart';
+import 'package:record_everything/data/repositories/life_item_repository.dart';
 import 'package:record_everything/features/smart_entry/models/draft_item.dart';
 import 'package:record_everything/features/smart_entry/pages/smart_entry_confirm_page.dart';
+import 'package:record_everything/features/smart_entry/providers/smart_entry_providers.dart';
 
 void main() {
   late AppDatabase db;
@@ -46,7 +49,12 @@ void main() {
     );
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [databaseProvider.overrideWithValue(db)],
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          smartEntryPersistProvider.overrideWith(
+            (ref) => _TestPersistService(ref, db),
+          ),
+        ],
         child: MaterialApp.router(routerConfig: router),
       ),
     );
@@ -127,10 +135,44 @@ void main() {
       ],
     );
     await tester.tap(find.text('保存全部 1 条'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
     expect(find.textContaining('已保存'), findsOneWidget);
     // 验证落库
     expect((await db.billRecordDao.getAll()).length, 1);
   });
 }
 
+class _TestPersistService extends SmartEntryPersistService {
+  _TestPersistService(super.ref, this.db);
+
+  final AppDatabase db;
+
+  @override
+  Future<DraftPersistResult> persist(List<DraftItem> items) async {
+    final saved = <DraftItem>[];
+    for (final item in items) {
+      if (item.kind == DraftKind.bill) {
+        await BillRecordRepository(db).create(
+          title: item.title,
+          amount: item.amountCents ?? 0,
+          amountType: item.amountType == DraftAmountType.income
+              ? 'income'
+              : 'expense',
+          billTime: item.time,
+          categoryId: item.categoryId,
+        );
+      } else {
+        await LifeItemRepository(db).create(
+          title: item.title,
+          amount: item.amountCents,
+          amountType: item.amountType.value,
+          dueTime: item.time,
+          categoryId: item.categoryId,
+        );
+      }
+      saved.add(item);
+    }
+    return DraftPersistResult(saved: saved, failed: const []);
+  }
+}
