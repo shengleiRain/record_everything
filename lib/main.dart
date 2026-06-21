@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +12,7 @@ import 'features/settings/services/file_picker_backup_file_gateway.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initSharedPrefs(); // 预热 SharedPreferences，保证主题/语言首帧可读
   runApp(
     ProviderScope(
       overrides: [

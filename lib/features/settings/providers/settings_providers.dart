@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,45 @@ import '../services/backup_file_gateway.dart';
 import '../services/backup_service.dart';
 import '../services/webdav_backup_file_gateway.dart';
 import '../services/webdav_config_store.dart';
+
+/// 同步访问的 SharedPreferences 实例。
+///
+/// 依赖 [initSharedPrefs] 在 `main()` 中预热，保证首帧前已有实例可读，
+/// 避免主题/语言切换闪烁。spec §6.3。
+late final SharedPreferences sharedPrefsInstance;
+
+/// 初始化 [sharedPrefsInstance]。必须在 runApp 前、main() 中调用一次。
+Future<void> initSharedPrefs() async {
+  sharedPrefsInstance = await SharedPreferences.getInstance();
+}
+
+/// 同步 Provider：返回预热好的 SharedPreferences。
+final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
+  return sharedPrefsInstance;
+});
+
+/// 主题模式（跟随系统/浅色/深色）。spec §6.2。
+final themeModeProvider =
+    NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
+
+class ThemeModeNotifier extends Notifier<ThemeMode> {
+  static const _key = 'app_theme_mode';
+
+  @override
+  ThemeMode build() {
+    final saved = ref.read(sharedPrefsProvider).getString(_key);
+    return switch (saved) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+  }
+
+  Future<void> set(ThemeMode mode) async {
+    state = mode;
+    await ref.read(sharedPrefsProvider).setString(_key, mode.name);
+  }
+}
 
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   return CategoryRepository(ref.watch(databaseProvider));
