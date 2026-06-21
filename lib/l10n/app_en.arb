@@ -1,0 +1,18 @@
+{
+  "@@locale": "en",
+  "appName": "Life Items",
+  "common_save": "Save",
+  "common_cancel": "Cancel",
+  "common_delete": "Delete",
+  "common_confirm": "Confirm",
+  "common_retry": "Retry",
+  "common_ok": "OK",
+  "settings_themeTitle": "Theme",
+  "settings_themeMode_system": "Follow system",
+  "settings_themeMode_light": "Light",
+  "settings_themeMode_dark": "Dark",
+  "settings_languageTitle": "Language",
+  "settings_language_system": "Follow system",
+  "settings_language_zh": "简体中文",
+  "settings_language_en": "English"
+}
