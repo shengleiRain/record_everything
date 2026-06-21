@@ -42,6 +42,8 @@ class SettingsPage extends ConsumerWidget {
           const SizedBox(height: 12),
           _AppearanceGroup(),
           const SizedBox(height: 12),
+          _LanguageGroup(),
+          const SizedBox(height: 12),
           _SettingsGroup(
             rows: [
               _SettingsRowData(
@@ -318,6 +320,70 @@ class _AppearanceGroup extends ConsumerWidget {
             onChanged: (mode) {
               if (mode != null) {
                 ref.read(themeModeProvider.notifier).set(mode);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LanguageGroup extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(localeProvider.notifier);
+    final isSystem = notifier.isFollowingSystem;
+    final current = ref.watch(localeProvider);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight.withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '语',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '语言',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          DropdownButton<String>(
+            value: isSystem ? 'system' : current.languageCode,
+            underline: const SizedBox(),
+            items: const [
+              DropdownMenuItem(value: 'system', child: Text('跟随系统')),
+              DropdownMenuItem(value: 'zh', child: Text('简体中文')),
+              DropdownMenuItem(value: 'en', child: Text('English')),
+            ],
+            onChanged: (value) async {
+              if (value == null) return;
+              if (value == 'system') {
+                await notifier.followSystem();
+              } else {
+                await notifier.set(Locale(value));
               }
             },
           ),

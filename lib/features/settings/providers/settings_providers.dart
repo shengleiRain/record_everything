@@ -55,6 +55,45 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   }
 }
 
+/// 应用语言。null 表示跟随系统。spec §4.4。
+final localeProvider =
+    NotifierProvider<LocaleNotifier, Locale>(LocaleNotifier.new);
+
+class LocaleNotifier extends Notifier<Locale> {
+  static const _key = 'app_locale';
+
+  @override
+  Locale build() {
+    final saved = ref.read(sharedPrefsProvider).getString(_key);
+    if (saved == 'en') return const Locale('en');
+    if (saved == 'zh') return const Locale('zh');
+    return _systemLocale();
+  }
+
+  /// 设置具体语言并持久化。
+  Future<void> set(Locale locale) async {
+    state = locale;
+    await ref.read(sharedPrefsProvider).setString(_key, locale.languageCode);
+  }
+
+  /// 恢复跟随系统。
+  Future<void> followSystem() async {
+    await ref.read(sharedPrefsProvider).remove(_key);
+    state = _systemLocale();
+  }
+
+  /// 是否跟随系统（用于 UI 选中态）。
+  bool get isFollowingSystem =>
+      ref.read(sharedPrefsProvider).getString(_key) == null;
+
+  Locale _systemLocale() {
+    final platform = WidgetsBinding.instance.platformDispatcher.locale;
+    return platform.languageCode == 'en'
+        ? const Locale('en')
+        : const Locale('zh');
+  }
+}
+
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
   return CategoryRepository(ref.watch(databaseProvider));
 });

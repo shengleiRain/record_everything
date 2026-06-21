@@ -9,6 +9,7 @@ import 'core/theme/app_theme.dart';
 import 'features/home/services/widget_sync_service.dart';
 import 'features/settings/providers/settings_providers.dart';
 import 'features/smart_entry/models/draft_item.dart';
+import 'l10n/generated/app_localizations.dart';
 import 'features/smart_entry/providers/smart_entry_providers.dart';
 import 'features/smart_entry/services/share_receiver.dart';
 
@@ -18,9 +19,14 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
     return MaterialApp.router(
+      onGenerateTitle: (context) => AppLocalizations.of(context).appName,
       title: '生活事项',
       debugShowCheckedModeBanner: false,
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
       themeMode: themeMode,
