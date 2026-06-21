@@ -63,7 +63,14 @@ class DailyTrendChart extends StatelessWidget {
             rightTitles:
                 const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
-          gridData: const FlGridData(show: true, drawVerticalLine: false),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (v) => FlLine(
+              color: AppColors.borderLight(context),
+              strokeWidth: 1,
+            ),
+          ),
           borderData: FlBorderData(show: false),
           barGroups: data.asMap().entries.map((entry) {
             final value = entry.value.total / 100;

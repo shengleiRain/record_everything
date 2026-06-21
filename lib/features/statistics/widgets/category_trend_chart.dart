@@ -103,7 +103,13 @@ class CategoryTrendChart extends StatelessWidget {
                   sideTitles: SideTitles(showTitles: false),
                 ),
               ),
-              gridData: const FlGridData(show: true, drawVerticalLine: false),
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                getDrawingHorizontalLine: (v) => FlLine(
+                  strokeWidth: 1,
+                ),
+              ),
               borderData: FlBorderData(show: false),
               barGroups: sortedMonths.asMap().entries.map((entry) {
                 final monthData = months[entry.value]!;
