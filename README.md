@@ -106,6 +106,16 @@
 - 提醒权限设置
 - 数据导入/导出
 - 回收站管理
+- 主题切换：跟随系统 / 浅色 / 深色（设置 → 主题）
+- 语言切换：简体中文、English（设置 → 语言）
+
+### 深色模式与多语言
+- 三种主题模式：跟随系统 / 浅色 / 深色
+- 全应用颜色令牌化（`AppPalette` ThemeExtension），深色模式符合 WCAG AA 对比度标准
+- 多语言支持：简体中文、English，运行时切换
+- 内置分类名随语言切换；用户自建分类原样显示
+- 枚举标签（事项状态、金额类型、重复周期等）通过 i18n key 翻译
+- 智能输入支持中英文双语关键词匹配
 
 ### 智能输入
 - 自然语言一句话创建事项或账单（"明天3点开会，午餐花了25"）
@@ -124,11 +134,12 @@
 |------|------|
 | Flutter 3.41 / Dart 3.11 | 跨平台 UI 框架 |
 | Riverpod 2.6.1 | 状态管理（Provider + StreamProvider + NotifierProvider） |
-| Drift 2.22.1 + SQLite | 本地数据库（10 张表，Schema 版本 10） |
+| Drift 2.22.1 + SQLite | 本地数据库（10 张表，Schema 版本 11） |
 | go_router 14.8.1 | 声明式路由（5 Tab ShellRoute + 子路由） |
 | flutter_local_notifications 18.0.1 | 本地提醒通知 |
 | fl_chart 0.69.2 | 统计图表 |
-| intl 0.19.0 | 日期/时间格式化 |
+| intl 0.20.2 | 日期/时间格式化 |
+| flutter_localizations | 多语言（gen-l10n，中/英） |
 | add_2_calendar 3.1.0 | 日历集成 |
 | file_picker 11.0.2 | 文件选择器（备份导入/导出） |
 | shared_preferences 2.5.5 | 轻量级本地存储 |
