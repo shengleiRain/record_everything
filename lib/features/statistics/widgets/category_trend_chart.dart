@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../data/database/daos/bill_record_dao.dart';
 
 /// 最近 6 个月分类消费趋势堆叠柱状图。spec §3.3。
@@ -21,7 +22,7 @@ class CategoryTrendChart extends StatelessWidget {
         AppColors.income(context),
         AppColors.upcoming(context),
         AppColors.completed(context),
-        const Color(0xFF9C27B0), // 紫色
+        chartPaletteExtras[0], // 紫色
       ];
 
   @override

@@ -199,7 +199,7 @@ class _CategoryGroup extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         children: [
@@ -218,7 +218,7 @@ class _CategoryGroup extends StatelessWidget {
               Divider(
                 height: 1,
                 indent: 56,
-                color: Colors.black.withValues(alpha: 0.06),
+                color: AppColors.borderLight(context),
               ),
           ],
         ],
@@ -346,7 +346,7 @@ class _EmptyState extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Text(
         '暂无分类',
@@ -626,7 +626,7 @@ class _CategoryIconChoice extends StatelessWidget {
             border: Border.all(
               color: selected
                   ? AppColors.primary(context)
-                  : Colors.black.withValues(alpha: 0.08),
+                  : AppColors.border(context),
             ),
           ),
           child: Column(

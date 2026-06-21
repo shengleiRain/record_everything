@@ -1019,7 +1019,7 @@ class _TemplateOptionFrame extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? AppColors.primary(context)
-                : Colors.black.withValues(alpha: 0.08),
+                : AppColors.border(context),
           ),
         ),
         child: Padding(padding: const EdgeInsets.all(12), child: child),

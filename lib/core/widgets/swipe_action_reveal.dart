@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+
+import '../theme/app_colors.dart';
 
 /// A quick action revealed when the user swipes a card.
 ///
@@ -194,7 +196,7 @@ class SwipeActionButton extends StatelessWidget {
     return FilledButton(
       style: FilledButton.styleFrom(
         backgroundColor: action.color,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.onColored(context, action.color),
         padding: const EdgeInsets.symmetric(horizontal: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -213,7 +215,7 @@ class SwipeActionButton extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(
               context,
-            ).textTheme.labelSmall?.copyWith(color: Colors.white),
+            ).textTheme.labelSmall?.copyWith(color: AppColors.onColored(context, action.color)),
           ),
         ],
       ),

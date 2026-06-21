@@ -29,6 +29,22 @@ abstract class AppColors {
   static AppPalette paletteOf(BuildContext c) =>
       Theme.of(c).extension<AppPalette>()!;
 
+  /// 根据背景色 [background] 的亮度返回高对比度的前景色。
+  /// 用于彩色徽章/按钮上的文字/图标色：浅底返回深色文字，深底返回白色文字。
+  /// 跨主题自适应，避免深色主题下亮色背景配白字对比度不足。
+  static Color onColored(BuildContext context, Color background) {
+    final isLightBg = ThemeData.estimateBrightnessForColor(background) ==
+        Brightness.light;
+    if (isLightBg) {
+      // 亮背景：浅色主题用 textPrimary（深灰），深色主题也用深色保证对比。
+      return Theme.of(context).brightness == Brightness.light
+          ? paletteOf(context).textPrimary
+          : const Color(0xFF0F1410);
+    }
+    // 深背景：用白色文字。
+    return const Color(0xFFFFFFFF);
+  }
+
   /// 浅色品牌色的浅色变体（用于 chip/胶囊背景，跨主题一致）。
   /// 原 primaryLight 在多处用作半透明背景，深色下仍用浅绿半透明可读，
   /// 故保留为常量。

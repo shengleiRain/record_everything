@@ -25,7 +25,7 @@ class HomeSummaryStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        border: Border.all(color: AppColors.borderLight(context)),
       ),
       child: Row(
         children: [

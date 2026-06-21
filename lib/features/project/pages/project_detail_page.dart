@@ -370,8 +370,8 @@ class _FinancialOverview extends StatelessWidget {
           child: _MetricCard(
             label: '已收',
             value: MoneyFormatter.formatInt(income),
-            color: Colors.green,
-            backgroundColor: const Color(0xFFE5F5EC),
+            color: AppColors.income(context),
+            backgroundColor: AppColors.income(context).withValues(alpha: 0.12),
           ),
         ),
         const SizedBox(width: 8),
@@ -379,8 +379,8 @@ class _FinancialOverview extends StatelessWidget {
           child: _MetricCard(
             label: '待收',
             value: MoneyFormatter.formatInt(pendingReceivable),
-            color: Colors.orange.shade800,
-            backgroundColor: const Color(0xFFFFF0DC),
+            color: AppColors.upcoming(context),
+            backgroundColor: AppColors.upcoming(context).withValues(alpha: 0.12),
           ),
         ),
         const SizedBox(width: 8),
@@ -388,8 +388,8 @@ class _FinancialOverview extends StatelessWidget {
           child: _MetricCard(
             label: '支出',
             value: MoneyFormatter.formatInt(expense),
-            color: Colors.red.shade700,
-            backgroundColor: const Color(0xFFFEE8E5),
+            color: AppColors.expense(context),
+            backgroundColor: AppColors.expense(context).withValues(alpha: 0.12),
           ),
         ),
       ],
@@ -498,7 +498,7 @@ class _ProjectSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Divider(height: 1, color: Colors.black.withValues(alpha: 0.08)),
+          Divider(height: 1, color: AppColors.border(context)),
           const SizedBox(height: 12),
           _SummaryItem(label: '备注', value: project.note, maxLines: 3),
         ],
@@ -587,7 +587,7 @@ class _ProjectFlowPanel extends StatelessWidget {
                 bottom: 6,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: AppColors.border(context),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: const SizedBox(width: 2),
@@ -842,7 +842,7 @@ class _ProjectFlowCard extends ConsumerWidget {
           ? AppColors.overdue(context).withValues(alpha: 0.28)
           : isCompleted
           ? AppColors.completed(context).withValues(alpha: 0.24)
-          : Colors.black.withValues(alpha: 0.08),
+          : AppColors.border(context),
     );
   }
 
@@ -860,26 +860,26 @@ class _ProjectFlowCard extends ConsumerWidget {
       );
     }
     if (isBill) {
-      final color = amountType == 'income' ? Colors.green : Colors.red.shade700;
+      final color = amountType == 'income' ? AppColors.income(context) : AppColors.expense(context);
       return _FlowVisual(icon: Icons.receipt_long_outlined, color: color);
     }
 
     if ((amountType == 'income' || amountType == 'expense') && !isSettled) {
       return _FlowVisual(
         icon: Icons.schedule_outlined,
-        color: Colors.orange.shade800,
+        color: AppColors.upcoming(context),
       );
     }
     if (amountType == 'income') {
-      return const _FlowVisual(
+      return _FlowVisual(
         icon: Icons.payments_outlined,
-        color: Colors.green,
+        color: AppColors.income(context),
       );
     }
     if (amountType == 'expense') {
       return _FlowVisual(
         icon: Icons.outbox_outlined,
-        color: Colors.red.shade700,
+        color: AppColors.expense(context),
       );
     }
     return _FlowVisual(
@@ -999,7 +999,7 @@ class _ProjectFlowCard extends ConsumerWidget {
           SwipeAction(
             label: '延期',
             icon: Icons.event_repeat,
-            color: Colors.orange.shade800,
+            color: AppColors.upcoming(context),
             onTap: () => _deferItem(context, ref, item),
           ),
         ];
@@ -1014,7 +1014,7 @@ class _ProjectFlowCard extends ConsumerWidget {
         SwipeAction(
           label: '延期',
           icon: Icons.event_repeat,
-          color: Colors.orange.shade800,
+          color: AppColors.upcoming(context),
           onTap: () => _deferItem(context, ref, item),
         ),
       ];
@@ -1193,7 +1193,7 @@ class _DatePill extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.background(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: SizedBox(
         width: 72,

@@ -202,7 +202,7 @@ class _StepTab extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final foreground = selected ? AppColors.primaryDark : AppColors.textPrimary(context);
     final badgeBg = selected ? AppColors.primary(context) : AppColors.primaryLight;
-    final badgeFg = selected ? Colors.white : AppColors.primary(context);
+    final badgeFg = selected ? AppColors.onColored(context, badgeBg) : AppColors.primary(context);
     final displayTitle = title.isNotEmpty ? title : '未命名节点';
     return InkWell(
       key: ValueKey('$keyPrefix-step-tab-button-$index'),
@@ -219,7 +219,7 @@ class _StepTab extends StatelessWidget {
                 border: Border.all(
                   color: selected
                       ? AppColors.primary(context)
-                      : Colors.black.withValues(alpha: 0.08),
+                      : AppColors.border(context),
                 ),
               ),
               child: Padding(
@@ -304,7 +304,7 @@ class StepAddButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backgroundColor = isEmpty ? AppColors.surface(context) : AppColors.primary(context);
-    final foregroundColor = isEmpty ? AppColors.primary(context) : Colors.white;
+    final foregroundColor = isEmpty ? AppColors.primary(context) : AppColors.onColored(context, backgroundColor);
 
     return Tooltip(
       message: '添加节点',

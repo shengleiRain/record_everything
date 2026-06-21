@@ -104,7 +104,7 @@ class _WebDavSettingsPageState extends ConsumerState<WebDavSettingsPage> {
             OutlinedButton.icon(
               onPressed: _isTesting ? null : _testConnection,
               icon: _isTesting
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
@@ -116,12 +116,12 @@ class _WebDavSettingsPageState extends ConsumerState<WebDavSettingsPage> {
             FilledButton(
               onPressed: _isLoading ? null : _save,
               child: _isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     )
                   : const Text('保存配置'),

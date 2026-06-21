@@ -28,7 +28,7 @@ class DraftItemCard extends StatelessWidget {
         border: Border.all(
           color: low
               ? Colors.orange.withValues(alpha: 0.5)
-              : Colors.black.withValues(alpha: 0.06),
+              : AppColors.borderLight(context),
         ),
       ),
       child: IntrinsicHeight(

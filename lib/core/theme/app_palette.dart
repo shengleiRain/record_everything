@@ -127,3 +127,14 @@ class AppPalette extends ThemeExtension<AppPalette> {
     );
   }
 }
+
+/// 数据可视化补充色板。spec §3.1。
+///
+/// 当语义色（primary/income/expense/...）不足以区分多个数据系列时
+/// （如堆叠柱状图的第 6 个分类），从这里取补充色。这些是固定的
+/// 数据可视化色，跨主题一致（数据色不随明暗翻转，保证可识别性）。
+const chartPaletteExtras = <Color>[
+  Color(0xFF9C27B0), // 紫色
+  Color(0xFF00BCD4), // 青色
+  Color(0xFF795548), // 棕色
+];

@@ -55,7 +55,7 @@ class DataSafetyPage extends ConsumerWidget {
             decoration: BoxDecoration(
               color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Text(
               '导入会追加有效记录，并自动复用同名同类型分类。导入前会校验备份版本、字段结构、日期和金额格式。',
@@ -214,7 +214,7 @@ class _ActionGroup extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         children: [
@@ -224,7 +224,7 @@ class _ActionGroup extends StatelessWidget {
               Divider(
                 height: 1,
                 indent: 56,
-                color: Colors.black.withValues(alpha: 0.06),
+                color: AppColors.borderLight(context),
               ),
           ],
         ],

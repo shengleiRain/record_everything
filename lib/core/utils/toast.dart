@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
+
 enum ToastType { success, error, info }
 
 class Toast {
@@ -81,14 +83,16 @@ class _ToastWidgetState extends State<_ToastWidget>
         ToastType.info => Icons.info_outline,
       };
 
-  Color get _color => switch (widget.type) {
-        ToastType.success => const Color(0xFF4CAF50),
-        ToastType.error => const Color(0xFFE53935),
-        ToastType.info => const Color(0xFF1E88E5),
+  /// Toast 彩色图标色，跟随主题语义色（success→收入绿，error→支出红，info→品牌绿）。
+  Color _iconColor(BuildContext context) => switch (widget.type) {
+        ToastType.success => AppColors.income(context),
+        ToastType.error => AppColors.expense(context),
+        ToastType.info => AppColors.primary(context),
       };
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Positioned(
       bottom: MediaQuery.of(context).size.height * 0.15,
       left: 40,
@@ -100,11 +104,11 @@ class _ToastWidgetState extends State<_ToastWidget>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF323232),
+              color: colorScheme.inverseSurface,
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: AppColors.border(context),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -113,13 +117,13 @@ class _ToastWidgetState extends State<_ToastWidget>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(_icon, color: _color, size: 20),
+                Icon(_icon, color: _iconColor(context), size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     widget.message,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onInverseSurface,
                       fontSize: 14,
                     ),
                   ),

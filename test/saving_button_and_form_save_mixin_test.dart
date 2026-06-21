@@ -1,6 +1,7 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/shared/widgets/form_save_mixin.dart';
 import 'package:record_everything/shared/widgets/saving_button.dart';
@@ -43,7 +44,7 @@ class _HostState extends State<_Host> with FormSaveMixin<_Host> {
   }
 }
 
-Widget _wrap(Widget child) => MaterialApp(home: child);
+Widget _wrap(Widget child) => MaterialApp(theme: AppTheme.lightTheme(), home: child);
 
 void main() {
   testWidgets(

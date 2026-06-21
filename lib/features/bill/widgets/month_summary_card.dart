@@ -32,7 +32,7 @@ class MonthSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
+            color: AppColors.borderLight(context),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
 
 class AppDropdownOption<T> {
   const AppDropdownOption({required this.value, required this.label});
@@ -39,7 +40,7 @@ class AppDropdownField<T> extends StatelessWidget {
             backgroundColor: WidgetStatePropertyAll(colorScheme.surface),
             surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
             shadowColor: WidgetStatePropertyAll(
-              Colors.black.withValues(alpha: 0.16),
+              AppColors.border(context),
             ),
             elevation: const WidgetStatePropertyAll(8),
             padding: const WidgetStatePropertyAll(

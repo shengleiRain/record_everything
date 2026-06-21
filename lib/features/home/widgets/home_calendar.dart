@@ -84,7 +84,7 @@ class HomeCalendar extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        border: Border.all(color: AppColors.borderLight(context)),
       ),
       child: Column(
         children: [
@@ -265,12 +265,12 @@ class _DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSelected = bucket.isSelected;
     final foreground = isSelected
-        ? Colors.white
+        ? AppColors.onColored(context, AppColors.primary(context))
         : bucket.isInVisibleMonth
         ? AppColors.textPrimary(context)
         : AppColors.textHint(context);
     final labelColor = isSelected
-        ? Colors.white.withValues(alpha: 0.88)
+        ? AppColors.onColored(context, AppColors.primary(context)).withValues(alpha: 0.88)
         : bucket.overdueCount > 0
         ? AppColors.upcoming(context)
         : AppColors.textSecondary(context);
@@ -286,7 +286,7 @@ class _DayCell extends StatelessWidget {
           border: Border.all(
             color: isSelected
                 ? AppColors.primary(context)
-                : Colors.black.withValues(alpha: 0.05),
+                : AppColors.borderLight(context),
           ),
         ),
         child: Column(

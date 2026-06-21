@@ -48,7 +48,7 @@ class _BillFoldShape extends StatelessWidget {
     return ClipPath(
       clipper: _BillFoldClipper(),
       child: ColoredBox(
-        color: Colors.black.withValues(alpha: 0.08),
+        color: AppColors.border(context),
         child: const SizedBox.square(dimension: 14),
       ),
     );
@@ -105,7 +105,7 @@ class StatusCornerBadge extends StatelessWidget {
               applyHeightToLastDescent: false,
             ),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.white,
+              color: AppColors.onColored(context, color),
               fontWeight: FontWeight.w800,
               height: 1,
             ),
