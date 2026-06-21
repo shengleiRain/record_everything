@@ -1,101 +1,111 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
+import 'package:flutter/services.dart';
 
+import 'app_colors.dart';
+import 'app_palette.dart';
+
+/// 应用主题。提供浅/深两套 ThemeData，均挂载 [AppPalette] extension。
+/// spec §2.3。
 class AppTheme {
-  static ThemeData lightTheme() {
+  static ThemeData lightTheme() => _build(Brightness.light, AppPalette.light);
+  static ThemeData darkTheme() => _build(Brightness.dark, AppPalette.dark);
+
+  static ThemeData _build(Brightness brightness, AppPalette palette) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.light,
-      primary: AppColors.primary,
-      surface: AppColors.surface,
-      error: AppColors.expense,
+      seedColor: palette.primary,
+      brightness: brightness,
+      primary: palette.primary,
+      surface: palette.surface,
+      error: palette.error,
     );
 
     return ThemeData(
       useMaterial3: true,
+      brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: palette.background,
+      extensions: [palette],
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: AppColors.surface,
+        color: palette.surface,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.background,
+      appBarTheme: AppBarTheme(
+        backgroundColor: palette.background,
         elevation: 0,
         scrolledUnderElevation: 0,
+        foregroundColor: palette.textPrimary,
         titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
+          color: palette.textPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
+        systemOverlayStyle: brightness == Brightness.light
+            ? SystemUiOverlayStyle.dark
+            : SystemUiOverlayStyle.light,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textHint,
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        selectedItemColor: palette.primary,
+        unselectedItemColor: palette.textHint,
         type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.surface,
+        backgroundColor: palette.surface,
         elevation: 8,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: palette.primary,
+        foregroundColor: brightness == Brightness.light
+            ? Colors.white
+            : const Color(0xFF0F1410),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: palette.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: AppColors.textHint.withValues(alpha: 0.35),
-          ),
+          borderSide: BorderSide(color: palette.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: AppColors.textHint.withValues(alpha: 0.35),
-          ),
+          borderSide: BorderSide(color: palette.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
+          borderSide: BorderSide(color: palette.primary, width: 1.4),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.expense),
+          borderSide: BorderSide(color: palette.expense),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.expense, width: 1.4),
+          borderSide: BorderSide(color: palette.expense, width: 1.4),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        floatingLabelStyle: const TextStyle(
-          color: AppColors.primary,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        floatingLabelStyle: TextStyle(
+          color: palette.primary,
           fontWeight: FontWeight.w600,
         ),
       ),
-      textTheme: const TextTheme(
+      dividerTheme: DividerThemeData(color: palette.borderLight, space: 1),
+      textTheme: TextTheme(
         headlineLarge: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
+          color: palette.textPrimary,
         ),
         headlineMedium: TextStyle(
           fontSize: 22,
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+          color: palette.textPrimary,
         ),
-        bodyLarge: TextStyle(fontSize: 16, color: AppColors.textPrimary),
-        bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        bodyLarge: TextStyle(fontSize: 16, color: palette.textPrimary),
+        bodyMedium: TextStyle(fontSize: 14, color: palette.textSecondary),
         labelLarge: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.primary,
+          color: palette.primary,
         ),
       ),
     );
