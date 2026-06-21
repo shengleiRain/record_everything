@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import '../../../domain/enums/project_event_type.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
 import '../providers/project_providers.dart';
@@ -72,7 +73,7 @@ class _ProjectEventSheetState extends ConsumerState<_ProjectEventSheet> {
             label: '事件类型',
             value: _eventType,
             options: ProjectEventType.values
-                .map((t) => AppDropdownOption(value: t, label: t.label))
+                .map((t) => AppDropdownOption(value: t, label: context.l.projectEventType(t)))
                 .toList(),
             onSelected: (v) =>
                 setState(() => _eventType = v ?? _eventType),

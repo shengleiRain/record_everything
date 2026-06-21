@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -206,7 +207,7 @@ class _ProjectDetailBody extends ConsumerWidget {
                     icon: current == ProjectStatus.active
                         ? Icons.check
                         : Icons.swap_horiz,
-                    label: current.advanceLabel,
+                    label: context.l.getByKey(current.advanceLabelKey) ?? current.advanceLabelKey,
                     onTap: () {
                       Navigator.of(sheetContext).pop();
                       _changeStatus(ref, nextStatus);

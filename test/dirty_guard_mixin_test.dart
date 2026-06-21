@@ -1,8 +1,11 @@
 ﻿import 'package:record_everything/core/theme/app_theme.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/utils/form_draft_store.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/shared/widgets/dirty_guard_mixin.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Minimal host exercising [DirtyGuardMixin] inside a real [Navigator], so we
@@ -109,7 +112,7 @@ class _DraftPageState extends State<_DraftPage>
   }
 }
 
-Widget _wrapDraft(_DraftPage page) => MaterialApp(theme: AppTheme.lightTheme(), home: page);
+Widget _wrapDraft(_DraftPage page) => MaterialApp(locale: const Locale('zh'), localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, theme: AppTheme.lightTheme(), home: page);
 
 class _DraftRoot extends StatelessWidget {
   const _DraftRoot({required this.store});
@@ -138,7 +141,7 @@ void main() {
   testWidgets('confirming discard clears dirty and pops the route', (
     tester,
   ) async {
-    await tester.pumpWidget(MaterialApp(theme: AppTheme.lightTheme(), home: _Root()));
+    await tester.pumpWidget(MaterialApp(locale: const Locale('zh'), localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, theme: AppTheme.lightTheme(), home: _Root()));
 
     // Push the guarded page so there's a real route to pop.
     await tester.tap(find.text('open'));

@@ -1,11 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/theme/app_theme.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/settings/pages/category_management_page.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/settings/pages/data_safety_page.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/settings/pages/settings_page.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/settings/providers/settings_providers.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 
 import 'helpers/test_app.dart';
 

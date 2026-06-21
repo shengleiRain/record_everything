@@ -16,6 +16,7 @@ import 'package:record_everything/features/settings/pages/category_management_pa
 import 'package:record_everything/features/settings/pages/data_safety_page.dart';
 import 'package:record_everything/features/settings/providers/settings_providers.dart';
 import 'package:record_everything/features/statistics/pages/statistics_page.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class TestAppHarness {
@@ -39,7 +40,13 @@ Future<TestAppHarness> pumpPageWithDatabase(
 
   final widget = ProviderScope(
     overrides: [databaseProvider.overrideWithValue(db)],
-    child: MaterialApp(theme: AppTheme.lightTheme(), home: page),
+    child: MaterialApp(
+      theme: AppTheme.lightTheme(),
+      locale: const Locale('zh'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: page,
+    ),
   );
   await tester.pumpWidget(widget);
   await tester.pump(const Duration(milliseconds: 100));
@@ -58,6 +65,9 @@ TestAppHarness createTestApp() {
       child: MaterialApp.router(
         title: '生活事项',
         debugShowCheckedModeBanner: false,
+        locale: const Locale('zh'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: AppTheme.lightTheme(),
         routerConfig: router,
       ),

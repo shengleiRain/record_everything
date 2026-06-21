@@ -1,4 +1,4 @@
-import 'package:drift/native.dart';
+﻿import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/data/repositories/bill_record_repository.dart';
@@ -35,8 +35,8 @@ void main() {
       expect(ProjectStatus.archived.nextStatus, isNull);
     });
 
-    test('advanceLabel：active 为「标记完成」', () {
-      expect(ProjectStatus.active.advanceLabel, '标记完成');
+    test('advanceLabelKey：active 为标记完成 key', () {
+      expect(ProjectStatus.active.advanceLabelKey, 'enum_projectStatus_advance_complete');
     });
 
     test('canTransitionTo 只允许显式方向', () {
@@ -203,7 +203,7 @@ void main() {
       final events = await db.projectEventDao.getByProject(project.id);
       expect(events, hasLength(1));
       expect(events.single.eventType, ProjectEventType.statusChange.value);
-      expect(events.single.title, '状态变更: 进行中 -> 已完成');
+      expect(events.single.title, '状态变更: active -> completed');
     });
 
     test('非法状态流转不会写状态或事件', () async {

@@ -10,15 +10,20 @@
 ///   active → cancelled（取消项目）
 ///   completed → archived（归档）
 ///   cancelled / archived → active（重新激活）
+///
+/// i18n：标签文案不再以中文硬编码存储，改为通过 [l10nKey] 在显示层翻译。
+/// spec §5.1。
 enum ProjectStatus {
-  active('active', '进行中'),
-  completed('completed', '已完成'),
-  cancelled('cancelled', '已取消'),
-  archived('archived', '已归档');
+  active('active'),
+  completed('completed'),
+  cancelled('cancelled'),
+  archived('archived');
 
-  const ProjectStatus(this.value, this.label);
+  const ProjectStatus(this.value);
   final String value;
-  final String label;
+
+  /// i18n key，由显示层翻译。
+  String get l10nKey => 'enum_projectStatus_$value';
 
   /// 新建项目的默认状态。
   static ProjectStatus get defaultStatus => ProjectStatus.active;
@@ -70,9 +75,9 @@ enum ProjectStatus {
     };
   }
 
-  /// 推进状态按钮的文案。
-  String get advanceLabel => switch (this) {
-    ProjectStatus.active => '标记完成',
-    _ => '推进状态',
+  /// 推进状态按钮的文案 i18n key。
+  String get advanceLabelKey => switch (this) {
+    ProjectStatus.active => 'enum_projectStatus_advance_complete',
+    _ => 'enum_projectStatus_advance_generic',
   };
 }

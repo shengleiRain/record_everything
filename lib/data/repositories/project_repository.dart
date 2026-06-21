@@ -197,8 +197,8 @@ class ProjectRepository {
     await addEvent(
       projectId: project.id,
       eventType: ProjectEventType.statusChange.value,
-      title: '状态变更: ${previous.label} -> ${next.label}',
-      description: '项目状态从 ${previous.label} 变为 ${next.label}',
+      title: '状态变更: ${previous.value} -> ${next.value}',
+      description: '项目状态从 ${previous.value} 变为 ${next.value}',
       eventTime: now,
       isSystem: true,
     );

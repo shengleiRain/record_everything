@@ -187,6 +187,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'English'**
   String get settings_language_en;
+
+  /// No description provided for @enum_projectStatus_active.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get enum_projectStatus_active;
+
+  /// No description provided for @enum_projectStatus_completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get enum_projectStatus_completed;
+
+  /// No description provided for @enum_projectStatus_cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get enum_projectStatus_cancelled;
+
+  /// No description provided for @enum_projectStatus_archived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get enum_projectStatus_archived;
+
+  /// No description provided for @enum_projectStatus_advance_complete.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark Complete'**
+  String get enum_projectStatus_advance_complete;
+
+  /// No description provided for @enum_projectStatus_advance_generic.
+  ///
+  /// In en, this message translates to:
+  /// **'Advance'**
+  String get enum_projectStatus_advance_generic;
+
+  /// No description provided for @enum_itemStatus_pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get enum_itemStatus_pending;
+
+  /// No description provided for @enum_itemStatus_completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get enum_itemStatus_completed;
+
+  /// No description provided for @enum_itemStatus_cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get enum_itemStatus_cancelled;
+
+  /// No description provided for @enum_itemStatus_archived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get enum_itemStatus_archived;
+
+  /// No description provided for @enum_amountType_none.
+  ///
+  /// In en, this message translates to:
+  /// **'No amount'**
+  String get enum_amountType_none;
+
+  /// No description provided for @enum_amountType_income.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get enum_amountType_income;
+
+  /// No description provided for @enum_amountType_expense.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get enum_amountType_expense;
+
+  /// No description provided for @enum_billAmountType_income.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get enum_billAmountType_income;
+
+  /// No description provided for @enum_billAmountType_expense.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get enum_billAmountType_expense;
+
+  /// No description provided for @enum_projectEventType_note.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get enum_projectEventType_note;
+
+  /// No description provided for @enum_projectEventType_status_change.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Change'**
+  String get enum_projectEventType_status_change;
+
+  /// No description provided for @enum_projectEventType_communication.
+  ///
+  /// In en, this message translates to:
+  /// **'Communication'**
+  String get enum_projectEventType_communication;
+
+  /// No description provided for @enum_projectEventType_milestone.
+  ///
+  /// In en, this message translates to:
+  /// **'Milestone'**
+  String get enum_projectEventType_milestone;
+
+  /// No description provided for @enum_projectEventType_delivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get enum_projectEventType_delivery;
+
+  /// No description provided for @enum_projectEventType_other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get enum_projectEventType_other;
+
+  /// No description provided for @enum_repeatPeriod_daily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get enum_repeatPeriod_daily;
+
+  /// No description provided for @enum_repeatPeriod_weekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get enum_repeatPeriod_weekly;
+
+  /// No description provided for @enum_repeatPeriod_monthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get enum_repeatPeriod_monthly;
+
+  /// No description provided for @enum_repeatPeriod_yearly.
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly'**
+  String get enum_repeatPeriod_yearly;
+
+  /// No description provided for @enum_repeatPeriod_custom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get enum_repeatPeriod_custom;
+
+  /// No description provided for @enum_reminderPreset_none.
+  ///
+  /// In en, this message translates to:
+  /// **'No reminder'**
+  String get enum_reminderPreset_none;
+
+  /// No description provided for @enum_reminderPreset_dueDayMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Due day 9:00 AM'**
+  String get enum_reminderPreset_dueDayMorning;
+
+  /// No description provided for @enum_reminderPreset_dayBeforeMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'1 day before 9:00 AM'**
+  String get enum_reminderPreset_dayBeforeMorning;
+
+  /// No description provided for @enum_reminderPreset_custom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom time'**
+  String get enum_reminderPreset_custom;
 }
 
 class _AppLocalizationsDelegate

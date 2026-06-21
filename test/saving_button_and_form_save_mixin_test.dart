@@ -2,9 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:record_everything/core/theme/app_theme.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/shared/widgets/form_save_mixin.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/shared/widgets/saving_button.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 
 /// A minimal host widget that mixes in [FormSaveMixin] so we can exercise
 /// `runSave` in isolation. It must live *under* a MaterialApp so that
@@ -44,7 +47,7 @@ class _HostState extends State<_Host> with FormSaveMixin<_Host> {
   }
 }
 
-Widget _wrap(Widget child) => MaterialApp(theme: AppTheme.lightTheme(), home: child);
+Widget _wrap(Widget child) => MaterialApp(locale: const Locale('zh'), localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, theme: AppTheme.lightTheme(), home: child);
 
 void main() {
   testWidgets(

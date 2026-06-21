@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
+﻿import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/data/database/app_database.dart';
@@ -179,7 +179,7 @@ void main() {
       final events = await repo.watchProjectEvents(project.id).first;
       expect(events, hasLength(1));
       expect(events.first.eventType, ProjectEventType.statusChange.value);
-      expect(events.first.title, '状态变更: 进行中 -> 已完成');
+      expect(events.first.title, '状态变更: active -> completed');
       expect(events.first.isSystem, isTrue);
     });
 

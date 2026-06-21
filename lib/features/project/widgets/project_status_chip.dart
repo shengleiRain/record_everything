@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import '../../../domain/enums/project_status.dart';
 
 class ProjectStatusChip extends StatelessWidget {
@@ -18,7 +19,7 @@ class ProjectStatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        ps.label,
+        context.l.projectStatus(ps),
         style: TextStyle(
           color: color,
           fontSize: 12,

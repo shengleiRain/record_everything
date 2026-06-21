@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:record_everything/l10n/l10n.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../domain/enums/amount_type.dart';
@@ -84,7 +85,7 @@ class StepDraftCard<T extends StepDraft> extends StatelessWidget {
                     options: AmountType.values
                         .map(
                           (type) =>
-                              AppDropdownOption(value: type, label: type.label),
+                              AppDropdownOption(value: type, label: context.l.amountType(type)),
                         )
                         .toList(),
                     onSelected: (value) {

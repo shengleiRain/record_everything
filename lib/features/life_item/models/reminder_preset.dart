@@ -1,12 +1,11 @@
+/// 提醒预设。i18n：标签通过 [l10nKey] 在显示层翻译。spec §5.1。
 enum ReminderPreset {
-  none('不提醒'),
-  dueDayMorning('当天 9:00'),
-  dayBeforeMorning('提前一天 9:00'),
-  custom('自定义时间');
+  none,
+  dueDayMorning,
+  dayBeforeMorning,
+  custom;
 
-  const ReminderPreset(this.label);
-
-  final String label;
+  String get l10nKey => 'enum_reminderPreset_$name';
 
   DateTime? remindTimeFor(DateTime dueTime, {DateTime? customTime}) {
     return switch (this) {

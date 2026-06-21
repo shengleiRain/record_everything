@@ -52,4 +52,94 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settings_language_en => 'English';
+
+  @override
+  String get enum_projectStatus_active => 'In Progress';
+
+  @override
+  String get enum_projectStatus_completed => 'Completed';
+
+  @override
+  String get enum_projectStatus_cancelled => 'Cancelled';
+
+  @override
+  String get enum_projectStatus_archived => 'Archived';
+
+  @override
+  String get enum_projectStatus_advance_complete => 'Mark Complete';
+
+  @override
+  String get enum_projectStatus_advance_generic => 'Advance';
+
+  @override
+  String get enum_itemStatus_pending => 'Pending';
+
+  @override
+  String get enum_itemStatus_completed => 'Completed';
+
+  @override
+  String get enum_itemStatus_cancelled => 'Cancelled';
+
+  @override
+  String get enum_itemStatus_archived => 'Archived';
+
+  @override
+  String get enum_amountType_none => 'No amount';
+
+  @override
+  String get enum_amountType_income => 'Income';
+
+  @override
+  String get enum_amountType_expense => 'Expense';
+
+  @override
+  String get enum_billAmountType_income => 'Income';
+
+  @override
+  String get enum_billAmountType_expense => 'Expense';
+
+  @override
+  String get enum_projectEventType_note => 'Note';
+
+  @override
+  String get enum_projectEventType_status_change => 'Status Change';
+
+  @override
+  String get enum_projectEventType_communication => 'Communication';
+
+  @override
+  String get enum_projectEventType_milestone => 'Milestone';
+
+  @override
+  String get enum_projectEventType_delivery => 'Delivery';
+
+  @override
+  String get enum_projectEventType_other => 'Other';
+
+  @override
+  String get enum_repeatPeriod_daily => 'Daily';
+
+  @override
+  String get enum_repeatPeriod_weekly => 'Weekly';
+
+  @override
+  String get enum_repeatPeriod_monthly => 'Monthly';
+
+  @override
+  String get enum_repeatPeriod_yearly => 'Yearly';
+
+  @override
+  String get enum_repeatPeriod_custom => 'Custom';
+
+  @override
+  String get enum_reminderPreset_none => 'No reminder';
+
+  @override
+  String get enum_reminderPreset_dueDayMorning => 'Due day 9:00 AM';
+
+  @override
+  String get enum_reminderPreset_dayBeforeMorning => '1 day before 9:00 AM';
+
+  @override
+  String get enum_reminderPreset_custom => 'Custom time';
 }

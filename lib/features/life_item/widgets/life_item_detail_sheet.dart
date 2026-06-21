@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -64,7 +65,7 @@ Future<void> showLifeItemDetailSheet(
                   trailingColor: amountColor,
                 ),
                 const SizedBox(height: 12),
-                _DetailInfoRow(label: '状态', value: status.label),
+                _DetailInfoRow(label: '状态', value: context.l.itemStatus(status)),
                 _DetailInfoRow(
                   label: _statusTimeLabel(status, isDeleted),
                   value: _statusTimeValue(item, status, isDeleted),
@@ -79,7 +80,7 @@ Future<void> showLifeItemDetailSheet(
                   label: '重复规则',
                   value: item.repeatRule == null
                       ? '不重复'
-                      : _formatRepeatRule(item.repeatRule!),
+                      : _formatRepeatRule(context, item.repeatRule!),
                 ),
                 if (amountText != null)
                   _DetailInfoRow(
@@ -169,12 +170,12 @@ Future<void> showLifeItemDetailSheet(
   );
 }
 
-String _formatRepeatRule(String rule) {
+String _formatRepeatRule(BuildContext context, String rule) {
   final repeatRule = RepeatRule.fromStorageString(rule);
   if (repeatRule.period == RepeatPeriod.custom) {
     return '每 ${repeatRule.customDays} 天';
   }
-  return repeatRule.period.label;
+  return context.l.repeatPeriod(repeatRule.period);
 }
 
 String? _formatAmountValue(int? amount, String amountType) {

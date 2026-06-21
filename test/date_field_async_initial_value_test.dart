@@ -1,8 +1,11 @@
 ﻿import 'package:record_everything/core/theme/app_theme.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/utils/date_formatter.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/core/widgets/date_field.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 
 void main() {
   // Reproduces the bug where DateField captured its initialValue on first build

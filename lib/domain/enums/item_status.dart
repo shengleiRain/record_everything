@@ -5,15 +5,18 @@
 ///   pending → cancelled（取消）
 ///   completed / cancelled → pending（重新打开）
 ///   archived 为终态。
+///
+/// i18n：标签通过 [l10nKey] 在显示层翻译。spec §5.1。
 enum ItemStatus {
-  pending('pending', '待处理'),
-  completed('completed', '已完成'),
-  cancelled('cancelled', '已取消'),
-  archived('archived', '已归档');
+  pending('pending'),
+  completed('completed'),
+  cancelled('cancelled'),
+  archived('archived');
 
-  const ItemStatus(this.value, this.label);
+  const ItemStatus(this.value);
   final String value;
-  final String label;
+
+  String get l10nKey => 'enum_itemStatus_$value';
 
   static ItemStatus fromString(String v) => ItemStatus.values.firstWhere(
     (e) => e.value == v,

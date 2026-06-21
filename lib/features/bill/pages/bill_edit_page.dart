@@ -3,6 +3,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
@@ -286,7 +287,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                       value: _amountType,
                       options: BillAmountType.values
                           .map(
-                            (t) => AppDropdownOption(value: t, label: t.label),
+                            (t) => AppDropdownOption(value: t, label: context.l.billAmountType(t)),
                           )
                           .toList(),
                       onSelected: (v) => setState(() {

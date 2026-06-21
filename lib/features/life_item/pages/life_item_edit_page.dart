@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../../domain/enums/item_status.dart';
@@ -555,7 +556,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                         options: ReminderPreset.values
                             .map(
                               (p) =>
-                                  AppDropdownOption(value: p, label: p.label),
+                                  AppDropdownOption(value: p, label: context.l.reminderPreset(p)),
                             )
                             .toList(),
                         onSelected: (v) => setState(() {
@@ -586,7 +587,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                         options: AmountType.values
                             .map(
                               (t) =>
-                                  AppDropdownOption(value: t, label: t.label),
+                                  AppDropdownOption(value: t, label: context.l.amountType(t)),
                             )
                             .toList(),
                         onSelected: (v) => setState(() {
@@ -623,7 +624,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                           options: RepeatPeriod.values
                               .map(
                                 (p) =>
-                                    AppDropdownOption(value: p, label: p.label),
+                                    AppDropdownOption(value: p, label: context.l.repeatPeriod(p)),
                               )
                               .toList(),
                           onSelected: (v) => setState(() {

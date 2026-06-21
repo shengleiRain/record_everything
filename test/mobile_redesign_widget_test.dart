@@ -1,19 +1,32 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/theme/app_theme.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/data/database/app_database.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/bill/widgets/bill_day_group.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/bill/widgets/month_summary_card.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/home/models/agenda_item_view_model.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/home/models/day_bucket_view_model.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/home/widgets/home_calendar.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/home/widgets/home_calendar_sliver.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/home/widgets/home_summary_strip.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/home/widgets/quick_create_sheet.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/home/widgets/selected_day_agenda.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/life_item/widgets/life_item_card.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/core/widgets/sheet_action_layout.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('home calendar renders controls and handles taps', (
@@ -349,7 +362,7 @@ class _Harness extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      child: MaterialApp(theme: AppTheme.lightTheme(), home: Scaffold(body: child)),
+      child: MaterialApp(locale: const Locale('zh'), localizationsDelegates: AppLocalizations.localizationsDelegates, supportedLocales: AppLocalizations.supportedLocales, theme: AppTheme.lightTheme(), home: Scaffold(body: child)),
     );
   }
 }

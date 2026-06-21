@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
 import '../../../core/utils/toast.dart';
@@ -270,7 +271,7 @@ class _StatusFilterBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         children: [
           _chip(context, null, '全部'),
-          ...ProjectStatus.values.map((s) => _chip(context, s.value, s.label)),
+          ...ProjectStatus.values.map((s) => _chip(context, s.value, context.l.projectStatus(s))),
         ],
       ),
     );
