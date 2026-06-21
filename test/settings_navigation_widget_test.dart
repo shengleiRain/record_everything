@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/theme/app_theme.dart';
@@ -6,6 +7,8 @@ import 'package:record_everything/features/settings/pages/category_management_pa
 import 'package:record_everything/features/settings/pages/data_safety_page.dart';
 import 'package:record_everything/features/settings/pages/settings_page.dart';
 import 'package:record_everything/features/settings/providers/settings_providers.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers/test_app.dart';
 
@@ -29,6 +32,9 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme(),
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const CategoryManagementPage(),
         ),
       ),

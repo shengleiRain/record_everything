@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -44,7 +45,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     final projects = ref.watch(projectsProvider).valueOrNull ?? const [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('搜索')),
+      appBar: AppBar(title: Text(context.l.page_search)),
       body: StreamBuilder(
         stream: bills,
         builder: (context, snapshot) {

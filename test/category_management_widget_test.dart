@@ -1,12 +1,21 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/features/settings/pages/category_management_page.dart';
 import 'package:record_everything/features/settings/providers/settings_providers.dart';
+import 'package:record_everything/l10n/generated/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    await initSharedPrefs();
+  });
+
   testWidgets('category rows render configured material icons', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -21,12 +30,17 @@ void main() {
                 isDefault: false,
                 isHidden: false,
                 isPinned: false,
+                builtinKey: null,
+                originalName: null,
               ),
             ]),
           ),
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme(),
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const CategoryManagementPage(),
         ),
       ),
@@ -45,6 +59,9 @@ void main() {
         ],
         child: MaterialApp(
           theme: AppTheme.lightTheme(),
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: const CategoryManagementPage(),
         ),
       ),

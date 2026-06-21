@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -34,7 +35,7 @@ class _BillListPageState extends ConsumerState<BillListPage> {
     final budget = budgetAsync.valueOrNull ?? 0;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('账单')),
+      appBar: AppBar(title: Text(context.l.page_bills)),
       body: Column(
         children: [
           Padding(

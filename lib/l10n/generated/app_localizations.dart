@@ -140,6 +140,150 @@ abstract class AppLocalizations {
   /// **'OK'**
   String get common_ok;
 
+  /// No description provided for @nav_home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get nav_home;
+
+  /// No description provided for @nav_items.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get nav_items;
+
+  /// No description provided for @nav_bills.
+  ///
+  /// In en, this message translates to:
+  /// **'Bills'**
+  String get nav_bills;
+
+  /// No description provided for @nav_stats.
+  ///
+  /// In en, this message translates to:
+  /// **'Stats'**
+  String get nav_stats;
+
+  /// No description provided for @nav_settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get nav_settings;
+
+  /// No description provided for @page_home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get page_home;
+
+  /// No description provided for @page_items.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get page_items;
+
+  /// No description provided for @page_bills.
+  ///
+  /// In en, this message translates to:
+  /// **'Bills'**
+  String get page_bills;
+
+  /// No description provided for @page_settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get page_settings;
+
+  /// No description provided for @page_billEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Bill'**
+  String get page_billEdit;
+
+  /// No description provided for @page_billNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New Bill'**
+  String get page_billNew;
+
+  /// No description provided for @page_billReadonly.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill (Read-only)'**
+  String get page_billReadonly;
+
+  /// No description provided for @page_itemEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Item'**
+  String get page_itemEdit;
+
+  /// No description provided for @page_itemNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New Item'**
+  String get page_itemNew;
+
+  /// No description provided for @page_itemReadonly.
+  ///
+  /// In en, this message translates to:
+  /// **'Item (Read-only)'**
+  String get page_itemReadonly;
+
+  /// No description provided for @page_recycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recycle Bin'**
+  String get page_recycle;
+
+  /// No description provided for @page_categories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get page_categories;
+
+  /// No description provided for @page_dataSafety.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Safety'**
+  String get page_dataSafety;
+
+  /// No description provided for @page_webdav.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV Sync'**
+  String get page_webdav;
+
+  /// No description provided for @page_aiAssistant.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Assistant'**
+  String get page_aiAssistant;
+
+  /// No description provided for @page_search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get page_search;
+
+  /// No description provided for @page_statistics.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics'**
+  String get page_statistics;
+
+  /// No description provided for @page_itemList.
+  ///
+  /// In en, this message translates to:
+  /// **'Life Items'**
+  String get page_itemList;
+
+  /// No description provided for @page_webdavConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV Config'**
+  String get page_webdavConfig;
+
   /// No description provided for @settings_themeTitle.
   ///
   /// In en, this message translates to:

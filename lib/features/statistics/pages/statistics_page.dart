@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
@@ -58,7 +59,7 @@ class StatisticsPage extends ConsumerWidget {
         ref.watch(categoryNamesProvider).valueOrNull ?? const {};
 
     return Scaffold(
-      appBar: AppBar(title: const Text('统计')),
+      appBar: AppBar(title: Text(context.l.page_statistics)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [

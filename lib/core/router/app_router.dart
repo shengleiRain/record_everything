@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../l10n/l10n.dart';
 import '../../features/home/pages/home_page.dart';
 import '../../features/life_item/pages/life_item_list_page.dart';
 import '../../features/life_item/pages/life_item_edit_page.dart';
@@ -48,36 +49,37 @@ String? lifeItemsDeepLinkPath(Uri uri) {
 }
 
 Widget _buildShell(BuildContext context, GoRouterState state, Widget child) {
+  final l = context.l;
   return Scaffold(
     body: child,
     bottomNavigationBar: BottomNavigationBar(
       currentIndex: _currentIndex(state),
       onTap: (index) => _onTap(context, index),
-      items: const [
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: '首页',
+          icon: const Icon(Icons.home_outlined),
+          activeIcon: const Icon(Icons.home),
+          label: l.nav_home,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.check_circle_outline),
-          activeIcon: Icon(Icons.check_circle),
-          label: '事项',
+          icon: const Icon(Icons.check_circle_outline),
+          activeIcon: const Icon(Icons.check_circle),
+          label: l.nav_items,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.receipt_long_outlined),
-          activeIcon: Icon(Icons.receipt_long),
-          label: '账单',
+          icon: const Icon(Icons.receipt_long_outlined),
+          activeIcon: const Icon(Icons.receipt_long),
+          label: l.nav_bills,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart_outlined),
-          activeIcon: Icon(Icons.bar_chart),
-          label: '统计',
+          icon: const Icon(Icons.bar_chart_outlined),
+          activeIcon: const Icon(Icons.bar_chart),
+          label: l.nav_stats,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          activeIcon: Icon(Icons.settings),
-          label: '设置',
+          icon: const Icon(Icons.settings_outlined),
+          activeIcon: const Icon(Icons.settings),
+          label: l.nav_settings,
         ),
       ],
     ),

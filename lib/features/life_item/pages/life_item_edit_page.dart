@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -414,7 +414,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
     if (_isReadonly) {
       return Scaffold(
         backgroundColor: AppColors.background(context),
-        appBar: AppBar(title: const Text('事项（只读）')),
+        appBar: AppBar(title: Text(context.l.page_itemReadonly)),
         body: ReadonlyMessage(
           title: '事项已完结',
           message: '只读状态的事项不能编辑，可在详情中重新打开后再修改。',
@@ -431,8 +431,8 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
         appBar: AppBar(
           title: Text(
             _isReadonly
-                ? '${_isEdit ? '事项' : '新建事项'}（只读）'
-                : (_isEdit ? '编辑事项' : '新建事项'),
+                ? '${_isEdit ? context.l.page_itemEdit : context.l.page_itemNew}（只读）'
+                : (_isEdit ? context.l.page_itemEdit : context.l.page_itemNew),
           ),
           actions: [
             if (!_isEdit)

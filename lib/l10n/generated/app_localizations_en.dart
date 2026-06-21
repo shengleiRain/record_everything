@@ -30,6 +30,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String get common_ok => 'OK';
 
   @override
+  String get nav_home => 'Home';
+
+  @override
+  String get nav_items => 'Items';
+
+  @override
+  String get nav_bills => 'Bills';
+
+  @override
+  String get nav_stats => 'Stats';
+
+  @override
+  String get nav_settings => 'Settings';
+
+  @override
+  String get page_home => 'Home';
+
+  @override
+  String get page_items => 'Items';
+
+  @override
+  String get page_bills => 'Bills';
+
+  @override
+  String get page_settings => 'Settings';
+
+  @override
+  String get page_billEdit => 'Edit Bill';
+
+  @override
+  String get page_billNew => 'New Bill';
+
+  @override
+  String get page_billReadonly => 'Bill (Read-only)';
+
+  @override
+  String get page_itemEdit => 'Edit Item';
+
+  @override
+  String get page_itemNew => 'New Item';
+
+  @override
+  String get page_itemReadonly => 'Item (Read-only)';
+
+  @override
+  String get page_recycle => 'Recycle Bin';
+
+  @override
+  String get page_categories => 'Categories';
+
+  @override
+  String get page_dataSafety => 'Data Safety';
+
+  @override
+  String get page_webdav => 'WebDAV Sync';
+
+  @override
+  String get page_aiAssistant => 'AI Assistant';
+
+  @override
+  String get page_search => 'Search';
+
+  @override
+  String get page_statistics => 'Statistics';
+
+  @override
+  String get page_itemList => 'Life Items';
+
+  @override
+  String get page_webdavConfig => 'WebDAV Config';
+
+  @override
   String get settings_themeTitle => 'Theme';
 
   @override

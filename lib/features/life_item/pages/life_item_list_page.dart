@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/toast.dart';
@@ -35,7 +36,7 @@ class LifeItemListPage extends ConsumerWidget {
     final selectedFilter = ref.watch(lifeItemFilterProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('生活事项')),
+      appBar: AppBar(title: Text(context.l.page_itemList)),
       body: itemsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('加载失败: $e')),

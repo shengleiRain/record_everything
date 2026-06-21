@@ -30,6 +30,78 @@ class AppLocalizationsZh extends AppLocalizations {
   String get common_ok => '确定';
 
   @override
+  String get nav_home => '首页';
+
+  @override
+  String get nav_items => '事项';
+
+  @override
+  String get nav_bills => '账单';
+
+  @override
+  String get nav_stats => '统计';
+
+  @override
+  String get nav_settings => '设置';
+
+  @override
+  String get page_home => '首页';
+
+  @override
+  String get page_items => '事项';
+
+  @override
+  String get page_bills => '账单';
+
+  @override
+  String get page_settings => '设置';
+
+  @override
+  String get page_billEdit => '编辑账单';
+
+  @override
+  String get page_billNew => '新建账单';
+
+  @override
+  String get page_billReadonly => '账单（只读）';
+
+  @override
+  String get page_itemEdit => '编辑事项';
+
+  @override
+  String get page_itemNew => '新建事项';
+
+  @override
+  String get page_itemReadonly => '事项（只读）';
+
+  @override
+  String get page_recycle => '回收站';
+
+  @override
+  String get page_categories => '分类管理';
+
+  @override
+  String get page_dataSafety => '数据安全';
+
+  @override
+  String get page_webdav => 'WebDAV 同步';
+
+  @override
+  String get page_aiAssistant => 'AI 助手';
+
+  @override
+  String get page_search => '搜索';
+
+  @override
+  String get page_statistics => '统计';
+
+  @override
+  String get page_itemList => '生活事项';
+
+  @override
+  String get page_webdavConfig => 'WebDAV 同步配置';
+
+  @override
   String get settings_themeTitle => '主题';
 
   @override

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -208,7 +208,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
     if (_isReadonly) {
       return Scaffold(
         backgroundColor: AppColors.background(context),
-        appBar: AppBar(title: const Text('账单（只读）')),
+        appBar: AppBar(title: Text(context.l.page_billReadonly)),
         body: ReadonlyMessage(
           title: '账单已删除',
           message: '回收站中的账单不能编辑，恢复后再修改。',

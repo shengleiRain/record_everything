@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 
 import '../../../core/constants/category_icon_options.dart';
 import '../../../core/theme/app_colors.dart';
@@ -28,7 +29,7 @@ class _CategoryManagementPageState
     final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('分类管理')),
+      appBar: AppBar(title: Text(context.l.page_categories)),
       floatingActionButton: FloatingActionButton.extended(
         key: const ValueKey('add-category'),
         onPressed: () => _showCategoryDialog(context),

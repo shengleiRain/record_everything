@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -52,7 +53,7 @@ class _WebDavSettingsPageState extends ConsumerState<WebDavSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('WebDAV 同步配置')),
+      appBar: AppBar(title: Text(context.l.page_webdavConfig)),
       body: Form(
         key: _formKey,
         child: ListView(

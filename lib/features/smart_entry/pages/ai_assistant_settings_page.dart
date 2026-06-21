@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/toast.dart';
@@ -63,7 +64,7 @@ class _AiAssistantSettingsPageState
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('AI 助手')),
+      appBar: AppBar(title: Text(context.l.page_aiAssistant)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
