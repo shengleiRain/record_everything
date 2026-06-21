@@ -7,13 +7,15 @@ import 'splitter.dart';
 ///
 /// 四类抽取：金额、时间、分类、事项/账单判定（spec §5.2）。
 /// 通过 `now` 注入当前时间，保证可测。
+/// `languageCode` 决定使用哪套分类关键词表（spec §5.3）。
 class LocalRuleEngine {
-  LocalRuleEngine({DateTime? now, DraftSource source = DraftSource.nl})
+  LocalRuleEngine({DateTime? now, DraftSource source = DraftSource.nl, this.languageCode = 'zh'})
     : now = now ?? DateTime.now(),
       defaultSource = source;
 
   final DateTime now;
   final DraftSource defaultSource;
+  final String languageCode;
 
   static const _pre = Preprocessor();
   static const _split = Splitter();
@@ -158,8 +160,6 @@ class LocalRuleEngine {
     if (t != null) {
       var h = int.parse(t.group(1)!);
       final min = t.group(2) == null ? 0 : int.parse(t.group(2)!);
-      // 下午/晚上的小时若无 AM/PM 标记且 ≤12，加 12（"下午3点"→15）。
-      // 12 点本身不重复加（"下午12点"=12）。
       if (hasPm && h < 12) h += 12;
       return DateTime(day.year, day.month, day.day, h, min);
     }
@@ -194,15 +194,16 @@ class LocalRuleEngine {
     return null;
   }
 
+  /// 分类猜测：按当前语言的关键词表匹配。spec §5.3。
   String? _extractCategory(String seg) {
-    for (final entry in categoryKeywords.entries) {
+    final keywords = categoryKeywordsFor(languageCode);
+    for (final entry in keywords.entries) {
       if (seg.contains(entry.key)) return entry.value;
     }
     return null;
   }
 
   String _extractTitle(String seg) {
-    // 去掉金额、时间、单位、动词，剩余中文片段作为标题
     var t = seg
         .replaceAll(amountPattern, '')
         .replaceAll(RegExp(r'\d{1,2}\s*[点:：时]\s*\d{0,2}'), '')
@@ -243,11 +244,11 @@ class LocalRuleEngine {
       return DraftKind.lifeItem;
     }
     if (amount != null) {
-      return DraftKind.bill; // 仅金额默认支出账单
+      return DraftKind.bill;
     }
     if (hasExpense || hasIncome) {
-      return DraftKind.bill; // 有消费/收入动词即便金额没抓到也判账单
+      return DraftKind.bill;
     }
-    return null; // 都不含 → 交给云端兜底
+    return null;
   }
 }

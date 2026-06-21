@@ -1,8 +1,10 @@
-﻿import 'package:drift/native.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/features/settings/providers/settings_providers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,6 +22,8 @@ void main() {
   late AppDatabase db;
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await initSharedPrefs();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     await db.categoryDao.getAll();
   });

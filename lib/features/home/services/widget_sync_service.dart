@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../settings/providers/settings_providers.dart';
+import 'package:intl/intl.dart';
 import 'package:home_widget/home_widget.dart';
 
 import '../../../core/utils/money_formatter.dart';
@@ -46,16 +48,8 @@ class WidgetSyncService {
   static Future<void> syncFromProviders(ProviderContainer container) async {
     try {
       final now = DateTime.now();
-      const weekday = [
-        '周一',
-        '周二',
-        '周三',
-        '周四',
-        '周五',
-        '周六',
-        '周日',
-      ];
-      final dateLabel = '${now.month}月${now.day}日 ${weekday[now.weekday - 1]}';
+      final locale = container.read(localeProvider);
+      final dateLabel = DateFormat('MMMd EEEE', locale.toLanguageTag()).format(now);
 
       final agenda = await container.read(homeSelectedDayAgendaProvider.future);
       final todayItems = agenda
@@ -86,10 +80,9 @@ class WidgetSyncService {
   static Future<void> syncFromRef(Ref ref) async {
     try {
       final now = DateTime.now();
-      const weekday = ['周一','周二','周三','周四','周五','周六','周日'];
-      final dateLabel = '${now.month}月${now.day}日 ${weekday[now.weekday - 1]}';
-
-      final agenda = ref.read(homeSelectedDayAgendaProvider).valueOrNull ?? [];
+      final locale = ref.read(localeProvider);
+      final dateLabel = DateFormat('MMMd EEEE', locale.toLanguageTag()).format(now);
+      final agenda = await ref.read(homeSelectedDayAgendaProvider.future);
       final todayItems = agenda
           .where((a) => !a.isCompleted)
           .map((a) => WidgetItemData(title: a.title, isOverdue: a.isOverdue))

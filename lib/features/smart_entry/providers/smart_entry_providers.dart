@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../settings/providers/settings_providers.dart';
 
 import '../../../data/database/daos/category_dao.dart';
 import '../../../data/database/database_provider.dart';
@@ -20,7 +21,8 @@ final smartEntryParserProvider = FutureProvider<SmartEntryParser>((ref) async {
           model: config.model ?? 'qwen-plus',
         )
       : const NoopCloudParser();
-  return SmartEntryParser(cloud: cloud);
+  final locale = ref.watch(localeProvider);
+  return SmartEntryParser(cloud: cloud, languageCode: locale.languageCode);
 });
 
 final categoryMatcherProvider = Provider<CategoryMatcher>((ref) {

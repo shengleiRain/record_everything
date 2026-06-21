@@ -168,3 +168,47 @@ const categoryKeywords = <String, String>{
   '续费': '订阅',
   '订阅': '订阅',
 };
+
+// ===== English category keywords =====
+
+/// 英文关键词 → categoryGuess 文本。spec §5.3。
+const categoryKeywordsEn = <String, String>{
+  'breakfast': '餐饮',
+  'lunch': '餐饮',
+  'dinner': '餐饮',
+  'coffee': '餐饮',
+  'pizza': '餐饮',
+  'takeout': '餐饮',
+  'snack': '餐饮',
+  'meal': '餐饮',
+  'grocery': '餐饮',
+  'uber': '交通',
+  'taxi': '交通',
+  'gas': '交通',
+  'parking': '交通',
+  'subway': '交通',
+  'bus': '交通',
+  'train': '交通',
+  'flight': '交通',
+  'rent': '住房',
+  'electricity': '住房',
+  'water': '住房',
+  'phone': '通讯',
+  'internet': '通讯',
+  'salary': '工资',
+  'bonus': '工资',
+  'refund': '工资',
+  'reimbursement': '工资',
+  'movie': '娱乐',
+  'game': '娱乐',
+  'netflix': '娱乐',
+  'spotify': '娱乐',
+  'subscription': '订阅',
+  'amazon': '购物',
+  'shopping': '购物',
+};
+
+/// 按语言选择分类关键词表。
+Map<String, String> categoryKeywordsFor(String languageCode) {
+  return languageCode == 'en' ? categoryKeywordsEn : categoryKeywords;
+}

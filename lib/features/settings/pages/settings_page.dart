@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -295,7 +295,7 @@ class _AppearanceGroup extends ConsumerWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '主题',
+              context.l.settings_themeTitle,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -304,18 +304,18 @@ class _AppearanceGroup extends ConsumerWidget {
           DropdownButton<ThemeMode>(
             value: themeMode,
             underline: const SizedBox(),
-            items: const [
+            items: [
               DropdownMenuItem(
                 value: ThemeMode.system,
-                child: Text('跟随系统'),
+                child: Text(context.l.settings_themeMode_system),
               ),
               DropdownMenuItem(
                 value: ThemeMode.light,
-                child: Text('浅色'),
+                child: Text(context.l.settings_themeMode_light),
               ),
               DropdownMenuItem(
                 value: ThemeMode.dark,
-                child: Text('深色'),
+                child: Text(context.l.settings_themeMode_dark),
               ),
             ],
             onChanged: (mode) {
@@ -365,7 +365,7 @@ class _LanguageGroup extends ConsumerWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              '语言',
+              context.l.settings_languageTitle,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -374,8 +374,8 @@ class _LanguageGroup extends ConsumerWidget {
           DropdownButton<String>(
             value: isSystem ? 'system' : current.languageCode,
             underline: const SizedBox(),
-            items: const [
-              DropdownMenuItem(value: 'system', child: Text('跟随系统')),
+            items: [
+              DropdownMenuItem(value: 'system', child: Text(context.l.settings_language_system)),
               DropdownMenuItem(value: 'zh', child: Text('简体中文')),
               DropdownMenuItem(value: 'en', child: Text('English')),
             ],

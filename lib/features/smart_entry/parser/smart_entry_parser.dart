@@ -10,11 +10,12 @@ class SmartEntryParser {
   SmartEntryParser({
     DateTime? now,
     CloudParser cloud = const NoopCloudParser(),
-  }) : _engine = LocalRuleEngine(now: now),
+    String languageCode = 'zh',
+  }) : _engine = LocalRuleEngine(now: now, languageCode: languageCode),
        _cloud = cloud;
 
-  SmartEntryParser.forTest({required DateTime now})
-    : _engine = LocalRuleEngine(now: now),
+  SmartEntryParser.forTest({required DateTime now, String languageCode = 'zh'})
+    : _engine = LocalRuleEngine(now: now, languageCode: languageCode),
       _cloud = const NoopCloudParser();
 
   final LocalRuleEngine _engine;
