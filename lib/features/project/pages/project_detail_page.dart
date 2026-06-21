@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
@@ -63,7 +63,7 @@ class _ProjectDetailBody extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(
         title: Text(project.title),
         actions: [
@@ -528,7 +528,7 @@ class _SummaryItem extends StatelessWidget {
           label,
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: 3),
         Text(
@@ -573,7 +573,7 @@ class _ProjectFlowPanel extends StatelessWidget {
                 child: Text(
                   '暂无项目事项或独立账单',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ),
@@ -703,7 +703,7 @@ class _ProjectFlowCard extends ConsumerWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Material(
-              color: AppColors.surface,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(8),
               child: InkWell(
                 key: ValueKey(
@@ -763,7 +763,7 @@ class _ProjectFlowCard extends ConsumerWidget {
                                               .textTheme
                                               .bodySmall
                                               ?.copyWith(
-                                                color: AppColors.textSecondary,
+                                                color: AppColors.textSecondary(context),
                                                 fontWeight: FontWeight.w500,
                                               ),
                                         ),
@@ -825,6 +825,7 @@ class _ProjectFlowCard extends ConsumerWidget {
       visual: visual,
       trailingText: _trailingText(amount: amount, amountType: amountType),
       trailingColor: _trailingColor(
+        context,
         amountType: amountType,
         isSettled: isSettled,
         hasAmount: hasAmount,
@@ -836,11 +837,11 @@ class _ProjectFlowCard extends ConsumerWidget {
         isBill: isBill,
       ),
       statusLabel: _statusLabel(item),
-      statusColor: _statusColor(item),
+      statusColor: _statusColor(context, item),
       borderColor: isOverdue
-          ? AppColors.overdue.withValues(alpha: 0.28)
+          ? AppColors.overdue(context).withValues(alpha: 0.28)
           : isCompleted
-          ? AppColors.completed.withValues(alpha: 0.24)
+          ? AppColors.completed(context).withValues(alpha: 0.24)
           : Colors.black.withValues(alpha: 0.08),
     );
   }
@@ -853,9 +854,9 @@ class _ProjectFlowCard extends ConsumerWidget {
     required bool isOverdue,
   }) {
     if (isOverdue) {
-      return const _FlowVisual(
+      return _FlowVisual(
         icon: Icons.error_outline,
-        color: AppColors.overdue,
+        color: AppColors.overdue(context),
       );
     }
     if (isBill) {
@@ -893,15 +894,16 @@ class _ProjectFlowCard extends ConsumerWidget {
     return '-${MoneyFormatter.formatInt(amount.abs())}';
   }
 
-  Color _trailingColor({
+  Color _trailingColor(
+    BuildContext context, {
     required String amountType,
     required bool isSettled,
     required bool hasAmount,
   }) {
-    if (!hasAmount) return AppColors.textSecondary;
-    if (!isSettled) return Colors.orange.shade800;
-    if (amountType == 'income') return Colors.green;
-    return Colors.red.shade700;
+    if (!hasAmount) return AppColors.textSecondary(context);
+    if (!isSettled) return AppColors.upcoming(context);
+    if (amountType == 'income') return AppColors.income(context);
+    return AppColors.expense(context);
   }
 
   String? _metaText({
@@ -925,9 +927,9 @@ class _ProjectFlowCard extends ConsumerWidget {
     return null;
   }
 
-  Color _statusColor(LifeItem? item) {
-    if (item?.status == 'completed') return AppColors.primary;
-    return AppColors.overdue;
+  Color _statusColor(BuildContext context, LifeItem? item) {
+    if (item?.status == 'completed') return AppColors.primary(context);
+    return AppColors.overdue(context);
   }
 
   String _formatMonthDay(DateTime time) =>
@@ -951,7 +953,7 @@ class _ProjectFlowCard extends ConsumerWidget {
           SwipeAction(
             label: '删账单',
             icon: Icons.delete_outline,
-            color: AppColors.overdue,
+            color: AppColors.overdue(context),
             onTap: () => _confirmDeleteBill(context, ref, linkedBill),
           ),
         ];
@@ -963,8 +965,8 @@ class _ProjectFlowCard extends ConsumerWidget {
               label: '补账',
               icon: Icons.receipt_long,
               color: item.amountType == 'income'
-                  ? AppColors.income
-                  : AppColors.expense,
+                  ? AppColors.income(context)
+                  : AppColors.expense(context),
               onTap: () => _openBillForItem(context, item),
             ),
           SwipeAction(
@@ -976,7 +978,7 @@ class _ProjectFlowCard extends ConsumerWidget {
           SwipeAction(
             label: '删除',
             icon: Icons.delete_outline,
-            color: AppColors.overdue,
+            color: AppColors.overdue(context),
             onTap: () => _confirmDeleteItem(context, ref, item),
           ),
         ];
@@ -990,8 +992,8 @@ class _ProjectFlowCard extends ConsumerWidget {
                 ? Icons.payments_outlined
                 : Icons.outbox_outlined,
             color: item.amountType == 'income'
-                ? AppColors.income
-                : AppColors.expense,
+                ? AppColors.income(context)
+                : AppColors.expense(context),
             onTap: () => _openBillForItem(context, item),
           ),
           SwipeAction(
@@ -1006,7 +1008,7 @@ class _ProjectFlowCard extends ConsumerWidget {
         SwipeAction(
           label: '完成',
           icon: Icons.check,
-          color: AppColors.completed,
+          color: AppColors.completed(context),
           onTap: () => _completeItem(context, ref, item),
         ),
         SwipeAction(
@@ -1022,7 +1024,7 @@ class _ProjectFlowCard extends ConsumerWidget {
       SwipeAction(
         label: '删除',
         icon: Icons.delete_outline,
-        color: AppColors.overdue,
+        color: AppColors.overdue(context),
         onTap: () => _confirmDeleteBill(context, ref, bill!),
       ),
     ];
@@ -1189,7 +1191,7 @@ class _DatePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: AppColors.background(context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
       ),
@@ -1211,7 +1213,7 @@ class _DatePill extends StatelessWidget {
               Text(
                 _weekdayLabel(date),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textSecondary(context),
                   fontWeight: FontWeight.w700,
                 ),
               ),

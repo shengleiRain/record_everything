@@ -1,3 +1,4 @@
+﻿import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/features/smart_entry/models/draft_item.dart';
@@ -20,6 +21,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.lightTheme(),
         home: Scaffold(
           body: DraftItemCard(
             item: item,
@@ -53,6 +55,7 @@ void main() {
     );
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.lightTheme(),
         home: Scaffold(
           body: DraftItemCard(item: item, onChanged: (_) {}, onDeleted: () {}),
         ),

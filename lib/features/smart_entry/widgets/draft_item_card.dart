@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
@@ -23,7 +23,7 @@ class DraftItemCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: low
@@ -53,7 +53,7 @@ class DraftItemCard extends StatelessWidget {
                               ? Icons.payments_outlined
                               : Icons.check_circle_outline,
                           size: 18,
-                          color: AppColors.primary,
+                          color: AppColors.primary(context),
                         ),
                         const SizedBox(width: 6),
                         if (low)
@@ -92,12 +92,13 @@ class DraftItemCard extends StatelessWidget {
                       runSpacing: 4,
                       children: [
                         _chip(
+                          context,
                           item.amountCents == null
                               ? '无金额'
                               : MoneyFormatter.format(item.amountCents),
                         ),
-                        _chip(_kindLabel()),
-                        _chip(_timeLabel()),
+                        _chip(context, _kindLabel()),
+                        _chip(context, _timeLabel()),
                       ],
                     ),
                     if (item.parseNotes.isNotEmpty) ...[
@@ -119,13 +120,13 @@ class DraftItemCard extends StatelessWidget {
     );
   }
 
-  Widget _chip(String text) => Container(
+  Widget _chip(BuildContext context, String text) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: BoxDecoration(
       color: AppColors.primaryLight,
       borderRadius: BorderRadius.circular(6),
     ),
-    child: Text(text, style: const TextStyle(fontSize: 12, color: AppColors.primary)),
+    child: Text(text, style: TextStyle(fontSize: 12, color: AppColors.primary(context))),
   );
 
   String _kindLabel() {

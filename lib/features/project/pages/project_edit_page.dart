@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
@@ -446,7 +446,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   Widget build(BuildContext context) {
     if (_isReadonly) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.background(context),
         appBar: AppBar(title: const Text('项目（只读）')),
         body: ReadonlyMessage(
           title: '项目已完结',
@@ -478,7 +478,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
       canPop: !isDirty,
       onPopInvokedWithResult: (didPop, _) => onPopInvoked(didPop),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.background(context),
         appBar: AppBar(
           title: Text(
             _isReadonly
@@ -493,8 +493,8 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
                   selectedTemplate?.name ?? '模板',
                   style: TextStyle(
                     color: selectedTemplate != null
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                        ? AppColors.primary(context)
+                        : AppColors.textSecondary(context),
                   ),
                 ),
               ),
@@ -886,7 +886,7 @@ class _ProjectTemplatePickerSheet extends ConsumerWidget {
             Text(
               '项目模板',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textSecondary(context),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -921,7 +921,7 @@ class _NoTemplateTile extends StatelessWidget {
         children: [
           Icon(
             selected ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: selected ? AppColors.primary : AppColors.textSecondary,
+            color: selected ? AppColors.primary(context) : AppColors.textSecondary(context),
           ),
           const SizedBox(width: 12),
           const Expanded(
@@ -965,7 +965,7 @@ class _TemplateOptionTile extends ConsumerWidget {
         children: [
           Icon(
             selected ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: selected ? AppColors.primary : AppColors.textSecondary,
+            color: selected ? AppColors.primary(context) : AppColors.textSecondary(context),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -984,7 +984,7 @@ class _TemplateOptionTile extends ConsumerWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ],
@@ -1014,11 +1014,11 @@ class _TemplateOptionFrame extends StatelessWidget {
       onTap: onTap,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : AppColors.surface,
+          color: selected ? AppColors.primaryLight : AppColors.surface(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: selected
-                ? AppColors.primary
+                ? AppColors.primary(context)
                 : Colors.black.withValues(alpha: 0.08),
           ),
         ),

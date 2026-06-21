@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,7 +15,7 @@ class ProjectTemplateListPage extends ConsumerWidget {
     final templatesAsync = ref.watch(projectTemplatesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.background(context),
       appBar: AppBar(title: const Text('项目模板')),
       body: templatesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -43,7 +43,7 @@ class ProjectTemplateListPage extends ConsumerWidget {
                       '模板用于自动生成项目里的待办、待收款和交付节点。',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.textSecondary(context),
                       ),
                     ),
                   ],
@@ -129,7 +129,7 @@ class _TemplateTile extends ConsumerWidget {
     final card = Card(
       margin: EdgeInsets.zero,
       elevation: 0,
-      color: AppColors.surface,
+      color: AppColors.surface(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -179,7 +179,7 @@ class _TemplateTile extends ConsumerWidget {
         SwipeAction(
           label: '复制',
           icon: Icons.content_copy,
-          color: AppColors.primary,
+          color: AppColors.primary(context),
           onTap: () async {
             final shouldCopy = await _confirmCopy(context);
             if (shouldCopy != true) return;
@@ -194,7 +194,7 @@ class _TemplateTile extends ConsumerWidget {
         SwipeAction(
           label: '删除',
           icon: Icons.delete_outline,
-          color: AppColors.overdue,
+          color: AppColors.overdue(context),
           onTap: () async {
             final shouldDelete = await _confirmDelete(context);
             if (shouldDelete != true) return;
@@ -225,7 +225,7 @@ class _Badge extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: AppColors.primary,
+          color: AppColors.primary(context),
           fontWeight: FontWeight.w700,
         ),
       ),

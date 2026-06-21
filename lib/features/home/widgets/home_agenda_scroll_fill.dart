@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 
@@ -18,7 +18,7 @@ class HomeAgendaScrollFill extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
       child: ColoredBox(
-        color: AppColors.background,
+        color: AppColors.background(context),
         child: ConstrainedBox(
           key: const ValueKey('home-agenda-scroll-fill-section'),
           constraints: BoxConstraints(minHeight: minHeight),

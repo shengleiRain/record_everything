@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -52,7 +52,7 @@ class QuickCreateSheet extends StatelessWidget {
                         Text(
                           '选择一种记录',
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.textSecondary),
+                              ?.copyWith(color: AppColors.textSecondary(context)),
                         ),
                       ],
                     ),
@@ -73,9 +73,9 @@ class QuickCreateSheet extends StatelessWidget {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.auto_awesome,
-                                color: AppColors.primary,
+                                color: AppColors.primary(context),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -95,15 +95,15 @@ class QuickCreateSheet extends StatelessWidget {
                                       style: Theme.of(
                                         context,
                                       ).textTheme.labelSmall?.copyWith(
-                                        color: AppColors.textSecondary,
+                                        color: AppColors.textSecondary(context),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(
+                              Icon(
                                 Icons.chevron_right,
-                                color: AppColors.primary,
+                                color: AppColors.primary(context),
                               ),
                             ],
                           ),
@@ -195,7 +195,7 @@ class _QuickCreateAction extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
         ),
@@ -208,7 +208,7 @@ class _QuickCreateAction extends StatelessWidget {
                 color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, size: 18, color: AppColors.primary),
+              child: Icon(icon, size: 18, color: AppColors.primary(context)),
             ),
             const SizedBox(width: 9),
             Expanded(
@@ -221,7 +221,7 @@ class _QuickCreateAction extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppColors.textPrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -231,7 +231,7 @@ class _QuickCreateAction extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],

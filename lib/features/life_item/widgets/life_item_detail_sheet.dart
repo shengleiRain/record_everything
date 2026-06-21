@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -37,7 +37,7 @@ Future<void> showLifeItemDetailSheet(
       final isOverdue =
           DateFormatter.isOverdue(item.dueTime) && status == ItemStatus.pending;
       final amountText = _formatAmountValue(item.amount, item.amountType);
-      final amountColor = _amountColor(item.amountType);
+      final amountColor = _amountColor(context, item.amountType);
 
       return SafeArea(
         child: SingleChildScrollView(
@@ -56,10 +56,10 @@ Future<void> showLifeItemDetailSheet(
                       ? Icons.check_circle
                       : Icons.event_note_outlined,
                   accent: isOverdue
-                      ? AppColors.overdue
+                      ? AppColors.overdue(context)
                       : status == ItemStatus.completed
-                      ? AppColors.completed
-                      : AppColors.upcoming,
+                      ? AppColors.completed(context)
+                      : AppColors.upcoming(context),
                   trailingText: amountText,
                   trailingColor: amountColor,
                 ),
@@ -68,7 +68,7 @@ Future<void> showLifeItemDetailSheet(
                 _DetailInfoRow(
                   label: _statusTimeLabel(status, isDeleted),
                   value: _statusTimeValue(item, status, isDeleted),
-                  valueColor: isOverdue ? AppColors.overdue : null,
+                  valueColor: isOverdue ? AppColors.overdue(context) : null,
                 ),
                 if (item.remindTime != null)
                   _DetailInfoRow(
@@ -93,11 +93,11 @@ Future<void> showLifeItemDetailSheet(
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const SizedBox(
+                      SizedBox(
                         width: 72,
                         child: Text(
                           '归属项目',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(color: AppColors.textSecondary(context)),
                         ),
                       ),
                       ProjectNameChip(
@@ -151,7 +151,7 @@ Future<void> showLifeItemDetailSheet(
                       ),
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.overdue,
+                          backgroundColor: AppColors.overdue(context),
                         ),
                         onPressed: () =>
                             _confirmDelete(sheetContext, context, ref, item),
@@ -204,9 +204,9 @@ String _statusTimeValue(LifeItem item, ItemStatus status, bool isDeleted) {
   return DateFormatter.formatDateTimeWithRelative(item.dueTime);
 }
 
-Color? _amountColor(String amountType) {
-  if (amountType == 'income') return AppColors.income;
-  if (amountType == 'expense') return AppColors.expense;
+Color? _amountColor(BuildContext context, String amountType) {
+  if (amountType == 'income') return AppColors.income(context);
+  if (amountType == 'expense') return AppColors.expense(context);
   return null;
 }
 
@@ -384,7 +384,7 @@ class _SheetHeader extends StatelessWidget {
                 subtitle,
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context)),
               ),
             ],
           ),
@@ -393,7 +393,7 @@ class _SheetHeader extends StatelessWidget {
           Text(
             trailingText!,
             style: TextStyle(
-              color: trailingColor ?? AppColors.textPrimary,
+              color: trailingColor ?? AppColors.textPrimary(context),
               fontWeight: FontWeight.w900,
               fontSize: 18,
             ),
@@ -427,14 +427,14 @@ class _DetailInfoRow extends StatelessWidget {
               label,
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context)),
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: valueColor ?? AppColors.textPrimary,
+                color: valueColor ?? AppColors.textPrimary(context),
                 fontWeight: FontWeight.w600,
               ),
             ),

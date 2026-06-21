@@ -1,4 +1,4 @@
-import 'package:fl_chart/fl_chart.dart';
+﻿import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -12,9 +12,9 @@ class DailyTrendChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 200,
-        child: Center(child: Text('暂无数据', style: TextStyle(color: AppColors.textSecondary))),
+        child: Center(child: Text('暂无数据', style: TextStyle(color: AppColors.textSecondary(context)))),
       );
     }
     final avg =
@@ -73,7 +73,7 @@ class DailyTrendChart extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: value,
-                  color: isHigh ? AppColors.expense : AppColors.primary,
+                  color: isHigh ? AppColors.expense(context) : AppColors.primary(context),
                   width: data.length > 20 ? 4 : 8,
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(2)),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
@@ -43,10 +43,10 @@ class UpcomingCard extends ConsumerWidget {
               ...items.take(5).map((item) {
                 final days = DateFormatter.daysRemaining(item.dueTime);
                 final color = days <= 1
-                    ? AppColors.overdue
+                    ? AppColors.overdue(context)
                     : days <= 3
-                    ? AppColors.upcoming
-                    : AppColors.primary;
+                    ? AppColors.upcoming(context)
+                    : AppColors.primary(context);
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   dense: true,

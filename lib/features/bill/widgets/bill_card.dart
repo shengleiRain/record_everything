@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -30,7 +30,7 @@ class BillCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isIncome = bill.amountType == 'income';
-    final accent = isIncome ? AppColors.income : AppColors.expense;
+    final accent = isIncome ? AppColors.income(context) : AppColors.expense(context);
 
     final row = _BillRow(bill: bill, accent: accent, onTap: onTap);
 
@@ -39,14 +39,14 @@ class BillCard extends StatelessWidget {
         SwipeAction(
           label: '编辑',
           icon: Icons.edit_outlined,
-          color: AppColors.primary,
+          color: AppColors.primary(context),
           onTap: onEdit!,
         ),
       if (onDelete != null)
         SwipeAction(
           label: '删除',
           icon: Icons.delete_outline,
-          color: AppColors.overdue,
+          color: AppColors.overdue(context),
           onTap: onDelete!,
         ),
     ];
@@ -71,7 +71,7 @@ class _BillRow extends StatelessWidget {
     final noteText = note != null && note.isNotEmpty ? note : null;
 
     return Material(
-      color: AppColors.surface,
+      color: AppColors.surface(context),
       borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
       child: InkWell(
         onTap: onTap,
@@ -83,7 +83,7 @@ class _BillRow extends StatelessWidget {
             DecoratedBox(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 66),
@@ -148,7 +148,7 @@ class _BillRow extends StatelessWidget {
     required String? noteText,
   }) {
     final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: AppColors.textSecondary,
+      color: AppColors.textSecondary(context),
       fontWeight: FontWeight.w500,
     );
 

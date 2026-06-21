@@ -1,3 +1,4 @@
+﻿import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/features/home/widgets/home_agenda_scroll_fill.dart';
@@ -7,7 +8,8 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
+        theme: AppTheme.lightTheme(),
         home: CustomScrollView(
           slivers: [
             HomeAgendaScrollFill(minHeight: 300, child: SizedBox(height: 100)),
@@ -31,8 +33,9 @@ void main() {
     'agenda scroll section keeps natural height when content is tall',
     (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: CustomScrollView(
+        MaterialApp(
+        theme: AppTheme.lightTheme(),
+        home: CustomScrollView(
             slivers: [
               HomeAgendaScrollFill(
                 minHeight: 300,

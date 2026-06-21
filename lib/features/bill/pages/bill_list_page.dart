@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
@@ -270,16 +270,16 @@ class _FilterChip extends StatelessWidget {
         onSelected: (_) => onSelected(),
         showCheckmark: false,
         visualDensity: VisualDensity.compact,
-        selectedColor: AppColors.primary.withValues(alpha: 0.14),
-        backgroundColor: AppColors.surface,
+        selectedColor: AppColors.primary(context).withValues(alpha: 0.14),
+        backgroundColor: AppColors.surface(context),
         labelStyle: TextStyle(
-          color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+          color: selected ? AppColors.primaryDark : AppColors.textSecondary(context),
           fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
         ),
         side: BorderSide(
           color: selected
-              ? AppColors.primary.withValues(alpha: 0.36)
-              : AppColors.textHint.withValues(alpha: 0.35),
+              ? AppColors.primary(context).withValues(alpha: 0.36)
+              : AppColors.textHint(context).withValues(alpha: 0.35),
         ),
       ),
     );

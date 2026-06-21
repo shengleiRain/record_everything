@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -135,7 +135,7 @@ class _AiAssistantSettingsPageState
             child: Text(
               '说明：API Key 存储在设备安全存储中，不会上传到任何服务器，也不会包含在备份导出中。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textSecondary(context),
               ),
             ),
           ),

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/money_formatter.dart';
@@ -32,12 +32,12 @@ class LifeItemCard extends StatelessWidget {
     final isCompleted = status == ItemStatus.completed;
     final isCancelled = status == ItemStatus.cancelled;
     final statusColor = isOverdue
-        ? AppColors.overdue
+        ? AppColors.overdue(context)
         : isCompleted
-        ? AppColors.completed
+        ? AppColors.completed(context)
         : isCancelled
-        ? AppColors.textHint
-        : AppColors.upcoming;
+        ? AppColors.textHint(context)
+        : AppColors.upcoming(context);
     final amountText = item.amount != null && item.amountType != 'none'
         ? MoneyFormatter.format(item.amount)
         : null;
@@ -75,6 +75,7 @@ class LifeItemCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
                 border: Border.all(
                   color: cardBorderColor(
+                    context,
                     isOverdue: isOverdue,
                     isCompleted: isCompleted,
                   ),
@@ -129,7 +130,7 @@ class LifeItemCard extends StatelessWidget {
                         CardTrailingValue(
                           text: amountText ?? _statusText(isOverdue),
                           color: amountText != null
-                              ? _amountColor()
+                              ? _amountColor(context)
                               : statusColor,
                           fontSize: 15,
                         ),
@@ -154,7 +155,7 @@ class LifeItemCard extends StatelessWidget {
         SwipeAction(
           label: '完成',
           icon: Icons.check,
-          color: AppColors.completed,
+          color: AppColors.completed(context),
           onTap: onComplete!,
         ),
       if (canMutate && onDefer != null)
@@ -184,7 +185,7 @@ class LifeItemCard extends StatelessWidget {
   }) {
     final textStyle = Theme.of(
       context,
-    ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary);
+    ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context));
 
     return Row(
       children: [
@@ -220,7 +221,7 @@ class LifeItemCard extends StatelessWidget {
     return '待办';
   }
 
-  Color _amountColor() {
-    return item.amountType == 'income' ? AppColors.income : AppColors.expense;
+  Color _amountColor(BuildContext context) {
+    return item.amountType == 'income' ? AppColors.income(context) : AppColors.expense(context);
   }
 }

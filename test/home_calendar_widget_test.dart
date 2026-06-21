@@ -1,3 +1,4 @@
+﻿import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/features/home/models/day_bucket_view_model.dart';
@@ -9,6 +10,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.lightTheme(),
         home: Scaffold(
           body: HomeCalendar(
             isWeek: true,
@@ -46,6 +48,7 @@ void main() {
   testWidgets('renders month view with correct title', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.lightTheme(),
         home: Scaffold(
           body: SingleChildScrollView(
             child: HomeCalendar(
@@ -84,6 +87,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: AppTheme.lightTheme(),
         home: Scaffold(
           body: HomeCalendar(
             isWeek: true,

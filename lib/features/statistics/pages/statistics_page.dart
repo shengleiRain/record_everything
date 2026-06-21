@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -73,24 +73,24 @@ class StatisticsPage extends ConsumerWidget {
               _SummaryCellData(
                 label: '结余',
                 value: MoneyFormatter.format(balance),
-                color: balance >= 0 ? AppColors.income : AppColors.expense,
+                color: balance >= 0 ? AppColors.income(context) : AppColors.expense(context),
               ),
               _SummaryCellData(
                 label: '预算',
                 value: budget == 0
                     ? '未设置'
                     : '${((expense / budget) * 100).round().clamp(0, 999)}%',
-                color: AppColors.upcoming,
+                color: AppColors.upcoming(context),
               ),
               _SummaryCellData(
                 label: '完成率',
                 value: '$completionRate%',
-                color: AppColors.textPrimary,
+                color: AppColors.textPrimary(context),
               ),
               _SummaryCellData(
                 label: '逾期',
                 value: '$overdue',
-                color: overdue > 0 ? AppColors.overdue : AppColors.textHint,
+                color: overdue > 0 ? AppColors.overdue(context) : AppColors.textHint(context),
               ),
             ],
           ),
@@ -174,21 +174,21 @@ class StatisticsPage extends ConsumerWidget {
                   label: '本月项目收入',
                   subtitle: '已关联项目的收入账单',
                   amount: MoneyFormatter.format(projectIncome),
-                  color: AppColors.income,
+                  color: AppColors.income(context),
                 ),
                 _CategoryRow(
                   icon: '进',
                   label: '进行中项目',
                   subtitle: '当前活跃',
                   amount: '${activeProjects.length} 个',
-                  color: AppColors.income,
+                  color: AppColors.income(context),
                 ),
                 _CategoryRow(
                   icon: '完',
                   label: '已完成项目',
                   subtitle: '已交付/归档',
                   amount: '${completedProjects.length} 个',
-                  color: AppColors.completed,
+                  color: AppColors.completed(context),
                 ),
               ],
             ),
@@ -241,7 +241,7 @@ class _MonthlyTrendChart extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Center(
-          child: Text('暂无趋势数据', style: TextStyle(color: AppColors.textHint)),
+          child: Text('暂无趋势数据', style: TextStyle(color: AppColors.textHint(context))),
         ),
       );
     }
@@ -281,7 +281,7 @@ class _MonthlyTrendChart extends StatelessWidget {
                       child: Text(
                         _monthLabel(ym),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: AppColors.textSecondary(context),
                           fontSize: 10,
                         ),
                       ),
@@ -294,13 +294,13 @@ class _MonthlyTrendChart extends StatelessWidget {
                         _MiniBar(
                           value: incomeMap[ym] ?? 0,
                           maxValue: maxValue,
-                          color: AppColors.income,
+                          color: AppColors.income(context),
                         ),
                         const SizedBox(width: 2),
                         _MiniBar(
                           value: expenseMap[ym] ?? 0,
                           maxValue: maxValue,
-                          color: AppColors.expense,
+                          color: AppColors.expense(context),
                         ),
                       ],
                     ),
@@ -423,8 +423,8 @@ class _CompareRow extends StatelessWidget {
         : (current > 0 ? 100 : 0);
     final isUp = diff > 0;
     final color = isUp
-        ? AppColors.income
-        : (diff < 0 ? AppColors.expense : AppColors.textHint);
+        ? AppColors.income(context)
+        : (diff < 0 ? AppColors.expense(context) : AppColors.textHint(context));
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -463,7 +463,7 @@ class _CompareRow extends StatelessWidget {
           else
             Text(
               '无上月数据',
-              style: TextStyle(color: AppColors.textHint, fontSize: 12),
+              style: TextStyle(color: AppColors.textHint(context), fontSize: 12),
             ),
         ],
       ),
@@ -517,8 +517,8 @@ class _CategoryBreakdownListState
     final displayRows = rows.take(5).toList();
     final otherSum = rows.skip(5).fold<int>(0, (sum, r) => sum + r.sum);
     final color = widget.amountType == 'income'
-        ? AppColors.income
-        : AppColors.expense;
+        ? AppColors.income(context)
+        : AppColors.expense(context);
 
     return Column(
       children: [
@@ -535,7 +535,7 @@ class _CategoryBreakdownListState
             label: '其他',
             subtitle: '${total > 0 ? ((otherSum / total) * 100).round() : 0}%',
             amount: MoneyFormatter.format(otherSum),
-            color: AppColors.textSecondary,
+            color: AppColors.textSecondary(context),
           ),
       ],
     );
@@ -589,7 +589,7 @@ class _BudgetRiskCard extends StatelessWidget {
       child: Text(
         message,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColors.textSecondary,
+          color: AppColors.textSecondary(context),
           height: 1.5,
         ),
       ),
@@ -630,7 +630,7 @@ class _MonthHeader extends StatelessWidget {
                 '趋势和风险提示',
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context)),
               ),
             ],
           ),
@@ -677,9 +677,9 @@ class _SummaryCell extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -692,7 +692,7 @@ class _SummaryCell extends StatelessWidget {
             child: Text(
               data.label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textSecondary(context),
                 fontSize: 11,
               ),
             ),
@@ -743,9 +743,9 @@ class _ChartCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -763,7 +763,7 @@ class _ChartCard extends StatelessWidget {
                 trailing,
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context)),
               ),
             ],
           ),
@@ -804,19 +804,19 @@ class _BalanceBars extends StatelessWidget {
             label: '收入',
             value: income,
             maxValue: maxValue,
-            color: AppColors.income,
+            color: AppColors.income(context),
           ),
           _Bar(
             label: '支出',
             value: expense,
             maxValue: maxValue,
-            color: AppColors.expense,
+            color: AppColors.expense(context),
           ),
           _Bar(
             label: '预测',
             value: forecast,
             maxValue: maxValue,
-            color: AppColors.upcoming,
+            color: AppColors.upcoming(context),
           ),
         ],
       ),
@@ -850,7 +850,7 @@ class _Bar extends StatelessWidget {
             child: Text(
               MoneyFormatter.format(value),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textSecondary(context),
                 fontSize: 11,
               ),
             ),
@@ -872,7 +872,7 @@ class _Bar extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textSecondary(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -939,7 +939,7 @@ class _CategoryRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ],
@@ -982,7 +982,7 @@ class _ForecastCard extends StatelessWidget {
       child: Text(
         message,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColors.textSecondary,
+          color: AppColors.textSecondary(context),
           height: 1.5,
         ),
       ),

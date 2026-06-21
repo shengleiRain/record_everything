@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -411,7 +411,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   Widget build(BuildContext context) {
     if (_isReadonly) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.background(context),
         appBar: AppBar(title: const Text('事项（只读）')),
         body: ReadonlyMessage(
           title: '事项已完结',
@@ -425,7 +425,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
       canPop: !isDirty,
       onPopInvokedWithResult: (didPop, _) => onPopInvoked(didPop),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.background(context),
         appBar: AppBar(
           title: Text(
             _isReadonly
@@ -822,8 +822,8 @@ class _ItemTemplatePickerSheet extends ConsumerWidget {
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
                   color: selectedTemplateId == null
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+                      ? AppColors.primary(context)
+                      : AppColors.textSecondary(context),
                 ),
                 const SizedBox(width: 12),
                 const Expanded(
@@ -881,7 +881,7 @@ class _ItemTemplateTile extends StatelessWidget {
         children: [
           Icon(
             selected ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: selected ? AppColors.primary : AppColors.textSecondary,
+            color: selected ? AppColors.primary(context) : AppColors.textSecondary(context),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -903,7 +903,7 @@ class _ItemTemplateTile extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondary(context),
                   ),
                 ),
               ],
@@ -933,11 +933,11 @@ class _ItemTemplateOptionFrame extends StatelessWidget {
       onTap: onTap,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : AppColors.surface,
+          color: selected ? AppColors.primaryLight : AppColors.surface(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: selected
-                ? AppColors.primary
+                ? AppColors.primary(context)
                 : Colors.black.withValues(alpha: 0.08),
           ),
         ),

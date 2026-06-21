@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
@@ -35,7 +35,7 @@ class BillDayGroup extends StatelessWidget {
                 Text(
                   _formatDayHeader(date),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -43,7 +43,7 @@ class BillDayGroup extends StatelessWidget {
                 Text(
                   '${bills.length}笔 · ${_formatNetAmount(bills)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondary(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

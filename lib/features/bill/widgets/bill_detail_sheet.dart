@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,7 +27,7 @@ Future<void> showBillDetailSheet(
     isScrollControlled: true,
     builder: (sheetContext) {
       final isIncome = bill.amountType == 'income';
-      final accent = isIncome ? AppColors.income : AppColors.expense;
+      final accent = isIncome ? AppColors.income(context) : AppColors.expense(context);
       final isDeleted = bill.deletedAt != null;
       return SafeArea(
         child: SingleChildScrollView(
@@ -65,11 +65,11 @@ Future<void> showBillDetailSheet(
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const SizedBox(
+                      SizedBox(
                         width: 72,
                         child: Text(
                           '归属项目',
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(color: AppColors.textSecondary(context)),
                         ),
                       ),
                       ProjectNameChip(
@@ -108,7 +108,7 @@ Future<void> showBillDetailSheet(
                       ),
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.overdue,
+                          backgroundColor: AppColors.overdue(context),
                         ),
                         onPressed: () =>
                             _confirmDelete(sheetContext, context, ref, bill),
@@ -189,7 +189,7 @@ class _SheetHeader extends StatelessWidget {
                 '账单',
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context)),
               ),
             ],
           ),
@@ -231,14 +231,14 @@ class _DetailInfoRow extends StatelessWidget {
               label,
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context)),
             ),
           ),
           Expanded(
             child: Text(
               value,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: valueColor ?? AppColors.textPrimary,
+                color: valueColor ?? AppColors.textPrimary(context),
                 fontWeight: FontWeight.w600,
               ),
             ),

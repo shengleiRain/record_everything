@@ -1,3 +1,4 @@
+﻿import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -149,6 +150,7 @@ Future<void> _pumpNarrowCard(
         ).overrideWith((ref) => Stream.value(project)),
       ],
       child: MaterialApp(
+        theme: AppTheme.lightTheme(),
         home: Scaffold(
           body: Center(child: SizedBox(width: 320, child: child)),
         ),

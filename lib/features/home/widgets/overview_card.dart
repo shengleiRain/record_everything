@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
 
@@ -32,14 +32,14 @@ class OverviewCard extends StatelessWidget {
                   child: _StatItem(
                     label: '收入',
                     value: MoneyFormatter.format(income),
-                    color: AppColors.income,
+                    color: AppColors.income(context),
                   ),
                 ),
                 Expanded(
                   child: _StatItem(
                     label: '支出',
                     value: MoneyFormatter.format(expense),
-                    color: AppColors.expense,
+                    color: AppColors.expense(context),
                   ),
                 ),
               ],
@@ -51,14 +51,14 @@ class OverviewCard extends StatelessWidget {
                   child: _StatItem(
                     label: '结余',
                     value: MoneyFormatter.format(balance),
-                    color: AppColors.primary,
+                    color: AppColors.primary(context),
                   ),
                 ),
                 Expanded(
                   child: _StatItem(
                     label: '预计支出',
                     value: MoneyFormatter.format(forecast),
-                    color: AppColors.upcoming,
+                    color: AppColors.upcoming(context),
                   ),
                 ),
               ],

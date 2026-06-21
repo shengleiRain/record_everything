@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -175,7 +175,7 @@ class _RecycleBinPageState extends ConsumerState<RecycleBinPage> {
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.overdue),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.overdue(context)),
             onPressed: () {
               Navigator.of(dialogContext).pop();
               onConfirm();
@@ -204,21 +204,21 @@ class _SectionHeader extends StatelessWidget {
             title,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
+              color: AppColors.textSecondary(context),
             ),
           ),
           const SizedBox(width: 6),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
             decoration: BoxDecoration(
-              color: AppColors.textHint.withValues(alpha: 0.2),
+              color: AppColors.textHint(context).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
               '$count',
               style: Theme.of(
                 context,
-              ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary),
+              ).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary(context)),
             ),
           ),
         ],
@@ -249,7 +249,7 @@ class _RecycleBinTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 3),
       elevation: 0,
-      color: AppColors.surface,
+      color: AppColors.surface(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppColors.cardRadiusLarge),
       ),
@@ -257,7 +257,7 @@ class _RecycleBinTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: AppColors.textSecondary),
+            Icon(icon, size: 22, color: AppColors.textSecondary(context)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -279,7 +279,7 @@ class _RecycleBinTile extends StatelessWidget {
                     subtitle,
                     style: Theme.of(
                       context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.textHint),
+                    ).textTheme.bodySmall?.copyWith(color: AppColors.textHint(context)),
                   ),
                 ],
               ),
@@ -289,7 +289,7 @@ class _RecycleBinTile extends StatelessWidget {
               tooltip: '永久删除',
               icon: Icon(
                 Icons.delete_forever_outlined,
-                color: AppColors.overdue,
+                color: AppColors.overdue(context),
                 size: 20,
               ),
               onPressed: onDelete,

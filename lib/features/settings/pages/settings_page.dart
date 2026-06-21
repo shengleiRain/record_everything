@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -102,9 +102,9 @@ class _SettingsGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         children: [
@@ -171,14 +171,14 @@ class _SettingsRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: AppColors.textHint),
+            Icon(Icons.chevron_right, color: AppColors.textHint(context)),
           ],
         ),
       ),
@@ -206,9 +206,9 @@ class _PreferenceCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +226,7 @@ class _PreferenceCard extends StatelessWidget {
                 '移动端优先',
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context)),
               ),
             ],
           ),
@@ -234,7 +234,7 @@ class _PreferenceCard extends StatelessWidget {
           Text(
             '首页默认使用收缩周视图，也可展开为整月日历；下方列表跟随选中日期切换，只显示当天事项和账单。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
+              color: AppColors.textSecondary(context),
               height: 1.5,
             ),
           ),
@@ -252,7 +252,7 @@ class _AboutRow extends StatelessWidget {
       textAlign: TextAlign.center,
       style: Theme.of(
         context,
-      ).textTheme.bodySmall?.copyWith(color: AppColors.textHint),
+      ).textTheme.bodySmall?.copyWith(color: AppColors.textHint(context)),
     );
   }
 }

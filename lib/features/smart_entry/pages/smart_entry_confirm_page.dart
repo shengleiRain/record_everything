@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -91,10 +91,10 @@ class _SmartEntryConfirmPageState extends ConsumerState<SmartEntryConfirmPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
+          Icon(
             Icons.sentiment_dissatisfied,
             size: 48,
-            color: AppColors.textSecondary,
+            color: AppColors.textSecondary(context),
           ),
           const SizedBox(height: 12),
           const Text('没识别到可记录的内容'),
@@ -133,7 +133,7 @@ class _SourceBanner extends StatelessWidget {
         children: [
           Text(
             '来自：$sourceLabel',
-            style: const TextStyle(fontSize: 12, color: AppColors.primary),
+            style: TextStyle(fontSize: 12, color: AppColors.primary(context)),
           ),
           const SizedBox(height: 4),
           Text(draft.rawInput, style: const TextStyle(fontSize: 13)),

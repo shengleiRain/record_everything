@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -105,13 +105,13 @@ class _SearchResultRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final (icon, color) = switch (result.kind) {
-      SearchResultKind.lifeItem => (Icons.event_note, AppColors.upcoming),
-      SearchResultKind.billRecord => (Icons.receipt_long, AppColors.expense),
+      SearchResultKind.lifeItem => (Icons.event_note, AppColors.upcoming(context)),
+      SearchResultKind.billRecord => (Icons.receipt_long, AppColors.expense(context)),
       SearchResultKind.project => (Icons.folder_outlined, Colors.blue),
     };
 
     final row = Material(
-      color: AppColors.surface,
+      color: AppColors.surface(context),
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
@@ -123,7 +123,7 @@ class _SearchResultRow extends ConsumerWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: AppColors.textHint.withValues(alpha: 0.4),
+                  color: AppColors.textHint(context).withValues(alpha: 0.4),
                 ),
               ),
               child: ConstrainedBox(
@@ -170,7 +170,7 @@ class _SearchResultRow extends ConsumerWidget {
         SwipeAction(
           label: '完成',
           icon: Icons.check,
-          color: AppColors.completed,
+          color: AppColors.completed(context),
           onTap: () async {
             await ref
                 .read(lifeItemNotifierProvider.notifier)
@@ -188,13 +188,13 @@ class _SearchResultRow extends ConsumerWidget {
         SwipeAction(
           label: '编辑',
           icon: Icons.edit_outlined,
-          color: AppColors.primary,
+          color: AppColors.primary(context),
           onTap: () => context.push('/bills/${result.id}/edit'),
         ),
         SwipeAction(
           label: '删除',
           icon: Icons.delete_outline,
-          color: AppColors.overdue,
+          color: AppColors.overdue(context),
           onTap: () => _confirmDeleteBill(context, ref),
         ),
       ],
@@ -202,7 +202,7 @@ class _SearchResultRow extends ConsumerWidget {
         SwipeAction(
           label: '编辑',
           icon: Icons.edit_outlined,
-          color: AppColors.primary,
+          color: AppColors.primary(context),
           onTap: () => context.push('/projects/${result.id}/edit'),
         ),
     ];
@@ -213,7 +213,7 @@ class _SearchResultRow extends ConsumerWidget {
   Widget _metaLine(BuildContext context) {
     final style = Theme.of(
       context,
-    ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary);
+    ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context));
     final bill = result.billRecord;
     if (bill != null) {
       final note = bill.note?.trim();

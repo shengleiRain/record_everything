@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'app_colors.dart';
 import 'app_palette.dart';
 
 /// 应用主题。提供浅/深两套 ThemeData，均挂载 [AppPalette] extension。

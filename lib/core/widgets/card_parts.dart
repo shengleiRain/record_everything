@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
@@ -151,10 +151,14 @@ class CardEntryIcon extends StatelessWidget {
 }
 
 /// Standard border color for a card, derived from its state.
-Color cardBorderColor({required bool isOverdue, required bool isCompleted}) {
-  if (isOverdue) return AppColors.overdue.withValues(alpha: 0.28);
-  if (isCompleted) return AppColors.completed.withValues(alpha: 0.24);
-  return Colors.black.withValues(alpha: 0.08);
+Color cardBorderColor(
+  BuildContext context, {
+  required bool isOverdue,
+  required bool isCompleted,
+}) {
+  if (isOverdue) return AppColors.overdue(context).withValues(alpha: 0.28);
+  if (isCompleted) return AppColors.completed(context).withValues(alpha: 0.24);
+  return AppColors.border(context);
 }
 
 /// The trailing amount/status value on the right edge of a card row.

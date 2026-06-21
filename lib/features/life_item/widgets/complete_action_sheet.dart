@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/dialog_helper.dart';
 import '../../../core/utils/money_formatter.dart';
@@ -38,7 +38,7 @@ void showCompleteActionSheet({
           const SizedBox(height: 16),
           if (isRecurring)
             ListTile(
-              leading: const Icon(Icons.autorenew, color: AppColors.primary),
+              leading: Icon(Icons.autorenew, color: AppColors.primary(context)),
               title: const Text('完成并生成下一轮'),
               subtitle: const Text('自动创建下一个周期事项'),
               onTap: () {
@@ -53,7 +53,7 @@ void showCompleteActionSheet({
             ),
           if (hasAmount)
             ListTile(
-              leading: Icon(Icons.receipt_long, color: AppColors.income),
+              leading: Icon(Icons.receipt_long, color: AppColors.income(context)),
               title: const Text('完成并记账'),
               subtitle: Text('记录 ${MoneyFormatter.format(item.amount)}'),
               onTap: () {
@@ -62,7 +62,7 @@ void showCompleteActionSheet({
               },
             ),
           ListTile(
-            leading: const Icon(Icons.check_circle, color: AppColors.completed),
+            leading: Icon(Icons.check_circle, color: AppColors.completed(context)),
             title: const Text('仅完成'),
             onTap: () {
               sheetContext.safePop();
@@ -70,7 +70,7 @@ void showCompleteActionSheet({
             },
           ),
           ListTile(
-            leading: const Icon(Icons.schedule, color: AppColors.upcoming),
+            leading: Icon(Icons.schedule, color: AppColors.upcoming(context)),
             title: const Text('延期'),
             onTap: () {
               sheetContext.safePop();
@@ -78,9 +78,9 @@ void showCompleteActionSheet({
             },
           ),
           ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.cancel_outlined,
-              color: AppColors.textHint,
+              color: AppColors.textHint(context),
             ),
             title: const Text('取消事项'),
             onTap: () {

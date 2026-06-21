@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../models/day_bucket_view_model.dart';
@@ -82,7 +82,7 @@ class HomeCalendar extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
       ),
@@ -248,7 +248,7 @@ class _WeekdayLabel extends StatelessWidget {
       label,
       textAlign: TextAlign.center,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: AppColors.textSecondary,
+        color: AppColors.textSecondary(context),
         fontWeight: FontWeight.w600,
       ),
     );
@@ -267,13 +267,13 @@ class _DayCell extends StatelessWidget {
     final foreground = isSelected
         ? Colors.white
         : bucket.isInVisibleMonth
-        ? AppColors.textPrimary
-        : AppColors.textHint;
+        ? AppColors.textPrimary(context)
+        : AppColors.textHint(context);
     final labelColor = isSelected
         ? Colors.white.withValues(alpha: 0.88)
         : bucket.overdueCount > 0
-        ? AppColors.upcoming
-        : AppColors.textSecondary;
+        ? AppColors.upcoming(context)
+        : AppColors.textSecondary(context);
 
     return InkWell(
       borderRadius: BorderRadius.circular(8),
@@ -281,11 +281,11 @@ class _DayCell extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
+          color: isSelected ? AppColors.primary(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary
+                ? AppColors.primary(context)
                 : Colors.black.withValues(alpha: 0.05),
           ),
         ),

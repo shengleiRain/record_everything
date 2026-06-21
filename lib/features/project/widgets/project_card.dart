@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
@@ -117,7 +117,7 @@ class ProjectCard extends StatelessWidget {
         SwipeAction(
           label: '编辑',
           icon: Icons.edit_outlined,
-          color: AppColors.primary,
+          color: AppColors.primary(context),
           onTap: onEdit!,
         ),
       if (onArchive != null && ps == ProjectStatus.completed)
@@ -131,7 +131,7 @@ class ProjectCard extends StatelessWidget {
         SwipeAction(
           label: '删除',
           icon: Icons.delete_outline,
-          color: AppColors.overdue,
+          color: AppColors.overdue(context),
           onTap: onDelete!,
         ),
     ];

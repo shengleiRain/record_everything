@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import 'step_draft.dart';
@@ -49,7 +49,7 @@ class StepTabHeader<T extends StepDraft> extends SliverPersistentHeaderDelegate 
   ) {
     return Material(
       key: ValueKey('$keyPrefix-step-tab-header'),
-      color: AppColors.background,
+      color: AppColors.background(context),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           _stepContentHorizontalInset,
@@ -200,9 +200,9 @@ class _StepTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final foreground = selected ? AppColors.primaryDark : AppColors.textPrimary;
-    final badgeBg = selected ? AppColors.primary : AppColors.primaryLight;
-    final badgeFg = selected ? Colors.white : AppColors.primary;
+    final foreground = selected ? AppColors.primaryDark : AppColors.textPrimary(context);
+    final badgeBg = selected ? AppColors.primary(context) : AppColors.primaryLight;
+    final badgeFg = selected ? Colors.white : AppColors.primary(context);
     final displayTitle = title.isNotEmpty ? title : '未命名节点';
     return InkWell(
       key: ValueKey('$keyPrefix-step-tab-button-$index'),
@@ -218,7 +218,7 @@ class _StepTab extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: selected
-                      ? AppColors.primary
+                      ? AppColors.primary(context)
                       : Colors.black.withValues(alpha: 0.08),
                 ),
               ),
@@ -254,7 +254,7 @@ class _StepTab extends StatelessWidget {
                 boxShadow: selected
                     ? [
                         BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.18),
+                          color: AppColors.primary(context).withValues(alpha: 0.18),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -303,8 +303,8 @@ class StepAddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = isEmpty ? AppColors.surface : AppColors.primary;
-    final foregroundColor = isEmpty ? AppColors.primary : Colors.white;
+    final backgroundColor = isEmpty ? AppColors.surface(context) : AppColors.primary(context);
+    final foregroundColor = isEmpty ? AppColors.primary(context) : Colors.white;
 
     return Tooltip(
       message: '添加节点',
@@ -319,12 +319,12 @@ class StepAddButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(collapsedExtent / 2),
           border: Border.all(
             color: isEmpty
-                ? AppColors.primary.withValues(alpha: 0.35)
-                : AppColors.primary,
+                ? AppColors.primary(context).withValues(alpha: 0.35)
+                : AppColors.primary(context),
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: isEmpty ? 0.08 : 0.16),
+              color: AppColors.primary(context).withValues(alpha: isEmpty ? 0.08 : 0.16),
               blurRadius: isEmpty ? 8 : 10,
               offset: const Offset(0, 2),
             ),

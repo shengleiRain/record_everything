@@ -1,3 +1,4 @@
+﻿import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/utils/form_draft_store.dart';
@@ -108,7 +109,7 @@ class _DraftPageState extends State<_DraftPage>
   }
 }
 
-Widget _wrapDraft(_DraftPage page) => MaterialApp(home: page);
+Widget _wrapDraft(_DraftPage page) => MaterialApp(theme: AppTheme.lightTheme(), home: page);
 
 class _DraftRoot extends StatelessWidget {
   const _DraftRoot({required this.store});
@@ -117,7 +118,8 @@ class _DraftRoot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    home: Scaffold(
+        theme: AppTheme.lightTheme(),
+        home: Scaffold(
       body: Center(
         child: Builder(
           builder: (context) => TextButton(
@@ -136,7 +138,7 @@ void main() {
   testWidgets('confirming discard clears dirty and pops the route', (
     tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: _Root()));
+    await tester.pumpWidget(MaterialApp(theme: AppTheme.lightTheme(), home: _Root()));
 
     // Push the guarded page so there's a real route to pop.
     await tester.tap(find.text('open'));

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
@@ -28,7 +28,7 @@ class MonthSummaryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
@@ -47,7 +47,7 @@ class MonthSummaryCard extends StatelessWidget {
                 child: _SummaryMetric(
                   label: '本月支出',
                   value: MoneyFormatter.format(expense),
-                  color: AppColors.expense,
+                  color: AppColors.expense(context),
                 ),
               ),
               const SizedBox(width: 12),
@@ -55,7 +55,7 @@ class MonthSummaryCard extends StatelessWidget {
                 child: _SummaryMetric(
                   label: '本月收入',
                   value: MoneyFormatter.format(income),
-                  color: AppColors.income,
+                  color: AppColors.income(context),
                 ),
               ),
             ],
@@ -66,8 +66,8 @@ class MonthSummaryCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6,
-              color: AppColors.primary,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+              color: AppColors.primary(context),
+              backgroundColor: AppColors.primary(context).withValues(alpha: 0.12),
             ),
           ),
           const SizedBox(height: 8),
@@ -76,7 +76,7 @@ class MonthSummaryCard extends StatelessWidget {
               Text(
                 budgetText,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textSecondary(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -86,7 +86,7 @@ class MonthSummaryCard extends StatelessWidget {
                 child: Text(
                   '结余 ${MoneyFormatter.format(balance)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: balance >= 0 ? AppColors.income : AppColors.expense,
+                    color: balance >= 0 ? AppColors.income(context) : AppColors.expense(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -118,7 +118,7 @@ class _SummaryMetric extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondary,
+            color: AppColors.textSecondary(context),
             fontWeight: FontWeight.w600,
           ),
         ),

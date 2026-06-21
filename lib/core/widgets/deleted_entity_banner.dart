@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
@@ -25,20 +25,20 @@ class DeletedEntityBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.upcoming.withValues(alpha: 0.12),
+        color: AppColors.upcoming(context).withValues(alpha: 0.12),
         border: Border(
-          bottom: BorderSide(color: AppColors.upcoming.withValues(alpha: 0.3)),
+          bottom: BorderSide(color: AppColors.upcoming(context).withValues(alpha: 0.3)),
         ),
       ),
       child: Row(
         children: [
-          Icon(Icons.delete_outline, size: 18, color: AppColors.upcoming),
+          Icon(Icons.delete_outline, size: 18, color: AppColors.upcoming(context)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               '此$entityLabel已在回收站中',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textPrimary,
+                color: AppColors.textPrimary(context),
                 fontWeight: FontWeight.w600,
               ),
             ),

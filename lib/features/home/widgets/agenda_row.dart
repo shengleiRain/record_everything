@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -33,10 +33,10 @@ class AgendaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _accentColor;
+    final color = _accentColor(context);
 
     final row = Material(
-      color: AppColors.surface,
+      color: AppColors.surface(context),
       borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppColors.cardRadiusSmall),
@@ -67,7 +67,7 @@ class AgendaRow extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: AppColors.textPrimary,
+                                  color: AppColors.textPrimary(context),
                                   fontWeight: FontWeight.w800,
                                 ),
                           ),
@@ -100,7 +100,7 @@ class AgendaRow extends StatelessWidget {
           SwipeAction(
             label: '完成',
             icon: Icons.check,
-            color: AppColors.completed,
+            color: AppColors.completed(context),
             onTap: onComplete!,
           ),
         if (onDefer != null)
@@ -116,14 +116,14 @@ class AgendaRow extends StatelessWidget {
           SwipeAction(
             label: '编辑',
             icon: Icons.edit_outlined,
-            color: AppColors.primary,
+            color: AppColors.primary(context),
             onTap: onEdit!,
           ),
         if (onDelete != null)
           SwipeAction(
             label: '删除',
             icon: Icons.delete_outline,
-            color: AppColors.overdue,
+            color: AppColors.overdue(context),
             onTap: onDelete!,
           ),
       ],
@@ -131,7 +131,7 @@ class AgendaRow extends StatelessWidget {
         SwipeAction(
           label: '编辑',
           icon: Icons.edit_outlined,
-          color: AppColors.primary,
+          color: AppColors.primary(context),
           onTap: onEdit!,
         ),
     ];
@@ -148,13 +148,13 @@ class AgendaRow extends StatelessWidget {
     return Icons.radio_button_unchecked;
   }
 
-  Color get _accentColor {
-    if (item.isOverdue) return AppColors.overdue;
-    if (item.amountType == 'income') return AppColors.income;
-    if (item.amountType == 'expense') return AppColors.expense;
-    if (item.isCompleted) return AppColors.completed;
-    if (item.kind == AgendaItemKind.project) return Colors.blue;
-    return AppColors.upcoming;
+  Color _accentColor(BuildContext context) {
+    if (item.isOverdue) return AppColors.overdue(context);
+    if (item.amountType == 'income') return AppColors.income(context);
+    if (item.amountType == 'expense') return AppColors.expense(context);
+    if (item.isCompleted) return AppColors.completed(context);
+    if (item.kind == AgendaItemKind.project) return AppColors.upcoming(context);
+    return AppColors.upcoming(context);
   }
 
   String get _trailingText {
@@ -221,7 +221,7 @@ class AgendaRow extends StatelessWidget {
   Widget _metaLine(BuildContext context) {
     final style = Theme.of(
       context,
-    ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary);
+    ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context));
     if (item.kind == AgendaItemKind.billRecord) {
       final bill = item.billRecord;
       if (bill == null) return const SizedBox.shrink();

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -53,14 +53,14 @@ class DataSafetyPage extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
             ),
             child: Text(
               '导入会追加有效记录，并自动复用同名同类型分类。导入前会校验备份版本、字段结构、日期和金额格式。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondary(context),
                     height: 1.5,
                   ),
             ),
@@ -212,7 +212,7 @@ class _ActionGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
       ),
@@ -245,7 +245,7 @@ class _ActionRow extends StatelessWidget {
       leading: Icon(data.icon, color: AppColors.primaryDark),
       title: Text(data.title),
       subtitle: Text(data.subtitle),
-      trailing: const Icon(Icons.chevron_right, color: AppColors.textHint),
+      trailing: Icon(Icons.chevron_right, color: AppColors.textHint(context)),
       onTap: data.onTap,
     );
   }

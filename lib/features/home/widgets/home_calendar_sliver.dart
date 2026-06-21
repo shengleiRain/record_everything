@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../models/calendar_window.dart';
@@ -69,7 +69,7 @@ class CalendarSliver extends SliverPersistentHeaderDelegate {
     final currentExtent = maxExtent - shrinkOffset.clamp(0.0, range);
 
     return ColoredBox(
-      color: AppColors.background,
+      color: AppColors.background(context),
       child: SizedBox(
         height: currentExtent,
         child: ClipRect(

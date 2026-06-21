@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:record_everything/data/database/app_database.dart';
 import 'package:record_everything/features/bill/widgets/bill_day_group.dart';
 import 'package:record_everything/features/bill/widgets/month_summary_card.dart';
@@ -348,7 +349,7 @@ class _Harness extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      child: MaterialApp(home: Scaffold(body: child)),
+      child: MaterialApp(theme: AppTheme.lightTheme(), home: Scaffold(body: child)),
     );
   }
 }

@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Value;
+﻿import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -266,7 +266,7 @@ class _ProjectTemplateEditPageState
       canPop: !isDirty,
       onPopInvokedWithResult: (didPop, _) => onPopInvoked(didPop),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.background(context),
         appBar: AppBar(
           title: Text(_isEdit ? '编辑项目模板' : '新建项目模板'),
           actions: [

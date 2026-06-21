@@ -1,3 +1,4 @@
+﻿import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/utils/toast.dart';
@@ -7,7 +8,8 @@ void main() {
     testWidgets('shows success toast with message', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Builder(
+        theme: AppTheme.lightTheme(),
+        home: Builder(
             builder: (context) => Scaffold(
               body: TextButton(
                 onPressed: () => Toast.success(context, '操作成功'),
@@ -31,7 +33,8 @@ void main() {
     testWidgets('shows error toast with message', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Builder(
+        theme: AppTheme.lightTheme(),
+        home: Builder(
             builder: (context) => Scaffold(
               body: TextButton(
                 onPressed: () => Toast.error(context, '操作失败'),
@@ -54,7 +57,8 @@ void main() {
     testWidgets('shows info toast with message', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Builder(
+        theme: AppTheme.lightTheme(),
+        home: Builder(
             builder: (context) => Scaffold(
               body: TextButton(
                 onPressed: () => Toast.info(context, '提示信息'),
@@ -77,7 +81,8 @@ void main() {
     testWidgets('auto-dismisses after duration', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Builder(
+        theme: AppTheme.lightTheme(),
+        home: Builder(
             builder: (context) => Scaffold(
               body: TextButton(
                 onPressed: () => Toast.info(context, '将消失'),

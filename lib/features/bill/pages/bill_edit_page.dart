@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
@@ -205,7 +205,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
   Widget build(BuildContext context) {
     if (_isReadonly) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.background(context),
         appBar: AppBar(title: const Text('账单（只读）')),
         body: ReadonlyMessage(
           title: '账单已删除',
@@ -225,7 +225,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
       canPop: !isDirty,
       onPopInvokedWithResult: (didPop, _) => onPopInvoked(didPop),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.background(context),
         appBar: AppBar(
           title: Text(_isEdit ? '编辑账单' : '新建账单'),
           actions: [
@@ -327,8 +327,8 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: ActionChip(
-                          avatar: const Icon(Icons.lightbulb_outline,
-                              size: 16, color: AppColors.primary),
+                          avatar: Icon(Icons.lightbulb_outline,
+                              size: 16, color: AppColors.primary(context)),
                           label: Text(
                             '推荐：${categories.firstWhere((c) => c.id == _suggestedCategoryId).name}',
                           ),

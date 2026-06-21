@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/category_icon_options.dart';
@@ -197,7 +197,7 @@ class _CategoryGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
       ),
@@ -344,7 +344,7 @@ class _EmptyState extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black.withValues(alpha: 0.07)),
       ),
@@ -352,7 +352,7 @@ class _EmptyState extends StatelessWidget {
         '暂无分类',
         style: Theme.of(
           context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary(context)),
       ),
     );
   }
@@ -515,7 +515,7 @@ class _CategoryPreview extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primaryLight.withValues(alpha: 0.24),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
+        border: Border.all(color: AppColors.primary(context).withValues(alpha: 0.12)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -526,7 +526,7 @@ class _CategoryPreview extends StatelessWidget {
               height: 42,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: AppColors.primaryDark),
@@ -548,7 +548,7 @@ class _CategoryPreview extends StatelessWidget {
                   Text(
                     typeLabel,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -611,7 +611,7 @@ class _CategoryIconChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.textSecondary;
+    final color = selected ? AppColors.primary(context) : AppColors.textSecondary(context);
     return Tooltip(
       message: option.label,
       child: InkWell(
@@ -625,7 +625,7 @@ class _CategoryIconChoice extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: selected
-                  ? AppColors.primary
+                  ? AppColors.primary(context)
                   : Colors.black.withValues(alpha: 0.08),
             ),
           ),

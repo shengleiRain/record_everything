@@ -1,3 +1,4 @@
+﻿import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/utils/date_formatter.dart';
@@ -96,7 +97,8 @@ class _DateFieldHost extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
+        theme: AppTheme.lightTheme(),
+        home: Scaffold(
         body: Form(
           child: DateField(
             key: const ValueKey('host-date-field'),

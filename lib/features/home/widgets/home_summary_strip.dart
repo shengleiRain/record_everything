@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/money_formatter.dart';
@@ -23,7 +23,7 @@ class HomeSummaryStrip extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
       ),
@@ -33,28 +33,28 @@ class HomeSummaryStrip extends StatelessWidget {
             child: _SummaryCell(
               label: '本月支出',
               value: MoneyFormatter.format(monthlyExpense),
-              color: AppColors.expense,
+              color: AppColors.expense(context),
             ),
           ),
           Expanded(
             child: _SummaryCell(
               label: '收入',
               value: MoneyFormatter.format(monthlyIncome),
-              color: AppColors.income,
+              color: AppColors.income(context),
             ),
           ),
           Expanded(
             child: _SummaryCell(
               label: '待办',
               value: '$pendingCount',
-              color: AppColors.textPrimary,
+              color: AppColors.textPrimary(context),
             ),
           ),
           Expanded(
             child: _SummaryCell(
               label: '逾期',
               value: '$overdueCount',
-              color: overdueCount > 0 ? AppColors.upcoming : AppColors.textHint,
+              color: overdueCount > 0 ? AppColors.upcoming(context) : AppColors.textHint(context),
             ),
           ),
         ],
@@ -85,7 +85,7 @@ class _SummaryCell extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary(context)),
         ),
         const SizedBox(height: 4),
         FittedBox(

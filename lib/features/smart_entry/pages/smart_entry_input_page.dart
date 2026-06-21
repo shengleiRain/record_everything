@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -106,7 +106,7 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
             Text(
               '试着用一句话描述，例如：',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: 4),

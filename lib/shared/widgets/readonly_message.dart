@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 
@@ -35,7 +35,7 @@ class ReadonlyMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.lock_outline, size: 48, color: AppColors.textHint),
+            Icon(Icons.lock_outline, size: 48, color: AppColors.textHint(context)),
             const SizedBox(height: 12),
             Text(
               title,
@@ -49,7 +49,7 @@ class ReadonlyMessage extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary(context)),
             ),
             if (onBack != null) ...[
               const SizedBox(height: 16),

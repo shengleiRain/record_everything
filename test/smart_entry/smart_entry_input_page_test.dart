@@ -1,5 +1,6 @@
-import 'package:drift/native.dart';
+﻿import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -43,7 +44,7 @@ void main() {
           databaseProvider.overrideWithValue(db),
           secureKeyStoreProvider.overrideWithValue(_FakeSecureKeyStore()),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(theme: AppTheme.lightTheme(), routerConfig: router),
       ),
     );
     await tester.pump(const Duration(milliseconds: 100));

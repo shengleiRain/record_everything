@@ -1,4 +1,4 @@
-import 'package:fl_chart/fl_chart.dart';
+﻿import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -15,22 +15,22 @@ class CategoryTrendChart extends StatelessWidget {
   final List<CategoryMonthlySumRow> data;
   final Map<int, String> categoryNames; // categoryId → name
 
-  static const _colors = [
-    AppColors.primary,
-    AppColors.expense,
-    AppColors.income,
-    AppColors.upcoming,
-    AppColors.completed,
-    Color(0xFF9C27B0), // 紫色
-  ];
+  List<Color> _colors(BuildContext context) => [
+        AppColors.primary(context),
+        AppColors.expense(context),
+        AppColors.income(context),
+        AppColors.upcoming(context),
+        AppColors.completed(context),
+        const Color(0xFF9C27B0), // 紫色
+      ];
 
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 200,
         child: Center(
-          child: Text('暂无数据', style: TextStyle(color: AppColors.textSecondary)),
+          child: Text('暂无数据', style: TextStyle(color: AppColors.textSecondary(context))),
         ),
       );
     }
@@ -113,8 +113,8 @@ class CategoryTrendChart extends StatelessWidget {
                     rods.add(
                       BarChartRodData(
                         toY: value,
-                        color: _colors[topCatIds.indexOf(catId) %
-                            _colors.length],
+                        color: _colors(context)[topCatIds.indexOf(catId) %
+                            _colors(context).length],
                         width: 16,
                       ),
                     );
@@ -132,7 +132,7 @@ class CategoryTrendChart extends StatelessWidget {
           runSpacing: 4,
           children: topCatIds.map((catId) {
             final color =
-                _colors[topCatIds.indexOf(catId) % _colors.length];
+                _colors(context)[topCatIds.indexOf(catId) % _colors(context).length];
             final name = categoryNames[catId] ?? '分类$catId';
             return Row(
               mainAxisSize: MainAxisSize.min,

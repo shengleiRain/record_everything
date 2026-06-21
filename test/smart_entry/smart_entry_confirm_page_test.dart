@@ -1,5 +1,6 @@
-import 'package:drift/native.dart';
+﻿import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +56,7 @@ void main() {
             (ref) => _TestPersistService(ref, db),
           ),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(theme: AppTheme.lightTheme(), routerConfig: router),
       ),
     );
     // 跳到 confirm 页（带 extra）。
