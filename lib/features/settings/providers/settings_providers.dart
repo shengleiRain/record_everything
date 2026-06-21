@@ -19,16 +19,17 @@ import '../services/webdav_config_store.dart';
 ///
 /// 依赖 [initSharedPrefs] 在 `main()` 中预热，保证首帧前已有实例可读，
 /// 避免主题/语言切换闪烁。spec §6.3。
-late final SharedPreferences sharedPrefsInstance;
+SharedPreferences? sharedPrefsInstance;
 
 /// 初始化 [sharedPrefsInstance]。必须在 runApp 前、main() 中调用一次。
+/// 重复调用安全（测试场景）：已初始化则跳过。
 Future<void> initSharedPrefs() async {
-  sharedPrefsInstance = await SharedPreferences.getInstance();
+  sharedPrefsInstance ??= await SharedPreferences.getInstance();
 }
 
 /// 同步 Provider：返回预热好的 SharedPreferences。
 final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
-  return sharedPrefsInstance;
+  return sharedPrefsInstance!;
 });
 
 /// 主题模式（跟随系统/浅色/深色）。spec §6.2。

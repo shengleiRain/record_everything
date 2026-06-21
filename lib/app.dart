@@ -7,19 +7,23 @@ import 'package:go_router/go_router.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/home/services/widget_sync_service.dart';
+import 'features/settings/providers/settings_providers.dart';
 import 'features/smart_entry/models/draft_item.dart';
 import 'features/smart_entry/providers/smart_entry_providers.dart';
 import 'features/smart_entry/services/share_receiver.dart';
 
-class App extends StatelessWidget {
+class App extends ConsumerWidget {
   const App({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       title: '生活事项',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
+      themeMode: themeMode,
       routerConfig: appRouter,
       builder: (context, child) => _ShareBootstrap(child: child!),
     );

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/notifications/notification_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/toast.dart';
+import '../providers/settings_providers.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -38,6 +39,8 @@ class SettingsPage extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          _AppearanceGroup(),
           const SizedBox(height: 12),
           _SettingsGroup(
             rows: [
@@ -253,6 +256,73 @@ class _AboutRow extends StatelessWidget {
       style: Theme.of(
         context,
       ).textTheme.bodySmall?.copyWith(color: AppColors.textHint(context)),
+    );
+  }
+}
+
+class _AppearanceGroup extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight.withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '观',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '主题',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          DropdownButton<ThemeMode>(
+            value: themeMode,
+            underline: const SizedBox(),
+            items: const [
+              DropdownMenuItem(
+                value: ThemeMode.system,
+                child: Text('跟随系统'),
+              ),
+              DropdownMenuItem(
+                value: ThemeMode.light,
+                child: Text('浅色'),
+              ),
+              DropdownMenuItem(
+                value: ThemeMode.dark,
+                child: Text('深色'),
+              ),
+            ],
+            onChanged: (mode) {
+              if (mode != null) {
+                ref.read(themeModeProvider.notifier).set(mode);
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 }

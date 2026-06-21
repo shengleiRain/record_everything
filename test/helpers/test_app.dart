@@ -14,7 +14,9 @@ import 'package:record_everything/features/life_item/pages/life_item_list_page.d
 import 'package:record_everything/features/settings/pages/settings_page.dart';
 import 'package:record_everything/features/settings/pages/category_management_page.dart';
 import 'package:record_everything/features/settings/pages/data_safety_page.dart';
+import 'package:record_everything/features/settings/providers/settings_providers.dart';
 import 'package:record_everything/features/statistics/pages/statistics_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TestAppHarness {
   TestAppHarness._(this.database, this.widget);
@@ -27,6 +29,8 @@ Future<TestAppHarness> pumpPageWithDatabase(
   WidgetTester tester,
   Widget page,
 ) async {
+  SharedPreferences.setMockInitialValues({});
+  await initSharedPrefs();
   final db = AppDatabase.forTesting(NativeDatabase.memory());
   addTearDown(() async {
     await tester.pumpWidget(const SizedBox.shrink());
