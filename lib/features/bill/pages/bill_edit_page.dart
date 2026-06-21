@@ -3,6 +3,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/core/utils/category_display.dart';
 import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
@@ -312,7 +313,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                         options: categories
                             .map(
                               (c) =>
-                                  AppDropdownOption(value: c.id, label: c.name),
+                                  AppDropdownOption(value: c.id, label: categoryDisplayName(context, c)),
                             )
                             .toList(),
                         onSelected: (v) => setState(() {
@@ -331,7 +332,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
                           avatar: Icon(Icons.lightbulb_outline,
                               size: 16, color: AppColors.primary(context)),
                           label: Text(
-                            '推荐：${categories.firstWhere((c) => c.id == _suggestedCategoryId).name}',
+                            '推荐：${categoryDisplayName(context, categories.firstWhere((c) => c.id == _suggestedCategoryId))}',
                           ),
                           onPressed: () => setState(() {
                             _selectedCategoryId = _suggestedCategoryId;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/category_display.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/money_formatter.dart';
 import '../../../core/widgets/card_parts.dart';
@@ -261,7 +262,7 @@ class _CategoryInfoRow extends ConsumerWidget {
       builder: (context, snapshot) {
         final category = snapshot.data;
         if (category == null) return const SizedBox.shrink();
-        return _DetailInfoRow(label: '分类', value: category.name);
+        return _DetailInfoRow(label: '分类', value: categoryDisplayName(context, category));
       },
     );
   }

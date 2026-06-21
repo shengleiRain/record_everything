@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/swipe_action_reveal.dart';
+import '../../../core/utils/category_display.dart';
 import '../../../core/utils/toast.dart';
 import '../../../data/database/app_database.dart';
 import '../../../domain/enums/project_status.dart';
@@ -109,7 +110,7 @@ class _GroupedProjectList extends ConsumerWidget {
     final categories =
         ref.watch(categoriesByTypeProvider('project')).valueOrNull ??
         const <Category>[];
-    final grouped = _groupProjects(projects, categories);
+    final grouped = _groupProjects(context, projects, categories);
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 88),
       itemCount: grouped.length,
@@ -121,6 +122,7 @@ class _GroupedProjectList extends ConsumerWidget {
   }
 
   List<_ProjectGroup> _groupProjects(
+    BuildContext context,
     List<Project> projects,
     List<Category> categories,
   ) {
@@ -136,7 +138,7 @@ class _GroupedProjectList extends ConsumerWidget {
     for (final category in categories) {
       final items = grouped.remove(category.id);
       if (items == null || items.isEmpty) continue;
-      result.add(_ProjectGroup(label: category.name, projects: items));
+      result.add(_ProjectGroup(label: categoryDisplayName(context, category), projects: items));
     }
     const nullCategorySortValue = 1 << 30;
     final remainingKeys = grouped.keys.toList()
@@ -149,7 +151,7 @@ class _GroupedProjectList extends ConsumerWidget {
       if (items.isEmpty) continue;
       result.add(
         _ProjectGroup(
-          label: key == null ? '未分类' : categoryMap[key]?.name ?? '其他项目',
+          label: key == null ? '未分类' : categoryDisplayName(context, categoryMap[key]!) ,
           projects: items,
         ),
       );
@@ -310,7 +312,7 @@ class _CategoryFilterBar extends ConsumerWidget {
         children: [
           _chip(context, null, '全部类型'),
           ...categories.map(
-            (category) => _chip(context, category.id, category.name),
+            (category) => _chip(context, category.id, categoryDisplayName(context, category)),
           ),
         ],
       ),

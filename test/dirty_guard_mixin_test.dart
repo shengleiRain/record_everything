@@ -3,9 +3,7 @@ import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/core/utils/form_draft_store.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/shared/widgets/dirty_guard_mixin.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Minimal host exercising [DirtyGuardMixin] inside a real [Navigator], so we

@@ -1,6 +1,7 @@
 ﻿import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/core/utils/category_display.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -483,7 +484,7 @@ class _TemplateInfoSection extends ConsumerWidget {
                   .map(
                     (category) => AppDropdownOption(
                       value: category.id,
-                      label: category.name,
+                      label: categoryDisplayName(context, category),
                     ),
                   )
                   .toList(),

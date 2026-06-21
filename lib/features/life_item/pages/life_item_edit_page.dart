@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/core/utils/category_display.dart';
 import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
@@ -498,7 +499,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
                                 .map(
                                   (c) => AppDropdownOption(
                                     value: c.id,
-                                    label: c.name,
+                                    label: categoryDisplayName(context, c),
                                   ),
                                 )
                                 .toList(),

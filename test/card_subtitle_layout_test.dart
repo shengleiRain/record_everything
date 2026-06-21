@@ -1,16 +1,11 @@
 ﻿import 'package:record_everything/core/theme/app_theme.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/data/database/app_database.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/bill/widgets/bill_card.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/life_item/widgets/life_item_card.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/project/providers/project_providers.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 
 void main() {
   group('card subtitle layout', () {

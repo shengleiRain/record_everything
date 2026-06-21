@@ -367,6 +367,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Custom time'**
   String get enum_reminderPreset_custom;
+
+  /// No description provided for @cat_salary.
+  ///
+  /// In en, this message translates to:
+  /// **'Salary'**
+  String get cat_salary;
+
+  /// No description provided for @cat_bonus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bonus'**
+  String get cat_bonus;
+
+  /// No description provided for @cat_parttime.
+  ///
+  /// In en, this message translates to:
+  /// **'Side Gig'**
+  String get cat_parttime;
+
+  /// No description provided for @cat_reimbursement.
+  ///
+  /// In en, this message translates to:
+  /// **'Reimbursement'**
+  String get cat_reimbursement;
+
+  /// No description provided for @cat_investment.
+  ///
+  /// In en, this message translates to:
+  /// **'Investment'**
+  String get cat_investment;
+
+  /// No description provided for @cat_refund.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund'**
+  String get cat_refund;
+
+  /// No description provided for @cat_income_other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Income'**
+  String get cat_income_other;
+
+  /// No description provided for @cat_food.
+  ///
+  /// In en, this message translates to:
+  /// **'Food'**
+  String get cat_food;
+
+  /// No description provided for @cat_shopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping'**
+  String get cat_shopping;
+
+  /// No description provided for @cat_transport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get cat_transport;
+
+  /// No description provided for @cat_housing.
+  ///
+  /// In en, this message translates to:
+  /// **'Housing'**
+  String get cat_housing;
+
+  /// No description provided for @cat_utilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Utilities'**
+  String get cat_utilities;
+
+  /// No description provided for @cat_telecom.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone & Internet'**
+  String get cat_telecom;
+
+  /// No description provided for @cat_medical.
+  ///
+  /// In en, this message translates to:
+  /// **'Medical'**
+  String get cat_medical;
+
+  /// No description provided for @cat_subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get cat_subscription;
+
+  /// No description provided for @cat_household.
+  ///
+  /// In en, this message translates to:
+  /// **'Household'**
+  String get cat_household;
+
+  /// No description provided for @cat_education.
+  ///
+  /// In en, this message translates to:
+  /// **'Education'**
+  String get cat_education;
+
+  /// No description provided for @cat_entertainment.
+  ///
+  /// In en, this message translates to:
+  /// **'Entertainment'**
+  String get cat_entertainment;
+
+  /// No description provided for @cat_gift.
+  ///
+  /// In en, this message translates to:
+  /// **'Gift'**
+  String get cat_gift;
+
+  /// No description provided for @cat_travel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get cat_travel;
+
+  /// No description provided for @cat_insurance.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance'**
+  String get cat_insurance;
+
+  /// No description provided for @cat_tax_fees.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax & Fees'**
+  String get cat_tax_fees;
+
+  /// No description provided for @cat_expense_other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Expense'**
+  String get cat_expense_other;
+
+  /// No description provided for @cat_todo.
+  ///
+  /// In en, this message translates to:
+  /// **'Todo'**
+  String get cat_todo;
+
+  /// No description provided for @cat_document.
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get cat_document;
+
+  /// No description provided for @cat_bill_reminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill Reminder'**
+  String get cat_bill_reminder;
+
+  /// No description provided for @cat_renewal.
+  ///
+  /// In en, this message translates to:
+  /// **'Renewal'**
+  String get cat_renewal;
+
+  /// No description provided for @cat_warranty.
+  ///
+  /// In en, this message translates to:
+  /// **'Warranty'**
+  String get cat_warranty;
+
+  /// No description provided for @cat_health.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get cat_health;
+
+  /// No description provided for @cat_grocery_stock.
+  ///
+  /// In en, this message translates to:
+  /// **'Grocery Stock'**
+  String get cat_grocery_stock;
+
+  /// No description provided for @cat_household_item.
+  ///
+  /// In en, this message translates to:
+  /// **'Household'**
+  String get cat_household_item;
+
+  /// No description provided for @cat_device.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get cat_device;
+
+  /// No description provided for @cat_item_other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Item'**
+  String get cat_item_other;
+
+  /// No description provided for @cat_personal_project.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Project'**
+  String get cat_personal_project;
+
+  /// No description provided for @cat_client_project.
+  ///
+  /// In en, this message translates to:
+  /// **'Client Project'**
+  String get cat_client_project;
+
+  /// No description provided for @cat_family_project.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get cat_family_project;
+
+  /// No description provided for @cat_event.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get cat_event;
+
+  /// No description provided for @cat_trip.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip'**
+  String get cat_trip;
+
+  /// No description provided for @cat_learning.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning'**
+  String get cat_learning;
+
+  /// No description provided for @cat_photo_order.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo Order'**
+  String get cat_photo_order;
+
+  /// No description provided for @cat_photo_follow.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo Shoot'**
+  String get cat_photo_follow;
+
+  /// No description provided for @cat_project_other.
+  ///
+  /// In en, this message translates to:
+  /// **'Other Project'**
+  String get cat_project_other;
 }
 
 class _AppLocalizationsDelegate

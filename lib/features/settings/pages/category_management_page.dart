@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/category_icon_options.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/category_display.dart';
 import '../../../core/utils/toast.dart';
 import '../../../data/database/app_database.dart';
 import '../../../shared/widgets/app_dropdown_field.dart';
@@ -268,7 +269,7 @@ class _CategoryRow extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                category.name,
+                categoryDisplayName(context, category),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

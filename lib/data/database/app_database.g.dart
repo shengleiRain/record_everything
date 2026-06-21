@@ -110,6 +110,28 @@ class $CategoriesTable extends Categories
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _builtinKeyMeta = const VerificationMeta(
+    'builtinKey',
+  );
+  @override
+  late final GeneratedColumn<String> builtinKey = GeneratedColumn<String>(
+    'builtin_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _originalNameMeta = const VerificationMeta(
+    'originalName',
+  );
+  @override
+  late final GeneratedColumn<String> originalName = GeneratedColumn<String>(
+    'original_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -120,6 +142,8 @@ class $CategoriesTable extends Categories
     isHidden,
     isPinned,
     lastUsedAt,
+    builtinKey,
+    originalName,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -185,6 +209,21 @@ class $CategoriesTable extends Categories
         ),
       );
     }
+    if (data.containsKey('builtin_key')) {
+      context.handle(
+        _builtinKeyMeta,
+        builtinKey.isAcceptableOrUnknown(data['builtin_key']!, _builtinKeyMeta),
+      );
+    }
+    if (data.containsKey('original_name')) {
+      context.handle(
+        _originalNameMeta,
+        originalName.isAcceptableOrUnknown(
+          data['original_name']!,
+          _originalNameMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -226,6 +265,14 @@ class $CategoriesTable extends Categories
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_used_at'],
       ),
+      builtinKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}builtin_key'],
+      ),
+      originalName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_name'],
+      ),
     );
   }
 
@@ -244,6 +291,8 @@ class Category extends DataClass implements Insertable<Category> {
   final bool isHidden;
   final bool isPinned;
   final DateTime? lastUsedAt;
+  final String? builtinKey;
+  final String? originalName;
   const Category({
     required this.id,
     required this.name,
@@ -253,6 +302,8 @@ class Category extends DataClass implements Insertable<Category> {
     required this.isHidden,
     required this.isPinned,
     this.lastUsedAt,
+    this.builtinKey,
+    this.originalName,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -266,6 +317,12 @@ class Category extends DataClass implements Insertable<Category> {
     map['is_pinned'] = Variable<bool>(isPinned);
     if (!nullToAbsent || lastUsedAt != null) {
       map['last_used_at'] = Variable<DateTime>(lastUsedAt);
+    }
+    if (!nullToAbsent || builtinKey != null) {
+      map['builtin_key'] = Variable<String>(builtinKey);
+    }
+    if (!nullToAbsent || originalName != null) {
+      map['original_name'] = Variable<String>(originalName);
     }
     return map;
   }
@@ -282,6 +339,12 @@ class Category extends DataClass implements Insertable<Category> {
       lastUsedAt: lastUsedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastUsedAt),
+      builtinKey: builtinKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(builtinKey),
+      originalName: originalName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originalName),
     );
   }
 
@@ -299,6 +362,8 @@ class Category extends DataClass implements Insertable<Category> {
       isHidden: serializer.fromJson<bool>(json['isHidden']),
       isPinned: serializer.fromJson<bool>(json['isPinned']),
       lastUsedAt: serializer.fromJson<DateTime?>(json['lastUsedAt']),
+      builtinKey: serializer.fromJson<String?>(json['builtinKey']),
+      originalName: serializer.fromJson<String?>(json['originalName']),
     );
   }
   @override
@@ -313,6 +378,8 @@ class Category extends DataClass implements Insertable<Category> {
       'isHidden': serializer.toJson<bool>(isHidden),
       'isPinned': serializer.toJson<bool>(isPinned),
       'lastUsedAt': serializer.toJson<DateTime?>(lastUsedAt),
+      'builtinKey': serializer.toJson<String?>(builtinKey),
+      'originalName': serializer.toJson<String?>(originalName),
     };
   }
 
@@ -325,6 +392,8 @@ class Category extends DataClass implements Insertable<Category> {
     bool? isHidden,
     bool? isPinned,
     Value<DateTime?> lastUsedAt = const Value.absent(),
+    Value<String?> builtinKey = const Value.absent(),
+    Value<String?> originalName = const Value.absent(),
   }) => Category(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -334,6 +403,8 @@ class Category extends DataClass implements Insertable<Category> {
     isHidden: isHidden ?? this.isHidden,
     isPinned: isPinned ?? this.isPinned,
     lastUsedAt: lastUsedAt.present ? lastUsedAt.value : this.lastUsedAt,
+    builtinKey: builtinKey.present ? builtinKey.value : this.builtinKey,
+    originalName: originalName.present ? originalName.value : this.originalName,
   );
   Category copyWithCompanion(CategoriesCompanion data) {
     return Category(
@@ -347,6 +418,12 @@ class Category extends DataClass implements Insertable<Category> {
       lastUsedAt: data.lastUsedAt.present
           ? data.lastUsedAt.value
           : this.lastUsedAt,
+      builtinKey: data.builtinKey.present
+          ? data.builtinKey.value
+          : this.builtinKey,
+      originalName: data.originalName.present
+          ? data.originalName.value
+          : this.originalName,
     );
   }
 
@@ -360,7 +437,9 @@ class Category extends DataClass implements Insertable<Category> {
           ..write('isDefault: $isDefault, ')
           ..write('isHidden: $isHidden, ')
           ..write('isPinned: $isPinned, ')
-          ..write('lastUsedAt: $lastUsedAt')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('builtinKey: $builtinKey, ')
+          ..write('originalName: $originalName')
           ..write(')'))
         .toString();
   }
@@ -375,6 +454,8 @@ class Category extends DataClass implements Insertable<Category> {
     isHidden,
     isPinned,
     lastUsedAt,
+    builtinKey,
+    originalName,
   );
   @override
   bool operator ==(Object other) =>
@@ -387,7 +468,9 @@ class Category extends DataClass implements Insertable<Category> {
           other.isDefault == this.isDefault &&
           other.isHidden == this.isHidden &&
           other.isPinned == this.isPinned &&
-          other.lastUsedAt == this.lastUsedAt);
+          other.lastUsedAt == this.lastUsedAt &&
+          other.builtinKey == this.builtinKey &&
+          other.originalName == this.originalName);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
@@ -399,6 +482,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<bool> isHidden;
   final Value<bool> isPinned;
   final Value<DateTime?> lastUsedAt;
+  final Value<String?> builtinKey;
+  final Value<String?> originalName;
   const CategoriesCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -408,6 +493,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.isHidden = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.lastUsedAt = const Value.absent(),
+    this.builtinKey = const Value.absent(),
+    this.originalName = const Value.absent(),
   });
   CategoriesCompanion.insert({
     this.id = const Value.absent(),
@@ -418,6 +505,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.isHidden = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.lastUsedAt = const Value.absent(),
+    this.builtinKey = const Value.absent(),
+    this.originalName = const Value.absent(),
   }) : name = Value(name),
        type = Value(type);
   static Insertable<Category> custom({
@@ -429,6 +518,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Expression<bool>? isHidden,
     Expression<bool>? isPinned,
     Expression<DateTime>? lastUsedAt,
+    Expression<String>? builtinKey,
+    Expression<String>? originalName,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -439,6 +530,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       if (isHidden != null) 'is_hidden': isHidden,
       if (isPinned != null) 'is_pinned': isPinned,
       if (lastUsedAt != null) 'last_used_at': lastUsedAt,
+      if (builtinKey != null) 'builtin_key': builtinKey,
+      if (originalName != null) 'original_name': originalName,
     });
   }
 
@@ -451,6 +544,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Value<bool>? isHidden,
     Value<bool>? isPinned,
     Value<DateTime?>? lastUsedAt,
+    Value<String?>? builtinKey,
+    Value<String?>? originalName,
   }) {
     return CategoriesCompanion(
       id: id ?? this.id,
@@ -461,6 +556,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       isHidden: isHidden ?? this.isHidden,
       isPinned: isPinned ?? this.isPinned,
       lastUsedAt: lastUsedAt ?? this.lastUsedAt,
+      builtinKey: builtinKey ?? this.builtinKey,
+      originalName: originalName ?? this.originalName,
     );
   }
 
@@ -491,6 +588,12 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (lastUsedAt.present) {
       map['last_used_at'] = Variable<DateTime>(lastUsedAt.value);
     }
+    if (builtinKey.present) {
+      map['builtin_key'] = Variable<String>(builtinKey.value);
+    }
+    if (originalName.present) {
+      map['original_name'] = Variable<String>(originalName.value);
+    }
     return map;
   }
 
@@ -504,7 +607,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
           ..write('isDefault: $isDefault, ')
           ..write('isHidden: $isHidden, ')
           ..write('isPinned: $isPinned, ')
-          ..write('lastUsedAt: $lastUsedAt')
+          ..write('lastUsedAt: $lastUsedAt, ')
+          ..write('builtinKey: $builtinKey, ')
+          ..write('originalName: $originalName')
           ..write(')'))
         .toString();
   }
@@ -6299,6 +6404,8 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       Value<bool> isHidden,
       Value<bool> isPinned,
       Value<DateTime?> lastUsedAt,
+      Value<String?> builtinKey,
+      Value<String?> originalName,
     });
 typedef $$CategoriesTableUpdateCompanionBuilder =
     CategoriesCompanion Function({
@@ -6310,6 +6417,8 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<bool> isHidden,
       Value<bool> isPinned,
       Value<DateTime?> lastUsedAt,
+      Value<String?> builtinKey,
+      Value<String?> originalName,
     });
 
 class $$CategoriesTableFilterComposer
@@ -6358,6 +6467,16 @@ class $$CategoriesTableFilterComposer
 
   ColumnFilters<DateTime> get lastUsedAt => $composableBuilder(
     column: $table.lastUsedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get builtinKey => $composableBuilder(
+    column: $table.builtinKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalName => $composableBuilder(
+    column: $table.originalName,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6410,6 +6529,16 @@ class $$CategoriesTableOrderingComposer
     column: $table.lastUsedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get builtinKey => $composableBuilder(
+    column: $table.builtinKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originalName => $composableBuilder(
+    column: $table.originalName,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CategoriesTableAnnotationComposer
@@ -6444,6 +6573,16 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get lastUsedAt => $composableBuilder(
     column: $table.lastUsedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get builtinKey => $composableBuilder(
+    column: $table.builtinKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get originalName => $composableBuilder(
+    column: $table.originalName,
     builder: (column) => column,
   );
 }
@@ -6484,6 +6623,8 @@ class $$CategoriesTableTableManager
                 Value<bool> isHidden = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
                 Value<DateTime?> lastUsedAt = const Value.absent(),
+                Value<String?> builtinKey = const Value.absent(),
+                Value<String?> originalName = const Value.absent(),
               }) => CategoriesCompanion(
                 id: id,
                 name: name,
@@ -6493,6 +6634,8 @@ class $$CategoriesTableTableManager
                 isHidden: isHidden,
                 isPinned: isPinned,
                 lastUsedAt: lastUsedAt,
+                builtinKey: builtinKey,
+                originalName: originalName,
               ),
           createCompanionCallback:
               ({
@@ -6504,6 +6647,8 @@ class $$CategoriesTableTableManager
                 Value<bool> isHidden = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
                 Value<DateTime?> lastUsedAt = const Value.absent(),
+                Value<String?> builtinKey = const Value.absent(),
+                Value<String?> originalName = const Value.absent(),
               }) => CategoriesCompanion.insert(
                 id: id,
                 name: name,
@@ -6513,6 +6658,8 @@ class $$CategoriesTableTableManager
                 isHidden: isHidden,
                 isPinned: isPinned,
                 lastUsedAt: lastUsedAt,
+                builtinKey: builtinKey,
+                originalName: originalName,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

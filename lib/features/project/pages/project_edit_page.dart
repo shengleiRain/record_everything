@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/core/utils/category_display.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
 import '../../../core/theme/app_colors.dart';
@@ -808,7 +809,7 @@ class _BasicInfoSectionState extends ConsumerState<_BasicInfoSection> {
                 label: '项目类型',
                 value: validValue,
                 options: cats
-                    .map((c) => AppDropdownOption(value: c.id, label: c.name))
+                    .map((c) => AppDropdownOption(value: c.id, label: categoryDisplayName(context, c)))
                     .toList(),
                 onSelected: widget.onCategoryChanged,
               );

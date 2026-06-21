@@ -52,7 +52,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   static QueryExecutor openConnection() {
     return driftDatabase(name: 'life_items.db');
@@ -146,6 +146,13 @@ class AppDatabase extends _$AppDatabase {
         await _ensureDefaultProjectCategory('跟拍', 'photo_camera');
         await _ensureDefaultProjectTemplates();
       }
+      if (from < 11) {
+        // schema v11：分类新增 builtin_key / original_name 列（i18n 支持）。
+        // spec §5.2。对所有内置分类回填 key 和原始名。
+        await m.addColumn(categories, categories.builtinKey);
+        await m.addColumn(categories, categories.originalName);
+        await _backfillBuiltinCategoryKeys();
+      }
     },
   );
 
@@ -157,6 +164,8 @@ class AppDatabase extends _$AppDatabase {
           type: 'income',
           icon: Value(c['icon']!),
           isDefault: const Value(true),
+          builtinKey: Value(c['key']),
+          originalName: Value(c['name']),
         ),
       );
     }
@@ -167,6 +176,8 @@ class AppDatabase extends _$AppDatabase {
           type: 'expense',
           icon: Value(c['icon']!),
           isDefault: const Value(true),
+          builtinKey: Value(c['key']),
+          originalName: Value(c['name']),
         ),
       );
     }
@@ -177,6 +188,8 @@ class AppDatabase extends _$AppDatabase {
           type: 'item',
           icon: Value(c['icon']!),
           isDefault: const Value(true),
+          builtinKey: Value(c['key']),
+          originalName: Value(c['name']),
         ),
       );
     }
@@ -200,6 +213,8 @@ class AppDatabase extends _$AppDatabase {
           type: 'project',
           icon: Value(c['icon']!),
           isDefault: const Value(true),
+          builtinKey: Value(c['key']),
+          originalName: Value(c['name']),
         ),
       );
     }
@@ -215,14 +230,41 @@ class AppDatabase extends _$AppDatabase {
               ))
             .getSingleOrNull();
     if (existing != null) return;
+    // 查找 key（跟拍 → cat_photo_follow）。
+    final match = DefaultCategories.project.cast<Map<String, String?>>().firstWhere(
+      (c) => c['name'] == name,
+      orElse: () => <String, String?>{'name': name, 'icon': icon, 'key': null},
+    );
+    final key = match['key'];
     await into(categories).insert(
       CategoriesCompanion.insert(
         name: name,
         type: 'project',
         icon: Value(icon),
         isDefault: const Value(true),
+        builtinKey: key != null ? Value(key) : const Value.absent(),
+        originalName: Value(name),
       ),
     );
+  }
+
+  /// v11 迁移：为已存在的内置分类回填 builtin_key 和 original_name。
+  /// 按 name 匹配 DefaultCategories 的内置分类清单。
+  Future<void> _backfillBuiltinCategoryKeys() async {
+    final all = <Map<String, String?>>[
+      ...DefaultCategories.income,
+      ...DefaultCategories.expense,
+      ...DefaultCategories.item,
+      ...DefaultCategories.project,
+    ];
+    for (final c in all) {
+      await (categories.update()
+            ..where((t) => t.name.equals(c['name']!) & t.isDefault.equals(true)))
+          .write(CategoriesCompanion(
+            builtinKey: Value(c['key']),
+            originalName: Value(c['name']),
+          ));
+    }
   }
 
   Future<void> _createProjectIndexes() async {

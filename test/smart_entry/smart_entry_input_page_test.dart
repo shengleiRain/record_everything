@@ -7,17 +7,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:record_everything/data/database/app_database.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/data/database/database_provider.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/smart_entry/models/draft_item.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/smart_entry/pages/smart_entry_confirm_page.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/smart_entry/pages/smart_entry_input_page.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/smart_entry/services/secure_key_store.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 
 void main() {
   late AppDatabase db;

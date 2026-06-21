@@ -142,4 +142,130 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get enum_reminderPreset_custom => '自定义时间';
+
+  @override
+  String get cat_salary => '工资';
+
+  @override
+  String get cat_bonus => '奖金';
+
+  @override
+  String get cat_parttime => '兼职';
+
+  @override
+  String get cat_reimbursement => '报销';
+
+  @override
+  String get cat_investment => '投资收益';
+
+  @override
+  String get cat_refund => '退款返现';
+
+  @override
+  String get cat_income_other => '其他收入';
+
+  @override
+  String get cat_food => '餐饮';
+
+  @override
+  String get cat_shopping => '购物';
+
+  @override
+  String get cat_transport => '交通';
+
+  @override
+  String get cat_housing => '住房';
+
+  @override
+  String get cat_utilities => '水电燃气';
+
+  @override
+  String get cat_telecom => '通信网络';
+
+  @override
+  String get cat_medical => '医疗药品';
+
+  @override
+  String get cat_subscription => '会员订阅';
+
+  @override
+  String get cat_household => '家庭耗材';
+
+  @override
+  String get cat_education => '教育';
+
+  @override
+  String get cat_entertainment => '娱乐';
+
+  @override
+  String get cat_gift => '人情礼物';
+
+  @override
+  String get cat_travel => '旅行差旅';
+
+  @override
+  String get cat_insurance => '保险';
+
+  @override
+  String get cat_tax_fees => '税费手续费';
+
+  @override
+  String get cat_expense_other => '其他支出';
+
+  @override
+  String get cat_todo => '待办';
+
+  @override
+  String get cat_document => '证件';
+
+  @override
+  String get cat_bill_reminder => '账单提醒';
+
+  @override
+  String get cat_renewal => '订阅续费';
+
+  @override
+  String get cat_warranty => '保修售后';
+
+  @override
+  String get cat_health => '药品健康';
+
+  @override
+  String get cat_grocery_stock => '食品库存';
+
+  @override
+  String get cat_household_item => '家庭耗材';
+
+  @override
+  String get cat_device => '车辆设备';
+
+  @override
+  String get cat_item_other => '其他事项';
+
+  @override
+  String get cat_personal_project => '个人项目';
+
+  @override
+  String get cat_client_project => '客户项目';
+
+  @override
+  String get cat_family_project => '家庭事务';
+
+  @override
+  String get cat_event => '活动安排';
+
+  @override
+  String get cat_trip => '旅行计划';
+
+  @override
+  String get cat_learning => '学习成长';
+
+  @override
+  String get cat_photo_order => '摄影接单';
+
+  @override
+  String get cat_photo_follow => '跟拍';
+
+  @override
+  String get cat_project_other => '其他项目';
 }

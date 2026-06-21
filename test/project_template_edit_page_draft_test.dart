@@ -8,11 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/data/database/app_database.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/data/database/database_provider.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:record_everything/features/project/pages/project_template_edit_page.dart';
-import 'package:record_everything/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Widget tests covering the dirty-guard + draft behavior that was added to
