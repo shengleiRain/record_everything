@@ -1,4 +1,4 @@
-﻿import 'package:record_everything/core/theme/app_theme.dart';
+import 'package:record_everything/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:record_everything/features/home/widgets/quick_create_sheet.dart';
