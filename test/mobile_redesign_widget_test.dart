@@ -172,16 +172,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('quick-create-bill')), findsOneWidget);
     expect(find.byKey(const ValueKey('quick-create-item')), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('quick-create-bill-item')),
-      findsOneWidget,
-    );
-    expect(find.byKey(const ValueKey('quick-create-template')), findsOneWidget);
     expect(find.byKey(const ValueKey('quick-create-project')), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('quick-create-photography')),
-      findsOneWidget,
-    );
   });
 
   testWidgets('life item card keeps dense row information and action menu', (

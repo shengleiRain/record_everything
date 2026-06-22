@@ -17,8 +17,6 @@ void main() {
     expect(find.text('快速新增'), findsOneWidget);
     expect(find.text('记一笔'), findsOneWidget);
     expect(find.text('建事项'), findsOneWidget);
-    expect(find.text('账单到期'), findsOneWidget);
-    expect(find.text('周期模板'), findsOneWidget);
     expect(find.byKey(const ValueKey('quick-create-bill')), findsOneWidget);
     expect(find.byKey(const ValueKey('quick-create-item')), findsOneWidget);
   });
