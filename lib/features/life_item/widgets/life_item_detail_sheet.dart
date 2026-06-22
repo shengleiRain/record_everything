@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
@@ -145,7 +145,7 @@ Future<void> showLifeItemDetailSheet(
                               .reopen(item.id);
                           if (!context.mounted) return;
                           Navigator.of(sheetContext).pop();
-                          Toast.info(context, '已重新打开事项');
+                          Toast.info(context, context.l.toast_itemReopened);
                         },
                         icon: const Icon(Icons.restart_alt),
                         label: const Text('重新打开'),
@@ -246,7 +246,7 @@ void _showCompleteAction(BuildContext context, WidgetRef ref, LifeItem item) {
       await ref.read(lifeItemNotifierProvider.notifier).cancel(item.id);
       if (!context.mounted) return;
       Navigator.pop(context);
-      Toast.info(context, '已取消事项');
+      Toast.info(context, context.l.toast_itemCancelled);
     },
   );
 }
@@ -265,7 +265,7 @@ Future<void> _defer(BuildContext context, WidgetRef ref, LifeItem item) async {
   if (picked == null) return;
   await ref.read(lifeItemNotifierProvider.notifier).defer(item.id, picked);
   if (!context.mounted) return;
-  Toast.info(context, '已延期事项');
+  Toast.info(context, context.l.toast_itemDeferred);
 }
 
 void _confirmDelete(

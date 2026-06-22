@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
@@ -224,7 +224,7 @@ class _ProjectCategorySection extends ConsumerWidget {
         .read(projectNotifierProvider.notifier)
         .changeStatus(project: project, next: ProjectStatus.archived);
     if (!context.mounted) return;
-    Toast.info(context, '已归档项目');
+    Toast.info(context, context.l.toast_projectArchived);
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref, Project project) {

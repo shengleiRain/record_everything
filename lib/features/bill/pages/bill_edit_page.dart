@@ -387,7 +387,7 @@ class _BillEditPageState extends ConsumerState<BillEditPage>
 
   Future<void> _save() async {
     if (_isReadonly) {
-      Toast.error(context, '账单已删除，不可编辑');
+      Toast.error(context, context.l.toast_billDeletedReadonly);
       return;
     }
     if (!_formKey.currentState!.validate()) return;

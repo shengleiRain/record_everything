@@ -340,4 +340,142 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cat_project_other => 'Other Project';
+
+  @override
+  String get toast_billDeletedReadonly => 'Bill deleted, read-only';
+
+  @override
+  String get toast_itemCancelled => 'Item cancelled';
+
+  @override
+  String get toast_itemCompletedReadonly => 'Item completed, read-only';
+
+  @override
+  String get toast_itemReopened => 'Item reopened';
+
+  @override
+  String get toast_itemDeferred => 'Item deferred';
+
+  @override
+  String get toast_itemCompleted => 'Item completed';
+
+  @override
+  String get toast_projectArchived => 'Project archived';
+
+  @override
+  String get toast_projectDeletedReadonly => 'Project completed, read-only';
+
+  @override
+  String get toast_keepOneTemplateNode => 'Keep at least one template node';
+
+  @override
+  String get toast_noMergeTarget => 'No merge target category';
+
+  @override
+  String toast_mergedCategory(String name) {
+    return 'Merged $name';
+  }
+
+  @override
+  String get toast_exportCancelled => 'Export cancelled';
+
+  @override
+  String toast_backupExported(String path) {
+    return 'Backup exported: $path';
+  }
+
+  @override
+  String toast_exportFailed(String error) {
+    return 'Export failed: $error';
+  }
+
+  @override
+  String get toast_configureWebdavFirst => 'Please configure WebDAV first';
+
+  @override
+  String get toast_uploadedToWebdav => 'Backup uploaded to WebDAV';
+
+  @override
+  String toast_uploadFailed(String error) {
+    return 'Upload failed: $error';
+  }
+
+  @override
+  String toast_importFailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String get toast_noBackupFiles => 'No backup files';
+
+  @override
+  String get toast_importCancelled => 'Import cancelled';
+
+  @override
+  String get toast_projectRestored => 'Project restored';
+
+  @override
+  String get toast_itemRestored => 'Item restored';
+
+  @override
+  String get toast_billRestored => 'Bill restored';
+
+  @override
+  String get toast_projectPermanentlyDeleted => 'Project permanently deleted';
+
+  @override
+  String get toast_itemPermanentlyDeleted => 'Item permanently deleted';
+
+  @override
+  String get toast_billPermanentlyDeleted => 'Bill permanently deleted';
+
+  @override
+  String toast_comingSoon(String title) {
+    return '$title coming soon';
+  }
+
+  @override
+  String get toast_connectionSuccess => 'Connection successful';
+
+  @override
+  String get toast_connectionFailed => 'Connection failed, check config';
+
+  @override
+  String toast_connectionError(String error) {
+    return 'Connection failed: $error';
+  }
+
+  @override
+  String get toast_configSaved => 'Config saved';
+
+  @override
+  String toast_saveFailed(String error) {
+    return 'Save failed: $error';
+  }
+
+  @override
+  String get toast_saved => 'Saved';
+
+  @override
+  String toast_savedItems(int count) {
+    return 'Saved $count items';
+  }
+
+  @override
+  String toast_partialSaveFailed(int count) {
+    return '$count items failed, please check';
+  }
+
+  @override
+  String get toast_voiceNotSupported =>
+      'Voice input not supported, use keyboard mic';
+
+  @override
+  String get toast_ocrFailed =>
+      'Recognition failed, try again or use a clearer image';
+
+  @override
+  String toast_saveError(String error) {
+    return 'Save failed: $error';
+  }
 }

@@ -763,6 +763,234 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Other Project'**
   String get cat_project_other;
+
+  /// No description provided for @toast_billDeletedReadonly.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill deleted, read-only'**
+  String get toast_billDeletedReadonly;
+
+  /// No description provided for @toast_itemCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Item cancelled'**
+  String get toast_itemCancelled;
+
+  /// No description provided for @toast_itemCompletedReadonly.
+  ///
+  /// In en, this message translates to:
+  /// **'Item completed, read-only'**
+  String get toast_itemCompletedReadonly;
+
+  /// No description provided for @toast_itemReopened.
+  ///
+  /// In en, this message translates to:
+  /// **'Item reopened'**
+  String get toast_itemReopened;
+
+  /// No description provided for @toast_itemDeferred.
+  ///
+  /// In en, this message translates to:
+  /// **'Item deferred'**
+  String get toast_itemDeferred;
+
+  /// No description provided for @toast_itemCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Item completed'**
+  String get toast_itemCompleted;
+
+  /// No description provided for @toast_projectArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Project archived'**
+  String get toast_projectArchived;
+
+  /// No description provided for @toast_projectDeletedReadonly.
+  ///
+  /// In en, this message translates to:
+  /// **'Project completed, read-only'**
+  String get toast_projectDeletedReadonly;
+
+  /// No description provided for @toast_keepOneTemplateNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep at least one template node'**
+  String get toast_keepOneTemplateNode;
+
+  /// No description provided for @toast_noMergeTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'No merge target category'**
+  String get toast_noMergeTarget;
+
+  /// No description provided for @toast_mergedCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged {name}'**
+  String toast_mergedCategory(String name);
+
+  /// No description provided for @toast_exportCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Export cancelled'**
+  String get toast_exportCancelled;
+
+  /// No description provided for @toast_backupExported.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup exported: {path}'**
+  String toast_backupExported(String path);
+
+  /// No description provided for @toast_exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed: {error}'**
+  String toast_exportFailed(String error);
+
+  /// No description provided for @toast_configureWebdavFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please configure WebDAV first'**
+  String get toast_configureWebdavFirst;
+
+  /// No description provided for @toast_uploadedToWebdav.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup uploaded to WebDAV'**
+  String get toast_uploadedToWebdav;
+
+  /// No description provided for @toast_uploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed: {error}'**
+  String toast_uploadFailed(String error);
+
+  /// No description provided for @toast_importFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: {error}'**
+  String toast_importFailed(String error);
+
+  /// No description provided for @toast_noBackupFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'No backup files'**
+  String get toast_noBackupFiles;
+
+  /// No description provided for @toast_importCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Import cancelled'**
+  String get toast_importCancelled;
+
+  /// No description provided for @toast_projectRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Project restored'**
+  String get toast_projectRestored;
+
+  /// No description provided for @toast_itemRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Item restored'**
+  String get toast_itemRestored;
+
+  /// No description provided for @toast_billRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill restored'**
+  String get toast_billRestored;
+
+  /// No description provided for @toast_projectPermanentlyDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Project permanently deleted'**
+  String get toast_projectPermanentlyDeleted;
+
+  /// No description provided for @toast_itemPermanentlyDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Item permanently deleted'**
+  String get toast_itemPermanentlyDeleted;
+
+  /// No description provided for @toast_billPermanentlyDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Bill permanently deleted'**
+  String get toast_billPermanentlyDeleted;
+
+  /// No description provided for @toast_comingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} coming soon'**
+  String toast_comingSoon(String title);
+
+  /// No description provided for @toast_connectionSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection successful'**
+  String get toast_connectionSuccess;
+
+  /// No description provided for @toast_connectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed, check config'**
+  String get toast_connectionFailed;
+
+  /// No description provided for @toast_connectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed: {error}'**
+  String toast_connectionError(String error);
+
+  /// No description provided for @toast_configSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Config saved'**
+  String get toast_configSaved;
+
+  /// No description provided for @toast_saveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed: {error}'**
+  String toast_saveFailed(String error);
+
+  /// No description provided for @toast_saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get toast_saved;
+
+  /// No description provided for @toast_savedItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {count} items'**
+  String toast_savedItems(int count);
+
+  /// No description provided for @toast_partialSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items failed, please check'**
+  String toast_partialSaveFailed(int count);
+
+  /// No description provided for @toast_voiceNotSupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input not supported, use keyboard mic'**
+  String get toast_voiceNotSupported;
+
+  /// No description provided for @toast_ocrFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognition failed, try again or use a clearer image'**
+  String get toast_ocrFailed;
+
+  /// No description provided for @toast_saveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed: {error}'**
+  String toast_saveError(String error);
 }
 
 class _AppLocalizationsDelegate

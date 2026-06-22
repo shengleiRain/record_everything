@@ -120,7 +120,7 @@ class _CategoryManagementPageState
         .where((row) => row.id != category.id && !row.isHidden)
         .toList();
     if (targets.isEmpty) {
-      Toast.info(context, '没有可合并的目标分类');
+      Toast.info(context, context.l.toast_noMergeTarget);
       return;
     }
 

@@ -95,7 +95,7 @@ class SettingsPage extends ConsumerWidget {
   }
 
   void _showComingSoon(BuildContext context, String title) {
-    Toast.info(context, '$title 后续开放');
+    Toast.info(context, context.l.toast_comingSoon(title));
   }
 }
 

@@ -1,6 +1,7 @@
-﻿import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:record_everything/core/utils/category_display.dart';
 import 'package:go_router/go_router.dart';
 
@@ -201,7 +202,7 @@ class _ProjectTemplateEditPageState
         .map((step) => step.toInput())
         .toList(growable: false);
     if (steps.isEmpty) {
-      Toast.info(context, '至少保留一个模板节点');
+      Toast.info(context, context.l.toast_keepOneTemplateNode);
       return;
     }
 

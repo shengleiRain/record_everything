@@ -347,7 +347,7 @@ class _LifeItemEditPageState extends ConsumerState<LifeItemEditPage>
   Future<void> _save() async {
     // 守卫：终态/已删除事项整页只读，禁止任何写入（防绕过 UI）。
     if (_isReadonly) {
-      Toast.error(context, '事项已完结，不可编辑');
+      Toast.error(context, context.l.toast_itemCompletedReadonly);
       return;
     }
     if (!_formKey.currentState!.validate()) return;

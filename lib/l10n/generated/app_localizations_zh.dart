@@ -340,4 +340,140 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cat_project_other => '其他项目';
+
+  @override
+  String get toast_billDeletedReadonly => '账单已删除，不可编辑';
+
+  @override
+  String get toast_itemCancelled => '已取消事项';
+
+  @override
+  String get toast_itemCompletedReadonly => '事项已完结，不可编辑';
+
+  @override
+  String get toast_itemReopened => '已重新打开事项';
+
+  @override
+  String get toast_itemDeferred => '已延期事项';
+
+  @override
+  String get toast_itemCompleted => '已完成事项';
+
+  @override
+  String get toast_projectArchived => '已归档项目';
+
+  @override
+  String get toast_projectDeletedReadonly => '项目已完结，不可编辑';
+
+  @override
+  String get toast_keepOneTemplateNode => '至少保留一个模板节点';
+
+  @override
+  String get toast_noMergeTarget => '没有可合并的目标分类';
+
+  @override
+  String toast_mergedCategory(String name) {
+    return '已处理 $name';
+  }
+
+  @override
+  String get toast_exportCancelled => '已取消导出';
+
+  @override
+  String toast_backupExported(String path) {
+    return '备份已导出: $path';
+  }
+
+  @override
+  String toast_exportFailed(String error) {
+    return '导出失败: $error';
+  }
+
+  @override
+  String get toast_configureWebdavFirst => '请先配置 WebDAV';
+
+  @override
+  String get toast_uploadedToWebdav => '备份已上传到 WebDAV';
+
+  @override
+  String toast_uploadFailed(String error) {
+    return '上传失败: $error';
+  }
+
+  @override
+  String toast_importFailed(String error) {
+    return '导入失败: $error';
+  }
+
+  @override
+  String get toast_noBackupFiles => '暂无备份文件';
+
+  @override
+  String get toast_importCancelled => '已取消导入';
+
+  @override
+  String get toast_projectRestored => '项目已恢复';
+
+  @override
+  String get toast_itemRestored => '事项已恢复';
+
+  @override
+  String get toast_billRestored => '账单已恢复';
+
+  @override
+  String get toast_projectPermanentlyDeleted => '项目已永久删除';
+
+  @override
+  String get toast_itemPermanentlyDeleted => '事项已永久删除';
+
+  @override
+  String get toast_billPermanentlyDeleted => '账单已永久删除';
+
+  @override
+  String toast_comingSoon(String title) {
+    return '$title 后续开放';
+  }
+
+  @override
+  String get toast_connectionSuccess => '连接成功';
+
+  @override
+  String get toast_connectionFailed => '连接失败，请检查配置';
+
+  @override
+  String toast_connectionError(String error) {
+    return '连接失败: $error';
+  }
+
+  @override
+  String get toast_configSaved => '配置已保存';
+
+  @override
+  String toast_saveFailed(String error) {
+    return '保存失败: $error';
+  }
+
+  @override
+  String get toast_saved => '已保存';
+
+  @override
+  String toast_savedItems(int count) {
+    return '已保存 $count 条';
+  }
+
+  @override
+  String toast_partialSaveFailed(int count) {
+    return '部分保存失败 $count 条，请核对';
+  }
+
+  @override
+  String get toast_voiceNotSupported => '设备不支持语音输入，请用键盘的麦克风';
+
+  @override
+  String get toast_ocrFailed => '识别失败，请重试或换个清晰的图片';
+
+  @override
+  String toast_saveError(String error) {
+    return '保存失败：$error';
+  }
 }

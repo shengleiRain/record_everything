@@ -1,7 +1,8 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -83,7 +84,7 @@ class _SmartEntryInputPageState extends ConsumerState<SmartEntryInputPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _parsing = false);
-      Toast.error(context, '识别失败，请重试或换个清晰的图片');
+      Toast.error(context, context.l.toast_ocrFailed);
     }
   }
 

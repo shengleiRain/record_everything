@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:record_everything/l10n/l10n.dart';
 import 'package:record_everything/core/utils/category_display.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' show Value;
@@ -337,7 +338,7 @@ class _ProjectEditPageState extends ConsumerState<ProjectEditPage>
   Future<void> _save() async {
     // 守卫：终态/已删除项目整页只读，禁止任何写入（防绕过 UI）。
     if (_isReadonly) {
-      Toast.error(context, '项目已完结，不可编辑');
+      Toast.error(context, context.l.toast_projectDeletedReadonly);
       return;
     }
     if (!_formKey.currentState!.validate()) return;

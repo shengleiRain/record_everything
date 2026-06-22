@@ -177,7 +177,7 @@ class _WebDavSettingsPageState extends ConsumerState<WebDavSettingsPage> {
           .read(settingsNotifierProvider.notifier)
           .testWebDavConnection();
       if (mounted) {
-        Toast.success(context, ok ? '连接成功' : '连接失败，请检查配置');
+        Toast.success(context, ok ? context.l.toast_connectionSuccess : context.l.toast_connectionFailed);
       }
     } catch (e) {
       if (mounted) Toast.error(context, '连接失败: $e');
@@ -193,7 +193,7 @@ class _WebDavSettingsPageState extends ConsumerState<WebDavSettingsPage> {
       final config = _buildConfig();
       await ref.read(settingsNotifierProvider.notifier).saveWebDavConfig(config);
       if (mounted) {
-        Toast.success(context, '配置已保存');
+        Toast.success(context, context.l.toast_configSaved);
         context.pop();
       }
     } catch (e) {

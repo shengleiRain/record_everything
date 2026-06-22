@@ -55,7 +55,7 @@ class _AiAssistantSettingsPageState
     // 刷新 parser provider 使新配置生效。
     ref.invalidate(smartEntryParserProvider);
     if (!mounted) return;
-    Toast.success(context, '已保存');
+    Toast.success(context, context.l.toast_saved);
   }
 
   @override
