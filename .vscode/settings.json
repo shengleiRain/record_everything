@@ -1,3 +1,18 @@
 {
-  "dart.flutterSdkPath": ".fvm/versions/stable"
+  "dart.flutterSdkPath": ".fvm/versions/stable",
+  // Disable format-on-save so AI-assisted editing (Edit/Write tools) doesn't
+  // conflict with the Dart formatter re-writing files between read and write.
+  // You can still format manually with Shift+Alt+F when needed.
+  "[dart]": {
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "never",
+      "source.organizeImports": "never"
+    },
+    "editor.selectionHighlight": false,
+    "editor.suggestSelection": "first",
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off"
+  },
+  "editor.formatOnSave": false
 }
