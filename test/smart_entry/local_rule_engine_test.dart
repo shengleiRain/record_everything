@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:record_everything/features/smart_entry/models/ai_assistant_config.dart';
 import 'package:record_everything/features/smart_entry/models/draft_item.dart';
 import 'package:record_everything/features/smart_entry/parser/local_rule_engine.dart';
 
@@ -63,5 +64,74 @@ void main() {
     final items = engine.parse('后天下午开会');
     final item = items.single;
     expect(item.time.day, 21); // 6/19 + 2
+  });
+
+  test('自定义规则优先于内置关键词并覆盖类型和分类', () {
+    final customEngine = LocalRuleEngine(
+      now: now,
+      rules: const [
+        LocalSmartEntryRule(
+          id: 'parking-task',
+          name: '停车提醒',
+          keywords: ['停车'],
+          priority: 10,
+          kind: DraftKind.lifeItem,
+          categoryGuess: '用车',
+          amountType: DraftAmountType.none,
+        ),
+      ],
+    );
+
+    final item = customEngine.parse('明天停车').single;
+
+    expect(item.kind, DraftKind.lifeItem);
+    expect(item.categoryGuess, '用车');
+    expect(item.amountType, DraftAmountType.none);
+  });
+
+  test('禁用规则不参与匹配', () {
+    final customEngine = LocalRuleEngine(
+      now: now,
+      rules: const [
+        LocalSmartEntryRule(
+          id: 'coffee-shopping',
+          name: '咖啡购物',
+          keywords: ['咖啡'],
+          enabled: false,
+          priority: 10,
+          categoryGuess: '购物',
+        ),
+      ],
+    );
+
+    final item = customEngine.parse('咖啡花了20').single;
+
+    expect(item.categoryGuess, '餐饮');
+  });
+
+  test('多条规则按 priority 从高到低选择', () {
+    final customEngine = LocalRuleEngine(
+      now: now,
+      rules: const [
+        LocalSmartEntryRule(
+          id: 'low',
+          name: '低优先级',
+          keywords: ['会员'],
+          priority: 1,
+          categoryGuess: '娱乐',
+        ),
+        LocalSmartEntryRule(
+          id: 'high',
+          name: '高优先级',
+          keywords: ['会员'],
+          priority: 20,
+          categoryGuess: '订阅服务',
+        ),
+      ],
+    );
+
+    final item = customEngine.parse('会员续费30').single;
+
+    expect(item.categoryGuess, '订阅服务');
   });
 }

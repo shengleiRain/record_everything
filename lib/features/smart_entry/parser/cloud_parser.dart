@@ -21,15 +21,16 @@ class NoopCloudParser implements CloudParser {
   }) async => const [];
 }
 
-/// 通义千问实现。可作其他厂商（智谱/DeepSeek/自定义 OpenAI 兼容）的模板。
-class QwenCloudParser implements CloudParser {
-  QwenCloudParser({
+/// OpenAI Chat Completions 兼容实现。
+class OpenAiCompatibleCloudParser implements CloudParser {
+  OpenAiCompatibleCloudParser({
     required this.apiKey,
     required this.model,
+    required String baseUrl,
     http.Client? client,
-    this.baseUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1',
     this.timeout = const Duration(seconds: 10),
-  }) : _client = client ?? http.Client();
+  }) : baseUrl = _normalizeBaseUrl(baseUrl),
+       _client = client ?? http.Client();
 
   final String apiKey;
   final String model;
@@ -67,9 +68,11 @@ class QwenCloudParser implements CloudParser {
 
       if (resp.statusCode != 200) return const [];
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      final content =
-          (body['choices'] as List).first['message']['content'] as String;
-      final parsed = jsonDecode(content) as Map<String, dynamic>;
+      final message = (body['choices'] as List).first['message'];
+      final content = message['content'];
+      final parsed = content is String
+          ? jsonDecode(content) as Map<String, dynamic>
+          : content as Map<String, dynamic>;
       final items = parsed['items'] as List? ?? [];
       return items
           .map((e) => _fromJson(e as Map<String, dynamic>, source))
@@ -83,8 +86,7 @@ class QwenCloudParser implements CloudParser {
   DraftItem? _fromJson(Map<String, dynamic> j, DraftSource source) {
     try {
       final kindStr = j['kind'] as String? ?? 'bill';
-      final kind =
-          kindStr == 'lifeItem' ? DraftKind.lifeItem : DraftKind.bill;
+      final kind = kindStr == 'lifeItem' ? DraftKind.lifeItem : DraftKind.bill;
       final amountTypeStr = j['amount_type'] as String? ?? 'expense';
       final amountType = DraftAmountTypeX.fromString(amountTypeStr);
       final timeStr = j['time'] as String?;
@@ -106,4 +108,22 @@ class QwenCloudParser implements CloudParser {
       return null;
     }
   }
+
+  static String _normalizeBaseUrl(String value) {
+    var normalized = value.trim();
+    while (normalized.endsWith('/')) {
+      normalized = normalized.substring(0, normalized.length - 1);
+    }
+    return normalized;
+  }
+}
+
+class QwenCloudParser extends OpenAiCompatibleCloudParser {
+  QwenCloudParser({
+    required super.apiKey,
+    required super.model,
+    super.client,
+    super.baseUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    super.timeout = const Duration(seconds: 10),
+  });
 }

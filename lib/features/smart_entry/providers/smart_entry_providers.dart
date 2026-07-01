@@ -14,15 +14,22 @@ import '../services/secure_key_store.dart';
 /// FutureProvider：首次读取时从 secure storage 加载 AiConfig，
 /// 据此决定注入 NoopCloudParser 还是 QwenCloudParser。
 final smartEntryParserProvider = FutureProvider<SmartEntryParser>((ref) async {
-  final config = await ref.read(secureKeyStoreProvider).load();
+  final config = await ref.read(secureKeyStoreProvider).loadConfig();
+  final activeProfile = config.activeProfile;
   final cloud = config.enabled && config.isConfigured
-      ? QwenCloudParser(
-          apiKey: config.apiKey!,
-          model: config.model ?? 'qwen-plus',
+      ? OpenAiCompatibleCloudParser(
+          apiKey: activeProfile.apiKey,
+          model: activeProfile.model,
+          baseUrl: activeProfile.baseUrl,
         )
       : const NoopCloudParser();
   final locale = ref.watch(localeProvider);
-  return SmartEntryParser(cloud: cloud, languageCode: locale.languageCode);
+  return SmartEntryParser(
+    cloud: cloud,
+    languageCode: locale.languageCode,
+    alwaysCloud: config.alwaysCloud,
+    rules: config.localRules,
+  );
 });
 
 final categoryMatcherProvider = Provider<CategoryMatcher>((ref) {
@@ -55,7 +62,8 @@ class SmartEntryPersistService {
 
     for (final item in items) {
       try {
-        final categoryId = item.categoryId ??
+        final categoryId =
+            item.categoryId ??
             await matcher.matchId(
               item.categoryGuess,
               item.kind,
@@ -101,10 +109,11 @@ final smartEntryPersistProvider = Provider<SmartEntryPersistService>((ref) {
 
 /// 根据账单标题推荐分类 id（基于历史账单匹配频率）。
 final categorySuggestionProvider =
-    FutureProvider.family<int?, (String title, String amountType)>(
-  (ref, params) async {
-    final (title, amountType) = params;
-    final db = ref.read(databaseProvider);
-    return db.billRecordDao.suggestCategoryByTitle(title, amountType);
-  },
-);
+    FutureProvider.family<int?, (String title, String amountType)>((
+      ref,
+      params,
+    ) async {
+      final (title, amountType) = params;
+      final db = ref.read(databaseProvider);
+      return db.billRecordDao.suggestCategoryByTitle(title, amountType);
+    });

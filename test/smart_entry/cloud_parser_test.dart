@@ -32,16 +32,35 @@ MockClient _mockClient(String body, {int status = 200}) {
 }
 
 void main() {
-  test('解析云端返回的 JSON 为 DraftItem 列表', () async {
+  test('OpenAI 兼容解析器发送配置的 baseUrl、API Key 和模型', () async {
     const innerJson =
         '{"items":[{"kind":"bill","title":"午餐","amount_cents":2500,"amount_type":"expense","time":"2026-06-20T12:00:00","remind_time":null,"repeat_rule":null,"category_guess":"餐饮","confidence":0.9}]}';
-    final parser = QwenCloudParser(
+    http.Request? captured;
+    final parser = OpenAiCompatibleCloudParser(
       apiKey: 'fake',
-      model: 'qwen-plus',
-      client: _mockClient(_wrapAsChatResponse(innerJson)),
+      model: 'glm-4-flash',
+      baseUrl: 'https://open.bigmodel.cn/api/paas/v4/',
+      client: MockClient((request) async {
+        captured = request;
+        return http.Response.bytes(
+          utf8.encode(_wrapAsChatResponse(innerJson)),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
     );
 
     final items = await parser.parse('午餐花了25', source: DraftSource.nl);
+    final request = captured!;
+    final body = jsonDecode(request.body) as Map<String, dynamic>;
+
+    expect(
+      request.url.toString(),
+      'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    );
+    expect(request.headers['Authorization'], 'Bearer fake');
+    expect(body['model'], 'glm-4-flash');
+    expect(body['response_format'], {'type': 'json_object'});
     expect(items, hasLength(1));
     expect(items.first.title, '午餐');
     expect(items.first.amountCents, 2500);
@@ -52,9 +71,10 @@ void main() {
   test('解析事项（lifeItem）', () async {
     const innerJson =
         '{"items":[{"kind":"lifeItem","title":"开会","amount_cents":null,"amount_type":"none","time":"2026-06-20T15:00:00","remind_time":"2026-06-20T14:30:00","repeat_rule":null,"category_guess":"工作","confidence":0.85}]}';
-    final parser = QwenCloudParser(
+    final parser = OpenAiCompatibleCloudParser(
       apiKey: 'x',
       model: 'm',
+      baseUrl: 'https://api.deepseek.com',
       client: _mockClient(_wrapAsChatResponse(innerJson)),
     );
 
@@ -65,9 +85,10 @@ void main() {
   });
 
   test('非法 JSON 返回空且不抛', () async {
-    final parser = QwenCloudParser(
+    final parser = OpenAiCompatibleCloudParser(
       apiKey: 'x',
       model: 'm',
+      baseUrl: 'https://api.deepseek.com',
       client: _mockClient('not json'),
     );
     final items = await parser.parse('任意', source: DraftSource.nl);
@@ -75,9 +96,10 @@ void main() {
   });
 
   test('HTTP 错误返回空且不抛', () async {
-    final parser = QwenCloudParser(
+    final parser = OpenAiCompatibleCloudParser(
       apiKey: 'x',
       model: 'm',
+      baseUrl: 'https://api.deepseek.com',
       client: _mockClient('', status: 500),
     );
     expect(await parser.parse('任意', source: DraftSource.nl), isEmpty);

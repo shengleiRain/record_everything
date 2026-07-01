@@ -1,3 +1,4 @@
+import '../models/ai_assistant_config.dart';
 import '../models/draft_item.dart';
 import 'cloud_parser.dart';
 import 'local_rule_engine.dart';
@@ -11,15 +12,24 @@ class SmartEntryParser {
     DateTime? now,
     CloudParser cloud = const NoopCloudParser(),
     String languageCode = 'zh',
-  }) : _engine = LocalRuleEngine(now: now, languageCode: languageCode),
-       _cloud = cloud;
+    bool alwaysCloud = false,
+    List<LocalSmartEntryRule> rules = const [],
+  }) : _engine = LocalRuleEngine(
+         now: now,
+         languageCode: languageCode,
+         rules: rules,
+       ),
+       _cloud = cloud,
+       _alwaysCloud = alwaysCloud;
 
   SmartEntryParser.forTest({required DateTime now, String languageCode = 'zh'})
     : _engine = LocalRuleEngine(now: now, languageCode: languageCode),
-      _cloud = const NoopCloudParser();
+      _cloud = const NoopCloudParser(),
+      _alwaysCloud = false;
 
   final LocalRuleEngine _engine;
   final CloudParser _cloud;
+  final bool _alwaysCloud;
 
   /// 解析文本输入。
   /// [source] 标记数据来源；[ocrFullText] 仅 OCR 来源携带原文。
@@ -44,6 +54,17 @@ class SmartEntryParser {
     String input,
     DraftSource source,
   ) async {
+    if (_alwaysCloud) {
+      try {
+        final cloudItems = await _cloud
+            .parse(input, source: source)
+            .timeout(const Duration(seconds: 10));
+        if (cloudItems.isNotEmpty) return cloudItems;
+      } catch (_) {
+        // 降级到本地结果。
+      }
+      return items;
+    }
     final needCloud = items.isEmpty || items.any((i) => i.isLowConfidence);
     if (!needCloud) return items;
     try {

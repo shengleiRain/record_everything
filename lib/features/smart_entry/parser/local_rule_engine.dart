@@ -1,4 +1,5 @@
 import '../constants/smart_entry_keywords.dart';
+import '../models/ai_assistant_config.dart';
 import '../models/draft_item.dart';
 import 'preprocessor.dart';
 import 'splitter.dart';
@@ -9,13 +10,19 @@ import 'splitter.dart';
 /// 通过 `now` 注入当前时间，保证可测。
 /// `languageCode` 决定使用哪套分类关键词表（spec §5.3）。
 class LocalRuleEngine {
-  LocalRuleEngine({DateTime? now, DraftSource source = DraftSource.nl, this.languageCode = 'zh'})
-    : now = now ?? DateTime.now(),
-      defaultSource = source;
+  LocalRuleEngine({
+    DateTime? now,
+    DraftSource source = DraftSource.nl,
+    this.languageCode = 'zh',
+    List<LocalSmartEntryRule> rules = const [],
+  }) : now = now ?? DateTime.now(),
+       defaultSource = source,
+       rules = _sortRules(rules);
 
   final DateTime now;
   final DraftSource defaultSource;
   final String languageCode;
+  final List<LocalSmartEntryRule> rules;
 
   static const _pre = Preprocessor();
   static const _split = Splitter();
@@ -24,9 +31,7 @@ class LocalRuleEngine {
   List<DraftItem> parseAll(String input) {
     final norm = _pre.normalize(input);
     final segments = _split.split(norm);
-    return [
-      for (final seg in segments) ...parse(seg),
-    ];
+    return [for (final seg in segments) ...parse(seg)];
   }
 
   /// 解析单段（一句），返回 0..n 个 DraftItem（一句通常 1 个）。
@@ -36,9 +41,10 @@ class LocalRuleEngine {
 
     final amount = _extractAmount(seg);
     final time = _extractTime(seg);
-    final categoryGuess = _extractCategory(seg);
+    final matchedRule = _matchRule(seg);
+    final categoryGuess = matchedRule?.categoryGuess ?? _extractCategory(seg);
     final repeatRule = _extractRepeatRule(seg);
-    final kind = _judgeKind(seg, amount, repeatRule);
+    final kind = matchedRule?.kind ?? _judgeKind(seg, amount, repeatRule);
 
     if (kind == null) return const [];
 
@@ -46,21 +52,22 @@ class LocalRuleEngine {
 
     final title = _extractTitle(seg);
 
-    final amountType = kind == DraftKind.bill
-        ? (isIncome
-              ? DraftAmountType.income
-              : DraftAmountType.expense)
-        : (isIncome
-              ? DraftAmountType.income
-              : (amount == null
-                    ? DraftAmountType.none
-                    : DraftAmountType.expense));
+    final amountType =
+        matchedRule?.amountType ??
+        (kind == DraftKind.bill
+            ? (isIncome ? DraftAmountType.income : DraftAmountType.expense)
+            : (isIncome
+                  ? DraftAmountType.income
+                  : (amount == null
+                        ? DraftAmountType.none
+                        : DraftAmountType.expense)));
 
     // 置信度粗算
     double conf = 0.5;
     if (kind == DraftKind.bill && amount != null) conf += 0.3;
     if (time != null) conf += 0.15;
     if (categoryGuess != null) conf += 0.1;
+    if (matchedRule != null) conf += 0.1;
     if (kind == DraftKind.lifeItem &&
         (taskVerbs.any(seg.contains) || repeatRule != null)) {
       conf += 0.25;
@@ -112,9 +119,7 @@ class LocalRuleEngine {
 
   DateTime? _extractTime(String seg) {
     // 绝对日期：2026-06-19 / 2026/6/19 / 6月19日
-    final abs = RegExp(
-      r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})',
-    ).firstMatch(seg);
+    final abs = RegExp(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})').firstMatch(seg);
     if (abs != null) {
       final d = DateTime(
         int.parse(abs.group(1)!),
@@ -203,6 +208,13 @@ class LocalRuleEngine {
     return null;
   }
 
+  LocalSmartEntryRule? _matchRule(String seg) {
+    for (final rule in rules) {
+      if (rule.matches(seg)) return rule;
+    }
+    return null;
+  }
+
   String _extractTitle(String seg) {
     var t = seg
         .replaceAll(amountPattern, '')
@@ -232,8 +244,8 @@ class LocalRuleEngine {
   }
 
   DraftKind? _judgeKind(String seg, int? amount, String? repeatRule) {
-    final hasExpense = expenseVerbs.any(seg.contains) ||
-        currencyMarkers.any(seg.contains);
+    final hasExpense =
+        expenseVerbs.any(seg.contains) || currencyMarkers.any(seg.contains);
     final hasIncome = incomeVerbs.any(seg.contains);
     final hasTask = taskVerbs.any(seg.contains);
 
@@ -250,5 +262,9 @@ class LocalRuleEngine {
       return DraftKind.bill;
     }
     return null;
+  }
+
+  static List<LocalSmartEntryRule> _sortRules(List<LocalSmartEntryRule> rules) {
+    return [...rules]..sort((a, b) => b.priority.compareTo(a.priority));
   }
 }
