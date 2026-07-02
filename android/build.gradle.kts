@@ -1,7 +1,28 @@
 allprojects {
     repositories {
+        // Aliyun mirrors first for networks where dl.google.com /
+        // repo.maven.apache.org suffer TLS handshake termination.
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         google()
         mavenCentral()
+    }
+}
+
+// Legacy Flutter plugins (e.g. :home_widget) apply AGP via their own
+// `buildscript { repositories { google() }}` block. Rewrite every project's
+// buildscript repositories to use the Aliyun mirrors too, otherwise the AGP
+// classpath JARs fail with TLS handshake errors against dl.google.com.
+subprojects {
+    buildscript {
+        repositories {
+            maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+            maven { url = uri("https://maven.aliyun.com/repository/google") }
+            maven { url = uri("https://maven.aliyun.com/repository/public") }
+            google()
+            mavenCentral()
+        }
     }
 }
 
